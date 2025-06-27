@@ -80,29 +80,33 @@ watch(parameters, (newParams, oldParams) => {
 }, { deep: true })
 
 // Methods
-const handleParameterValueChanged = (value, paramId) => {
+const handleParameterValueChanged = (parameterData) => {
+  // Handle both old format (value, paramId) and new format (object)
+  let value, paramId
+  if (typeof parameterData === 'object' && parameterData.value !== undefined) {
+    value = parameterData.value
+    paramId = parameterData.paramId || parameterData.id
+  } else {
+    // Legacy format support
+    value = arguments[0]
+    paramId = arguments[1]
+  }
+  
   console.log(`VirtualHardwareView: Parameter ${paramId} changed to ${value}`)
   
-  // Update parameter in store (this will trigger WebSocket broadcast)
-  parameterStore.updateParameter(paramId, value)
+  // Note: Parameter store update will trigger hardware display via data watcher
+  // This just handles WebSocket broadcast and LED updates
   
-  // Update hardware display
-  const parameter = parameterStore.getParameterById(paramId)
-  if (parameter) {
-    const displayValue = formatValue(value, 'percentage')
-    hardwareStore.updateDisplay(parameter.name, displayValue)
-    
-    // Send hardware command payload
-    const payload = payloadStore.createParameterPayload(paramId, value)
-    hardwareStore.sendHardwareCommand(payload)
-    
-    // Create LED payload for visual feedback
-    const ledIndex = parameters.value.findIndex(p => p.id === paramId)
-    if (ledIndex !== -1) {
-      const color = getParameterColor(value)
-      const ledPayload = payloadStore.createLEDPayload(ledIndex, color)
-      hardwareStore.sendHardwareCommand(ledPayload)
-    }
+  // Send hardware command payload
+  const payload = payloadStore.createParameterPayload(paramId, value)
+  hardwareStore.sendHardwareCommand(payload)
+  
+  // Create LED payload for visual feedback
+  const ledIndex = parameters.value.findIndex(p => p.id === paramId)
+  if (ledIndex !== -1) {
+    const color = getParameterColor(value)
+    const ledPayload = payloadStore.createLEDPayload(ledIndex, color)
+    hardwareStore.sendHardwareCommand(ledPayload)
   }
 }
 
@@ -119,6 +123,9 @@ onMounted(() => {
   
   // Initialize WebSocket handlers for parameter synchronization
   parameterStore.initWebSocketHandlers()
+  
+  // Initialize hardware store parameter watcher
+  hardwareStore.initParameterWatcher()
   
   // Force WebSocket connection if not connected
   if (!websocketStore.isConnected) {
@@ -139,7 +146,7 @@ onMounted(() => {
   // Initialize display with VU meter
   hardwareStore.fadeToUVMeter()
   
-  console.log('VirtualHardwareView: Component mounted, waiting for parameter data via WebSocket')
+  console.log('VirtualHardwareView: Component mounted, data-driven display initialized')
 })
 </script>
 

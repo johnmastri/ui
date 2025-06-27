@@ -104,12 +104,34 @@
       </div>
 
       <!-- Parameters Tab -->
-      <div v-if="activeTab === 'parameters'" class="tab-panel">
-        <ParameterGrid 
-          @mock-data-loaded="handleMockDataLoaded"
-          @value-changed="handleParameterValueChanged"
-          @color-changed="handleParameterColorChanged"
-        />
+              <div v-if="activeTab === 'parameters'" class="tab-panel">
+        
+        <!-- Parameter Controls -->
+        <div class="parameter-section">
+          <h3 class="section-title">Master Unit Controls</h3>
+          
+          <!-- No Parameters State -->
+          <div v-if="parameters.length === 0" class="no-parameters">
+            <div class="no-parameters-icon">🎛️</div>
+            <div class="no-parameters-text">No VST loaded</div>
+            <div class="no-parameters-subtext">Load a VST plugin to see its parameters</div>
+            <button @click="loadMockData" class="mock-data-button">
+              🎯 Load Mock Data
+            </button>
+          </div>
+          
+          <!-- Parameters Grid -->
+          <div v-else class="parameter-grid">
+            <ParameterKnob 
+              v-for="parameter in parameters" 
+              :key="parameter.id"
+              :paramId="parameter.id"
+              theme="light"
+              @value-changed="handleParameterValueChanged"
+              @color-changed="handleParameterColorChanged"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -117,9 +139,9 @@
 
 <script>
 import { gsap } from 'gsap'
-import ParameterGrid from '../components/ParameterGrid.vue'
 import Header from '../components/Header.vue'
 import WebSocketStatusBar from '../components/WebSocketStatusBar.vue'
+import ParameterKnob from '../components/ParameterKnob.vue'
 import { useJuceIntegration } from '../composables/useJuceIntegration'
 import { useParameterStore } from '../stores/parameterStore'
 import { useWebSocketStore } from '../stores/websocketStore'
@@ -127,9 +149,9 @@ import { useWebSocketStore } from '../stores/websocketStore'
 export default {
   name: 'MainView',
   components: {
-    ParameterGrid,
     Header,
-    WebSocketStatusBar
+    WebSocketStatusBar,
+    ParameterKnob
   },
   data() {
     console.log('MainView.vue data() function called!')
@@ -167,6 +189,12 @@ export default {
       // Collapsible sections data (collapsed by default)
       isDebugConsoleCollapsed: true,
       debugConsoleContent: null
+    }
+  },
+  computed: {
+    parameters() {
+      const parameterStore = useParameterStore()
+      return parameterStore.parameters
     }
   },
   beforeMount() {
@@ -350,15 +378,20 @@ export default {
       }
     },
 
-    // Parameter Grid event handlers
-    handleMockDataLoaded() {
-      console.log('MainView: Mock data loaded event received')
+    // Parameter handling methods
+    loadMockData() {
+      const parameterStore = useParameterStore()
+      parameterStore.loadMockData()
+      console.log('MainView: Mock data loaded')
       this.addDebugMessage('Parameter mock data loaded and broadcasted via WebSocket')
     },
 
     handleParameterValueChanged(parameter) {
       console.log('MainView: Parameter value changed', parameter)
       this.addDebugMessage(`Parameter value changed: ${JSON.stringify(parameter)}`)
+      
+      // Note: Hardware display is updated directly by ParameterKnob component
+      // This handler is just for logging and debugging
     },
 
     handleParameterColorChanged(parameter) {
@@ -615,5 +648,114 @@ export default {
 .control-group button:disabled {
   background: #6c757d;
   cursor: not-allowed;
+}
+
+/* Parameter Section Styles */
+.parameter-section {
+  margin-top: 20px;
+}
+
+.section-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #007bff;
+  text-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.parameter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+/* No Parameters State */
+.no-parameters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: #666;
+}
+
+.no-parameters-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.no-parameters-text {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.no-parameters-subtext {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 20px;
+}
+
+.mock-data-button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.mock-data-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.mock-data-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
+}
+
+/* Dark theme overrides for parameter components in parameters tab - only when theme-dark class is present */
+.tab-panel .parameter-grid :deep(.parameter-knob-container.theme-dark) {
+  background: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border: none;
+}
+
+.tab-panel :deep(.parameter-knob-container.theme-dark .parameter-knob-label) {
+  color: #ffffff;
+}
+
+.tab-panel :deep(.parameter-knob-container.theme-dark .parameter-knob) {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border: 3px solid #444;
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.3),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+
+.tab-panel :deep(.parameter-knob-container.theme-dark .knob-indicator) {
+  background: #00ffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.tab-panel :deep(.parameter-knob-container.theme-dark .parameter-knob-value) {
+  color: #cccccc;
+  background: #2a2a2a;
+  border: 1px solid #444;
 }
 </style> 

@@ -92,8 +92,17 @@ export default {
       let newValue = this.dragStartValue + (deltaY * sensitivity)
       // Clamp to [0, 1] (endless, but no wrapping)
       newValue = Math.max(0, Math.min(1, newValue))
+      
+      // Only update parameter store - hardware display will react to data changes
       this.store.updateParameter(this.paramId, newValue)
-      this.$emit('value-changed', newValue)
+      
+      this.$emit('value-changed', {
+        value: newValue,
+        paramId: this.paramId,
+        id: this.paramId,
+        name: this.parameter?.name,
+        text: this.parameter?.text
+      })
     },
 
     endKnobDrag() {
@@ -106,6 +115,8 @@ export default {
       document.removeEventListener('mouseup', this.endKnobDrag)
       document.removeEventListener('touchmove', this.handleKnobDrag)
       document.removeEventListener('touchend', this.endKnobDrag)
+      
+      // Note: Hardware display timing is now handled by data watchers in hardwareStore
     },
 
     handleColorChanged(color) {

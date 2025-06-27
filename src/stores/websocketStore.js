@@ -29,38 +29,30 @@ export const useWebSocketStore = defineStore('websocket', () => {
 
   // Message handler registration
   const registerHandler = (messageType, handler) => {
-    console.log(`WebSocket: Registering handler for ${messageType}`)
     messageHandlers.value.set(messageType, handler)
   }
 
   const unregisterHandler = (messageType) => {
-    console.log(`WebSocket: Unregistering handler for ${messageType}`)
     messageHandlers.value.delete(messageType)
   }
 
   // Core WebSocket methods
   const connect = () => {
     try {
-      console.log(`WebSocket: Attempting to connect to ${serverUrl.value}`)
       websocket = new WebSocket(serverUrl.value)
       
       websocket.onopen = () => {
         isConnected.value = true
         reconnectAttempts = 0
-        console.log(`WebSocket: Connected to ${serverUrl.value}`)
-        console.log(`WebSocket: Connection state is now:`, isConnected.value)
       }
       
       websocket.onmessage = (event) => {
-        console.log(`WebSocket: Received: ${event.data}`)
         handleIncomingMessage(event.data)
         showReceiveLight()
       }
       
       websocket.onclose = (event) => {
         isConnected.value = false
-        console.log(`WebSocket: Disconnected - Code: ${event.code}, Reason: ${event.reason}`)
-        console.log(`WebSocket: Connection state is now:`, isConnected.value)
         
         // Auto-reconnect if not manually disconnected
         if (event.code !== 1000) {
@@ -69,11 +61,11 @@ export const useWebSocketStore = defineStore('websocket', () => {
       }
       
       websocket.onerror = (error) => {
-        console.log(`WebSocket: Error - ${error}`)
+        console.error('WebSocket: Connection error')
       }
       
     } catch (error) {
-      console.log(`WebSocket: Failed to connect - ${error.message}`)
+      console.error('WebSocket: Failed to connect')
       scheduleReconnect()
     }
   }
@@ -97,12 +89,10 @@ export const useWebSocketStore = defineStore('websocket', () => {
     if (websocket && websocket.readyState === WebSocket.OPEN) {
       const messageStr = JSON.stringify(message)
       websocket.send(messageStr)
-      console.log(`WebSocket: Sent: ${messageStr}`)
       addToHistory(message, 'sent')
       showSendLight()
       return true
     } else {
-      console.log('WebSocket: Cannot send - not connected')
       return false
     }
   }
@@ -113,16 +103,9 @@ export const useWebSocketStore = defineStore('websocket', () => {
       const message = JSON.parse(data)
       addToHistory(message, 'received')
       
-      console.log(`WebSocket: Incoming message type: ${message.type}`)
-      console.log(`WebSocket: Available handlers:`, Array.from(messageHandlers.value.keys()))
-      
       if (message.type && messageHandlers.value.has(message.type)) {
         const handler = messageHandlers.value.get(message.type)
-        console.log(`WebSocket: Routing ${message.type} to registered handler`)
         handler(message)
-      } else {
-        console.log(`WebSocket: No handler registered for message type: ${message.type}`)
-        console.log(`WebSocket: Registered handlers:`, Array.from(messageHandlers.value.keys()))
       }
     } catch (error) {
       console.error('WebSocket: Failed to parse incoming message:', error)
@@ -135,18 +118,13 @@ export const useWebSocketStore = defineStore('websocket', () => {
       reconnectAttempts++
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000)
       
-      console.log(`WebSocket: Scheduling reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${delay}ms`)
-      
       reconnectInterval = setTimeout(() => {
         connect()
       }, delay)
-    } else {
-      console.log('WebSocket: Max reconnect attempts reached. Manual reconnect required.')
     }
   }
 
   const reconnect = () => {
-    console.log('WebSocket: Manual reconnect requested')
     disconnect()
     reconnectAttempts = 0
     setTimeout(() => {

@@ -72,18 +72,12 @@ export const useParameterStore = defineStore('parameters', {
     // WebSocket initialization
     initWebSocketHandlers() {
       if (this.isWebSocketInitialized) {
-        console.log('ParameterStore: WebSocket handlers already initialized')
         return
       }
-      
-      console.log('ParameterStore: Initializing WebSocket handlers...')
       
       // Dynamic import to avoid circular dependency
       import('./websocketStore.js').then(({ useWebSocketStore }) => {
         const websocketStore = useWebSocketStore()
-        
-        console.log('ParameterStore: WebSocket store loaded, registering handlers')
-        console.log('ParameterStore: WebSocket connected?', websocketStore.isConnected)
         
         websocketStore.registerHandler('parameter_structure_sync', this.handleStructureSync.bind(this))
         websocketStore.registerHandler('parameter_value_sync', this.handleValueSync.bind(this))
@@ -91,7 +85,6 @@ export const useParameterStore = defineStore('parameters', {
         websocketStore.registerHandler('request_parameter_state', this.handleParameterStateRequest.bind(this))
         
         this.isWebSocketInitialized = true
-        console.log('ParameterStore: WebSocket handlers registered successfully')
       }).catch(error => {
         console.error('ParameterStore: Failed to load websocketStore:', error)
       })
@@ -99,16 +92,11 @@ export const useParameterStore = defineStore('parameters', {
 
     // WebSocket message handlers
     handleStructureSync(message) {
-      console.log('ParameterStore: Received parameter structure sync', message)
-      console.log('ParameterStore: Current parameters before sync:', this.parameters.length)
-      
       if (message.structure_hash && message.structure_hash === this.currentStructureHash) {
-        console.log('ParameterStore: Structure unchanged, skipping update')
         return
       }
       
       if (message.parameters && Array.isArray(message.parameters)) {
-        console.log('ParameterStore: Updating parameter structure')
         this.parameters = []
         
         message.parameters.forEach(param => {
@@ -121,8 +109,6 @@ export const useParameterStore = defineStore('parameters', {
     },
 
     handleValueSync(message) {
-      console.log('ParameterStore: Received parameter value sync', message)
-      
       if (message.updates && Array.isArray(message.updates)) {
         message.updates.forEach(update => {
           if (update.id && update.value !== undefined) {
@@ -159,14 +145,9 @@ export const useParameterStore = defineStore('parameters', {
     },
 
     handleParameterStateRequest(message) {
-      console.log('ParameterStore: Received parameter state request', message)
-      
       // If we have parameters, broadcast the current state
       if (this.parameters.length > 0) {
-        console.log('ParameterStore: Responding with current parameter structure')
         this.broadcastStructure()
-      } else {
-        console.log('ParameterStore: No parameters to share yet')
       }
     },
 
@@ -185,12 +166,8 @@ export const useParameterStore = defineStore('parameters', {
 
     // Broadcasting methods
     broadcastStructure() {
-      console.log('ParameterStore: broadcastStructure() called')
       import('./websocketStore.js').then(({ useWebSocketStore }) => {
         const websocketStore = useWebSocketStore()
-        
-        console.log('ParameterStore: WebSocket store loaded for broadcasting')
-        console.log('ParameterStore: WebSocket connected?', websocketStore.isConnected)
         
         const structureHash = this.generateStructureHash()
         const payload = {
@@ -212,11 +189,7 @@ export const useParameterStore = defineStore('parameters', {
           timestamp: Date.now()
         }
         
-        console.log('ParameterStore: Broadcasting parameter structure:', payload)
-        console.log('ParameterStore: Parameter count in payload:', payload.parameters.length)
-        
-        const sendResult = websocketStore.send(payload)
-        console.log('ParameterStore: Send result:', sendResult)
+        websocketStore.send(payload)
         
         this.currentStructureHash = structureHash
         this.lastStructureUpdate = Date.now()
@@ -242,7 +215,6 @@ export const useParameterStore = defineStore('parameters', {
             timestamp: Date.now()
           }
           
-          console.log(`ParameterStore: Broadcasting value update for ${paramId}`)
           websocketStore.send(payload)
         }
       })
@@ -355,7 +327,6 @@ export const useParameterStore = defineStore('parameters', {
     },
 
     loadMockData() {
-      console.log('ParameterStore: Loading mock data...')
       const mockParameters = [
         {
           id: 'input-gain',
@@ -480,10 +451,8 @@ export const useParameterStore = defineStore('parameters', {
       ]
 
       this.parameters = mockParameters
-      console.log('ParameterStore: Mock data loaded, parameter count:', this.parameters.length)
       
       // Broadcast structure change via WebSocket
-      console.log('ParameterStore: About to broadcast structure...')
       this.broadcastStructure()
     },
 
