@@ -1,7 +1,8 @@
 <template>
-  <div class="mock-display">
-    <!-- Header Row -->
-    <div class="header-row">
+  <div class="mock-display-container" :style="containerStyle">
+    <div class="mock-display" :style="displayStyle">
+      <!-- Header Row -->
+      <div class="header-row">
       <div class="left-header">
         <div class="settings-icon" @click="openSettings">⚙️</div>
         <div class="device-name">{{ deviceName }}</div>
@@ -45,13 +46,14 @@
       </div>
     </div>
 
-    <!-- Settings Panel -->
-    <SettingsPanel />
+      <!-- Settings Panel -->
+      <SettingsPanel />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { gsap } from 'gsap'
 import { useHardwareStore } from '../stores/hardwareStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -70,6 +72,9 @@ const deviceName = ref('MasterCtrl Device') // TODO: Make this dynamic
 const channelName = ref('Channel 1') // TODO: Get from DAW
 const vuMeterValue = ref('-20.0 dB')
 const vuMeterLevel = ref(-20)
+
+// Scaling
+const scale = ref(1)
 
 // Computed properties
 const shouldShowLargeDisplay = computed(() => {
@@ -101,6 +106,16 @@ const vuMeterPercentage = computed(() => {
   const db = parseFloat(vuMeterValue.value)
   return Math.max(0, Math.min(100, ((db + 60) / 60) * 100))
 })
+
+const displayStyle = computed(() => ({
+  transform: `scale(${scale.value})`,
+  transformOrigin: 'center center'
+}))
+
+const containerStyle = computed(() => ({
+  height: `${480 * scale.value}px`,
+  padding: '0'
+}))
 
 // Animation methods
 const fadeInParameterDisplay = () => {
@@ -154,6 +169,14 @@ const openSettings = () => {
   settingsStore.openSettingsPanel()
 }
 
+const calculateScale = () => {
+  const viewportWidth = window.innerWidth
+  const padding = viewportWidth <= 480 ? 10 : 20
+  const availableWidth = viewportWidth - padding
+  const newScale = Math.min(1, availableWidth / 800) // Never scale up beyond 1
+  scale.value = newScale
+}
+
 // Watchers for animations
 watch(shouldShowLargeDisplay, async (newValue, oldValue) => {
   if (newValue === oldValue) return
@@ -200,19 +223,40 @@ onMounted(() => {
   } else {
     gsap.set(vuMeterDisplayRef.value, { opacity: 1, scale: 1 })
   }
+  
+  // Initialize scaling
+  calculateScale()
+  window.addEventListener('resize', calculateScale)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', calculateScale)
 })
 </script>
 
 <style scoped>
-.mock-display {
+.mock-display-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  height: 300px;
+  height: fit-content;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.mock-display {
+  width: 800px;
+  height: 480px;
+  min-width: 800px;
+  min-height: 480px;
+  max-width: 800px;
+  max-height: 480px;
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   border: 2px solid #333;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
   position: relative;
   overflow: hidden;
   box-shadow: 
@@ -369,65 +413,6 @@ onMounted(() => {
   will-change: opacity, transform;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  .mock-display {
-    height: 250px;
-  }
-  
-  .left-header {
-    gap: 8px;
-  }
-  
-  .settings-icon {
-    font-size: 1em;
-  }
-  
-  .device-name {
-    font-size: 0.7em;
-  }
-  
-  .numeric-value {
-    font-size: 3em;
-  }
-  
-  .parameter-name {
-    font-size: 1.2em;
-  }
-  
-  .meter-value {
-    font-size: 1.8em;
-  }
-  
-  .meter-bar {
-    width: 220px;
-    height: 20px;
-  }
-  
-  .channel-name {
-    font-size: 1em;
-  }
-}
+/* Mobile responsive width calculation handled by JavaScript */
 
-@media (max-width: 480px) {
-  .left-header {
-    gap: 6px;
-  }
-  
-  .device-name {
-    font-size: 0.6em;
-  }
-  
-  .channel-name {
-    font-size: 0.9em;
-  }
-  
-  .numeric-value {
-    font-size: 2.5em;
-  }
-  
-  .parameter-name {
-    font-size: 1em;
-  }
-}
 </style> 
