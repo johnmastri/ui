@@ -1,17 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useWebSocket } from '../composables/useWebSocket'
+import { useWebSocketStore } from './websocketStore'
 
 export const useHardwareStore = defineStore('hardware', () => {
   // WebSocket integration
-  const {
-    isWebSocketConnected,
-    hasRecentSend,
-    hasRecentReceive,
-    websocketServer,
-    sendWebSocketMessage,
-    reconnectWebSocket
-  } = useWebSocket()
+  const websocketStore = useWebSocketStore()
 
   // Display state for virtual hardware
   const displayText = ref('')
@@ -24,10 +17,8 @@ export const useHardwareStore = defineStore('hardware', () => {
   const hardwareConnected = ref(false)
 
   // Computed
-  const isConnected = computed(() => isWebSocketConnected.value)
-  const connectionStatus = computed(() => 
-    isWebSocketConnected.value ? 'Connected' : 'Disconnected'
-  )
+  const isConnected = computed(() => websocketStore.isConnected)
+  const connectionStatus = computed(() => websocketStore.connectionStatus)
 
   // Methods
   const updateDisplay = (parameterName, value) => {
@@ -55,7 +46,7 @@ export const useHardwareStore = defineStore('hardware', () => {
   }
 
   const sendHardwareCommand = (command) => {
-    sendWebSocketMessage(command)
+    websocketStore.send(command)
   }
 
   const sendParameterUpdate = (parameterName, value) => {
@@ -65,7 +56,7 @@ export const useHardwareStore = defineStore('hardware', () => {
       value: value,
       timestamp: Date.now()
     }
-    sendWebSocketMessage(payload)
+    websocketStore.send(payload)
   }
 
   const sendLEDUpdate = (ledData) => {
@@ -74,7 +65,11 @@ export const useHardwareStore = defineStore('hardware', () => {
       data: ledData,
       timestamp: Date.now()
     }
-    sendWebSocketMessage(payload)
+    websocketStore.send(payload)
+  }
+
+  const reconnect = () => {
+    websocketStore.reconnect()
   }
 
   const resetDisplay = () => {
@@ -88,11 +83,11 @@ export const useHardwareStore = defineStore('hardware', () => {
   }
 
   return {
-    // WebSocket state
-    isWebSocketConnected,
-    hasRecentSend,
-    hasRecentReceive,
-    websocketServer,
+    // WebSocket state (delegated to websocketStore)
+    isWebSocketConnected: computed(() => websocketStore.isConnected),
+    hasRecentSend: computed(() => websocketStore.hasRecentSend),
+    hasRecentReceive: computed(() => websocketStore.hasRecentReceive),
+    websocketServer: computed(() => websocketStore.serverUrl),
     isConnected,
     connectionStatus,
     
@@ -111,7 +106,7 @@ export const useHardwareStore = defineStore('hardware', () => {
     sendHardwareCommand,
     sendParameterUpdate,
     sendLEDUpdate,
-    reconnectWebSocket,
+    reconnectWebSocket: reconnect,
     resetDisplay
   }
 }) 

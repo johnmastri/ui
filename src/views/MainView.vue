@@ -121,7 +121,8 @@ import ParameterGrid from '../components/ParameterGrid.vue'
 import Header from '../components/Header.vue'
 import WebSocketStatusBar from '../components/WebSocketStatusBar.vue'
 import { useJuceIntegration } from '../composables/useJuceIntegration'
-import { useWebSocket } from '../composables/useWebSocket'
+import { useParameterStore } from '../stores/parameterStore'
+import { useWebSocketStore } from '../stores/websocketStore'
 
 export default {
   name: 'MainView',
@@ -177,8 +178,18 @@ export default {
     
     // Initialize JUCE integration
     this.initJuceIntegration()
+    
+    // Initialize WebSocket handlers for parameter synchronization
+    this.initParameterStore()
   },
   methods: {
+    // Store initialization
+    initParameterStore() {
+      const parameterStore = useParameterStore()
+      console.log('MainView: Initializing parameter store WebSocket handlers')
+      parameterStore.initWebSocketHandlers()
+    },
+
     // JUCE Integration methods
     initJuceIntegration() {
       const { pluginInfo, isDevelopment } = useJuceIntegration()
@@ -186,11 +197,11 @@ export default {
       this.isDevelopment = isDevelopment
     },
 
-    // WebSocket methods (using the composable)
+    // WebSocket methods (using the store)
     testWebSocketConnection() {
-      const { connectWebSocket } = useWebSocket()
+      const websocketStore = useWebSocketStore()
       this.addDebugMessage('WebSocket: Manual test connection requested')
-      connectWebSocket()
+      websocketStore.connect()
     },
 
     // GSAP animation function for smooth 60fps level updates
@@ -284,6 +295,22 @@ export default {
       }, 200)
     },
 
+    // Parameter event handlers
+    handleMockDataLoaded() {
+      console.log('MainView: Mock data loaded in ParameterGrid')
+      this.addDebugMessage('Parameter mock data loaded and broadcasted via WebSocket')
+    },
+
+    handleParameterValueChanged(value) {
+      console.log('MainView: Parameter value changed', value)
+      this.addDebugMessage(`Parameter value changed: ${JSON.stringify(value)}`)
+    },
+
+    handleParameterColorChanged(color) {
+      console.log('MainView: Parameter color changed', color)
+      this.addDebugMessage(`Parameter color changed: ${JSON.stringify(color)}`)
+    },
+
     // VST Hosting methods
     browseForVST() {
       this.addDebugMessage('Browsing for VST...')
@@ -324,16 +351,19 @@ export default {
     },
 
     // Parameter Grid event handlers
-    handleMockDataLoaded(data) {
-      this.addDebugMessage(`Mock data loaded: ${data.length} parameters`)
+    handleMockDataLoaded() {
+      console.log('MainView: Mock data loaded event received')
+      this.addDebugMessage('Parameter mock data loaded and broadcasted via WebSocket')
     },
 
     handleParameterValueChanged(parameter) {
-      this.addDebugMessage(`Parameter changed: ${parameter.name} = ${parameter.value}`)
+      console.log('MainView: Parameter value changed', parameter)
+      this.addDebugMessage(`Parameter value changed: ${JSON.stringify(parameter)}`)
     },
 
     handleParameterColorChanged(parameter) {
-      this.addDebugMessage(`Parameter color changed: ${parameter.name} = RGB(${parameter.color.r}, ${parameter.color.g}, ${parameter.color.b})`)
+      console.log('MainView: Parameter color changed', parameter)
+      this.addDebugMessage(`Parameter color changed: ${JSON.stringify(parameter)}`)
     },
 
     // Debug console methods

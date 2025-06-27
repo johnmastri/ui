@@ -34,7 +34,7 @@ canvas, img, svg {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 0;
 }
 
 /* Modern UI styling */

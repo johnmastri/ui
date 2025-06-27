@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 3000,
-    host: 'localhost',
+    host: '0.0.0.0', // This allows access from any device on the network
     cors: true
   },
   build: {

@@ -14,7 +14,7 @@
       <h3 class="section-title">Master Unit Controls</h3>
       <div class="parameter-grid">
         <ParameterKnob 
-          v-for="parameter in masterParameters" 
+          v-for="parameter in parameters" 
           :key="parameter.id"
           :paramId="parameter.id"
           theme="dark"
@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import Header from '../components/Header.vue'
 import WebSocketStatusBar from '../components/WebSocketStatusBar.vue'
 import MockDisplay from '../components/MockDisplay.vue'
@@ -35,10 +35,12 @@ import ParameterKnob from '../components/ParameterKnob.vue'
 import { useHardwareStore } from '../stores/hardwareStore'
 import { usePayloadStore } from '../stores/payloadStore'
 import { useParameterStore } from '../stores/parameterStore'
+import { useWebSocketStore } from '../stores/websocketStore'
 
 const hardwareStore = useHardwareStore()
 const payloadStore = usePayloadStore()
 const parameterStore = useParameterStore()
+const websocketStore = useWebSocketStore()
 
 // Helper functions (defined before use)
 const formatValue = (value, format) => {
@@ -62,92 +64,40 @@ const getParameterColor = (value) => {
   }
 }
 
-// Initialize parameters in the store immediately
-const masterParameters = ref([
-  {
-    id: 'gain',
-    name: 'Gain',
-    value: 1.0,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    format: 'percentage'
-  },
-  {
-    id: 'bass',
-    name: 'Bass',
-    value: 0.5,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    format: 'percentage'
-  },
-  {
-    id: 'mid',
-    name: 'Mid',
-    value: 0.5,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    format: 'percentage'
-  },
-  {
-    id: 'treble',
-    name: 'Treble',
-    value: 0.5,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    format: 'percentage'
-  },
-  {
-    id: 'drive',
-    name: 'Drive',
-    value: 0.0,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    format: 'percentage'
-  },
-  {
-    id: 'volume',
-    name: 'Volume',
-    value: 0.7,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    format: 'percentage'
-  }
-])
-
-// Initialize parameters in the store immediately
-masterParameters.value.forEach(param => {
-  parameterStore.addParameter({
-    id: param.id,
-    name: param.name,
-    value: param.value,
-    text: formatValue(param.value, param.format),
-    min: param.min,
-    max: param.max,
-    step: param.step
-  })
+// Use parameters from store (populated via WebSocket)
+const parameters = computed(() => {
+  console.log('VirtualHardwareView: Parameters computed:', parameterStore.parameters.length, 'parameters')
+  return parameterStore.parameters
 })
+
+// Watch for parameter changes
+watch(parameters, (newParams, oldParams) => {
+  console.log('VirtualHardwareView: Parameters changed!', {
+    old: oldParams?.length || 0,
+    new: newParams.length,
+    params: newParams.map(p => ({ id: p.id, name: p.name }))
+  })
+}, { deep: true })
 
 // Methods
 const handleParameterValueChanged = (value, paramId) => {
-  // The ParameterKnob component handles the store update internally
-  // We just need to handle the display and WebSocket communication
+  console.log(`VirtualHardwareView: Parameter ${paramId} changed to ${value}`)
+  
+  // Update parameter in store (this will trigger WebSocket broadcast)
+  parameterStore.updateParameter(paramId, value)
+  
+  // Update hardware display
   const parameter = parameterStore.getParameterById(paramId)
   if (parameter) {
-    const displayValue = formatValue(value, 'percentage') // Default to percentage format
+    const displayValue = formatValue(value, 'percentage')
     hardwareStore.updateDisplay(parameter.name, displayValue)
     
-    // Send payload to hardware
+    // Send hardware command payload
     const payload = payloadStore.createParameterPayload(paramId, value)
     hardwareStore.sendHardwareCommand(payload)
     
     // Create LED payload for visual feedback
-    const ledIndex = masterParameters.value.findIndex(p => p.id === paramId)
+    const ledIndex = parameters.value.findIndex(p => p.id === paramId)
     if (ledIndex !== -1) {
       const color = getParameterColor(value)
       const ledPayload = payloadStore.createLEDPayload(ledIndex, color)
@@ -163,8 +113,33 @@ const handleParameterColorChanged = (color) => {
 
 // Lifecycle
 onMounted(() => {
+  console.log('VirtualHardwareView: Mounting component')
+  console.log('VirtualHardwareView: WebSocket connected?', websocketStore.isConnected)
+  console.log('VirtualHardwareView: Current parameters:', parameterStore.parameters.length)
+  
+  // Initialize WebSocket handlers for parameter synchronization
+  parameterStore.initWebSocketHandlers()
+  
+  // Force WebSocket connection if not connected
+  if (!websocketStore.isConnected) {
+    console.log('VirtualHardwareView: WebSocket not connected, forcing connection')
+    websocketStore.connect()
+  }
+  
+  // Request current parameter state from other clients
+  setTimeout(() => {
+    console.log('VirtualHardwareView: Requesting current parameter state')
+    const requestPayload = {
+      type: 'request_parameter_state',
+      timestamp: Date.now()
+    }
+    websocketStore.send(requestPayload)
+  }, 1000) // Wait 1 second for connection to stabilize
+  
   // Initialize display with VU meter
   hardwareStore.fadeToUVMeter()
+  
+  console.log('VirtualHardwareView: Component mounted, waiting for parameter data via WebSocket')
 })
 </script>
 
@@ -175,6 +150,9 @@ onMounted(() => {
   color: #ffffff;
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .parameter-section {
@@ -225,15 +203,24 @@ onMounted(() => {
 @media (max-width: 768px) {
   .virtual-hardware-view {
     padding: 10px;
+    height: 100vh; /* Ensure full height on mobile */
+    width: 100vw; /* Ensure full width on mobile */
+    box-sizing: border-box; /* Include padding in dimensions */
   }
   
   .parameter-grid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 15px;
+    padding-bottom: 20px; /* Add bottom padding for scroll space */
   }
   
   .section-title {
     font-size: 1.3em;
+    margin-bottom: 15px; /* Reduce margin on mobile */
+  }
+  
+  .parameter-section {
+    margin-top: 15px; /* Reduce top margin on mobile */
   }
 }
 </style> 

@@ -3,6 +3,9 @@ import { defineStore } from 'pinia'
 export const useParameterStore = defineStore('parameters', {
   state: () => ({
     parameters: [],
+    currentStructureHash: null,
+    lastStructureUpdate: null,
+    isWebSocketInitialized: false,
     colorPresets: {
       'Input Gain': '#4CAF50',    // Green
       'Drive': '#FF5722',         // Orange-Red
@@ -66,6 +69,202 @@ export const useParameterStore = defineStore('parameters', {
   },
 
   actions: {
+    // WebSocket initialization
+    initWebSocketHandlers() {
+      if (this.isWebSocketInitialized) {
+        console.log('ParameterStore: WebSocket handlers already initialized')
+        return
+      }
+      
+      console.log('ParameterStore: Initializing WebSocket handlers...')
+      
+      // Dynamic import to avoid circular dependency
+      import('./websocketStore.js').then(({ useWebSocketStore }) => {
+        const websocketStore = useWebSocketStore()
+        
+        console.log('ParameterStore: WebSocket store loaded, registering handlers')
+        console.log('ParameterStore: WebSocket connected?', websocketStore.isConnected)
+        
+        websocketStore.registerHandler('parameter_structure_sync', this.handleStructureSync.bind(this))
+        websocketStore.registerHandler('parameter_value_sync', this.handleValueSync.bind(this))
+        websocketStore.registerHandler('parameter_color_sync', this.handleColorSync.bind(this))
+        websocketStore.registerHandler('request_parameter_state', this.handleParameterStateRequest.bind(this))
+        
+        this.isWebSocketInitialized = true
+        console.log('ParameterStore: WebSocket handlers registered successfully')
+      }).catch(error => {
+        console.error('ParameterStore: Failed to load websocketStore:', error)
+      })
+    },
+
+    // WebSocket message handlers
+    handleStructureSync(message) {
+      console.log('ParameterStore: Received parameter structure sync', message)
+      console.log('ParameterStore: Current parameters before sync:', this.parameters.length)
+      
+      if (message.structure_hash && message.structure_hash === this.currentStructureHash) {
+        console.log('ParameterStore: Structure unchanged, skipping update')
+        return
+      }
+      
+      if (message.parameters && Array.isArray(message.parameters)) {
+        console.log('ParameterStore: Updating parameter structure')
+        this.parameters = []
+        
+        message.parameters.forEach(param => {
+          this.addParameter(param)
+        })
+        
+        this.currentStructureHash = message.structure_hash
+        this.lastStructureUpdate = Date.now()
+      }
+    },
+
+    handleValueSync(message) {
+      console.log('ParameterStore: Received parameter value sync', message)
+      
+      if (message.updates && Array.isArray(message.updates)) {
+        message.updates.forEach(update => {
+          if (update.id && update.value !== undefined) {
+            // Don't broadcast when receiving WebSocket updates (prevents feedback loop)
+            this.updateParameter(update.id, update.value, false)
+            
+            // Update color if provided
+            if (update.rgbColor) {
+              const param = this.parameters.find(p => p.id === update.id)
+              if (param) {
+                param.rgbColor = update.rgbColor
+              }
+            }
+          }
+        })
+      }
+    },
+
+    handleColorSync(message) {
+      if (message.updates && Array.isArray(message.updates)) {
+        message.updates.forEach(update => {
+          if (update.id && (update.color || update.rgbColor)) {
+            // Don't broadcast when receiving WebSocket updates (prevents feedback loop)
+            if (update.color) {
+              this.setParameterColor(update.id, update.color, false)
+            } else if (update.rgbColor) {
+              // Convert RGB to hex and use setParameterColor for proper reactivity
+              const hexColor = `#${update.rgbColor.r.toString(16).padStart(2, '0')}${update.rgbColor.g.toString(16).padStart(2, '0')}${update.rgbColor.b.toString(16).padStart(2, '0')}`
+              this.setParameterColor(update.id, hexColor, false)
+            }
+          }
+        })
+      }
+    },
+
+    handleParameterStateRequest(message) {
+      console.log('ParameterStore: Received parameter state request', message)
+      
+      // If we have parameters, broadcast the current state
+      if (this.parameters.length > 0) {
+        console.log('ParameterStore: Responding with current parameter structure')
+        this.broadcastStructure()
+      } else {
+        console.log('ParameterStore: No parameters to share yet')
+      }
+    },
+
+    // Structure management
+    generateStructureHash(parameters = this.parameters) {
+      const structure = parameters.map(p => ({
+        id: p.id,
+        name: p.name,
+        min: p.min || 0,
+        max: p.max || 1,
+        step: p.step || 0.01,
+        format: p.format || 'percentage'
+      }))
+      return btoa(JSON.stringify(structure))
+    },
+
+    // Broadcasting methods
+    broadcastStructure() {
+      console.log('ParameterStore: broadcastStructure() called')
+      import('./websocketStore.js').then(({ useWebSocketStore }) => {
+        const websocketStore = useWebSocketStore()
+        
+        console.log('ParameterStore: WebSocket store loaded for broadcasting')
+        console.log('ParameterStore: WebSocket connected?', websocketStore.isConnected)
+        
+        const structureHash = this.generateStructureHash()
+        const payload = {
+          type: 'parameter_structure_sync',
+          structure_hash: structureHash,
+          parameters: this.parameters.map(p => ({
+            id: p.id,
+            name: p.name,
+            value: p.value,
+            min: p.min || 0,
+            max: p.max || 1,
+            step: p.step || 0.01,
+            format: p.format || 'percentage',
+            defaultValue: p.defaultValue || 0.5,
+            color: p.color,
+            rgbColor: p.rgbColor,
+            ledCount: p.ledCount || 28
+          })),
+          timestamp: Date.now()
+        }
+        
+        console.log('ParameterStore: Broadcasting parameter structure:', payload)
+        console.log('ParameterStore: Parameter count in payload:', payload.parameters.length)
+        
+        const sendResult = websocketStore.send(payload)
+        console.log('ParameterStore: Send result:', sendResult)
+        
+        this.currentStructureHash = structureHash
+        this.lastStructureUpdate = Date.now()
+      }).catch(error => {
+        console.error('ParameterStore: Failed to broadcast structure:', error)
+      })
+    },
+
+    broadcastValueUpdate(paramId, value) {
+      import('./websocketStore.js').then(({ useWebSocketStore }) => {
+        const websocketStore = useWebSocketStore()
+        const param = this.parameters.find(p => p.id === paramId)
+        
+        if (param) {
+          const payload = {
+            type: 'parameter_value_sync',
+            updates: [{
+              id: paramId,
+              value: value,
+              text: param.text,
+              rgbColor: param.rgbColor
+            }],
+            timestamp: Date.now()
+          }
+          
+          console.log(`ParameterStore: Broadcasting value update for ${paramId}`)
+          websocketStore.send(payload)
+        }
+      })
+    },
+
+    broadcastColorUpdate(paramId, color, rgbColor) {
+      import('./websocketStore.js').then(({ useWebSocketStore }) => {
+        const websocketStore = useWebSocketStore()
+        
+        const payload = {
+          type: 'parameter_color_sync',
+          updates: [{
+            id: paramId,
+            color: color,
+            rgbColor: rgbColor
+          }],
+          timestamp: Date.now()
+        }
+        
+        websocketStore.send(payload)
+      })
+    },
 
     addParameter(parameter) {
       // Check if parameter already exists
@@ -92,19 +291,30 @@ export const useParameterStore = defineStore('parameters', {
         this.parameters.push(newParameter)
       }
     },
-    updateParameter(id, value) {
+    updateParameter(id, value, shouldBroadcast = true) {
       const param = this.parameters.find(p => p.id === id)
       if (param) {
         param.value = Math.max(0, Math.min(1, value))
         param.text = this.generateParameterText(param.name, param.value)
+        
+        // Only broadcast if this isn't from a WebSocket update
+        if (shouldBroadcast) {
+          this.broadcastValueUpdate(id, param.value)
+        }
       }
     },
 
-    setParameterColor(id, color) {
+    setParameterColor(id, color, shouldBroadcast = true) {
       const param = this.parameters.find(p => p.id === id)
       if (param) {
+        // Direct property mutation - Pinia handles reactivity automatically
         param.color = color
         param.rgbColor = this.hexToRgb(color)
+        
+        // Broadcast color change via WebSocket
+        if (shouldBroadcast) {
+          this.broadcastColorUpdate(id, color, param.rgbColor)
+        }
       }
     },
 
@@ -145,6 +355,7 @@ export const useParameterStore = defineStore('parameters', {
     },
 
     loadMockData() {
+      console.log('ParameterStore: Loading mock data...')
       const mockParameters = [
         {
           id: 'input-gain',
@@ -269,6 +480,11 @@ export const useParameterStore = defineStore('parameters', {
       ]
 
       this.parameters = mockParameters
+      console.log('ParameterStore: Mock data loaded, parameter count:', this.parameters.length)
+      
+      // Broadcast structure change via WebSocket
+      console.log('ParameterStore: About to broadcast structure...')
+      this.broadcastStructure()
     },
 
     clearParameters() {

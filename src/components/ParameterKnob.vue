@@ -133,7 +133,7 @@ export default {
 .parameter-knob-container.theme-dark {
   background: #1a1a1a;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  border: 1px solid #333;
+  border: none; /* Remove the white border */
 }
 
 .color-picker-absolute {

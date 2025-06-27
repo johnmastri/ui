@@ -5,6 +5,8 @@
       <span class="status-value" :class="{ connected: isWebSocketConnected }">
         {{ isWebSocketConnected ? 'Connected' : 'Disconnected' }}
       </span>
+      <!-- Debug info -->
+      <span style="font-size: 10px; color: #999;">({{ websocketStore.isConnected }})</span>
     </div>
     <div class="status-item">
       <span class="status-label">Send:</span>
@@ -27,15 +29,17 @@
 </template>
 
 <script setup>
-import { useWebSocket } from '../composables/useWebSocket'
+import { computed } from 'vue'
+import { useWebSocketStore } from '../stores/websocketStore'
 
-const { 
-  isWebSocketConnected, 
-  hasRecentSend, 
-  hasRecentReceive, 
-  websocketServer, 
-  reconnectWebSocket 
-} = useWebSocket()
+const websocketStore = useWebSocketStore()
+
+// Create reactive computed properties
+const isWebSocketConnected = computed(() => websocketStore.isConnected)
+const hasRecentSend = computed(() => websocketStore.hasRecentSend)
+const hasRecentReceive = computed(() => websocketStore.hasRecentReceive)
+const websocketServer = computed(() => websocketStore.serverUrl)
+const reconnectWebSocket = () => websocketStore.reconnect()
 </script>
 
 <style scoped>
