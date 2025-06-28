@@ -46,6 +46,14 @@ public:
     void showTestPattern();
     void showErrorPattern();
     void showStartupSequence();
+    void simpleColorTest(int step);  // Add this for debugging
+    
+    // NEW: Diagnostic functions for troubleshooting
+    void runFullDiagnostics();
+    void testLEDRange(int startLED, int endLED, CRGB color);
+    void sequentialTest(int delayMs);
+    void findLEDCount(); // Auto-detect actual strip length
+    void testSignalIntegrity(); // Test for level shifting issues
     
     // Status
     bool isInitialized() const { return initialized; }

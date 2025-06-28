@@ -10,8 +10,8 @@
 // ============================================================================
 
 // LED Strip (APA102) - D0/D1
-#define LED_DATA_PIN 44    // D0 on XIAO ESP32-S3
-#define LED_CLOCK_PIN 43   // D1 on XIAO ESP32-S3
+#define LED_DATA_PIN D0        // D0 on XIAO ESP32-S3  
+#define LED_CLOCK_PIN D1       // D1 on XIAO ESP32-S3
 
 // I2C Encoders - SDA/SCL  
 #define I2C_SDA_PIN 6      // SDA on XIAO ESP32-S3
@@ -24,15 +24,20 @@
 // ============================================================================
 
 // Encoder Setup
-#define NUM_ENCODERS 8
+#define NUM_ENCODERS 1
 #define I2C_ENCODER_BASE_ADDR 0x20  // Addresses 0x20-0x27
 
 // LED Configuration  
-#define LEDS_PER_ENCODER 28
-#define TOTAL_LEDS (NUM_ENCODERS * LEDS_PER_ENCODER)
-#define LED_BRIGHTNESS 64   // Start conservative (25% brightness)
-#define LED_TYPE APA102
-#define COLOR_ORDER RGB
+#define LEDS_PER_ENCODER 72    // 144 LEDs/meter × 0.5 meters = 72 LEDs
+#define TOTAL_LEDS (NUM_ENCODERS * LEDS_PER_ENCODER)  // 72 LEDs total
+#define LED_BRIGHTNESS 12      // LOWER brightness for better 3.3V compatibility
+#define LED_TYPE APA102        // DotStar uses APA102
+#define COLOR_ORDER RGB        // Test RGB first
+
+// Debugging Options
+#define ENABLE_LED_DIAGNOSTICS true
+#define SAFE_MODE true         // Slower timing, more conservative power
+#define LED_UPDATE_RATE_MS 50  // SLOWER updates for 3.3V compatibility (20 FPS)
 
 // I2C Configuration
 #define I2C_FREQUENCY 400000  // 400kHz standard speed
@@ -44,7 +49,6 @@
 #define MAIN_LOOP_DELAY_MS 1
 #define HEARTBEAT_INTERVAL_MS 5000      // 5 seconds
 #define STATUS_UPDATE_INTERVAL_MS 10000 // 10 seconds
-#define LED_UPDATE_RATE_MS 16           // ~60 FPS
 #define I2C_SCAN_INTERVAL_MS 50         // 20Hz encoder scanning
 
 // Communication Protocol

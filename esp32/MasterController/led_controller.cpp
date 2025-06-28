@@ -4,11 +4,27 @@
 LEDController ledController;
 
 void LEDController::begin() {
-    // Initialize FastLED
-    FastLED.addLeds<LED_TYPE, LED_DATA_PIN, LED_CLOCK_PIN, COLOR_ORDER>(leds, TOTAL_LEDS);
+    // Initialize FastLED for DotStar/APA102 with slower timing
+    FastLED.addLeds<LED_TYPE, LED_DATA_PIN, LED_CLOCK_PIN, COLOR_ORDER>(leds, TOTAL_LEDS).setCorrection(TypicalLEDStrip);
+    
+    // More conservative settings for troubleshooting
     FastLED.setBrightness(LED_BRIGHTNESS);
-    FastLED.clear();
-    FastLED.show();
+    FastLED.setMaxPowerInVoltsAndMilliamps(5, 1000);  // Increased current limit
+    FastLED.setTemperature(Tungsten40W); // Warmer color temperature
+    
+    // Longer stabilization time for better compatibility
+    #ifdef SAFE_MODE
+    delay(500);  // Extra time for level shifters to stabilize
+    #endif
+    
+    // Multiple clear cycles to ensure clean start
+    for(int i = 0; i < 3; i++) {
+        FastLED.clear();
+        FastLED.show();
+        delay(100);
+    }
+    
+    Serial.println("[LED] LED strip cleared and stabilized");
     
     // Initialize encoder rings
     for (int i = 0; i < NUM_ENCODERS; i++) {
@@ -24,7 +40,9 @@ void LEDController::begin() {
     lastFrameUpdate = 0;
     initialized = true;
     
-    Serial.println("[LED] FastLED initialized - APA102 strips ready");
+    Serial.printf("[LED] FastLED initialized - DotStar/APA102 strips ready\n");
+    Serial.printf("[LED] Type: %s, Pins: DATA=%d CLOCK=%d, LEDs: %d\n", 
+                  "APA102", LED_DATA_PIN, LED_CLOCK_PIN, TOTAL_LEDS);
     
     // Show startup sequence
     showStartupSequence();
@@ -35,7 +53,7 @@ void LEDController::update() {
     
     unsigned long currentTime = millis();
     
-    // Limit update rate to ~60 FPS
+    // Use the configurable update rate for 3.3V compatibility
     if (currentTime - lastFrameUpdate < LED_UPDATE_RATE_MS) {
         return;
     }
@@ -48,8 +66,30 @@ void LEDController::update() {
         renderEncoder(i);
     }
     
-    // Update LED strip
+    // Add small delay before show() for signal stability
+    delayMicroseconds(10);
+    
+    // Update LED strip with error recovery
+    static int errorCount = 0;
     FastLED.show();
+    
+    // Periodic refresh to combat data corruption
+    static unsigned long lastRefresh = 0;
+    if (currentTime - lastRefresh > 5000) { // Every 5 seconds
+        // Clear and re-render to fix any corruption
+        FastLED.clear();
+        FastLED.show();
+        delay(10);
+        
+        for (int i = 0; i < NUM_ENCODERS; i++) {
+            renderEncoder(i);
+        }
+        FastLED.show();
+        
+        lastRefresh = currentTime;
+        Serial.println("[LED] Periodic refresh completed");
+    }
+    
     lastFrameUpdate = currentTime;
 }
 
@@ -233,6 +273,212 @@ void LEDController::showStartupSequence() {
     
     clearAll();
     Serial.println("[LED] Startup sequence complete");
+}
+
+void LEDController::simpleColorTest(int step) {
+    // Simple color test for debugging
+    switch(step) {
+        case 0:
+            // All LEDs OFF
+            Serial.println("[LED] All LEDs OFF");
+            FastLED.clear();
+            FastLED.show();
+            break;
+            
+        case 1:
+            // First 5 LEDs RED
+            Serial.println("[LED] First 5 LEDs RED");
+            FastLED.clear();
+            for(int i = 0; i < 5 && i < TOTAL_LEDS; i++) {
+                leds[i] = CRGB::Red;
+            }
+            FastLED.show();
+            break;
+            
+        case 2:
+            // LEDs 5-9 GREEN  
+            Serial.println("[LED] LEDs 5-9 GREEN");
+            FastLED.clear();
+            for(int i = 5; i < 10 && i < TOTAL_LEDS; i++) {
+                leds[i] = CRGB::Green;
+            }
+            FastLED.show();
+            break;
+            
+        case 3:
+            // LEDs 10-14 BLUE
+            Serial.println("[LED] LEDs 10-14 BLUE");
+            FastLED.clear();
+            for(int i = 10; i < 15 && i < TOTAL_LEDS; i++) {
+                leds[i] = CRGB::Blue;
+            }
+            FastLED.show();
+            break;
+            
+        case 4:
+            // All LEDs dim white (test if color order is wrong)
+            Serial.println("[LED] All LEDs dim white");
+            for(int i = 0; i < TOTAL_LEDS; i++) {
+                leds[i] = CRGB(32, 32, 32);  // Dim white
+            }
+            FastLED.show();
+            break;
+    }
+}
+
+// NEW: Comprehensive diagnostic functions
+void LEDController::runFullDiagnostics() {
+    Serial.println("=== LED STRIP DIAGNOSTICS ===");
+    Serial.printf("Configured LEDs: %d\n", TOTAL_LEDS);
+    Serial.printf("Current brightness: %d\n", FastLED.getBrightness());
+    Serial.printf("LED Type: APA102, Pins: DATA=%d, CLOCK=%d\n", LED_DATA_PIN, LED_CLOCK_PIN);
+    
+    // Test 1: Clear all
+    Serial.println("\nTest 1: Clear all LEDs");
+    FastLED.clear();
+    FastLED.show();
+    delay(1000);
+    
+    // Test 2: Single LED sweep
+    Serial.println("Test 2: Single LED sweep (first 20)");
+    for(int i = 0; i < min(20, TOTAL_LEDS); i++) {
+        FastLED.clear();
+        leds[i] = CRGB::Red;
+        FastLED.show();
+        Serial.printf("LED %d ON\n", i);
+        delay(200);
+    }
+    FastLED.clear();
+    FastLED.show();
+    
+    // Test 3: Range tests
+    Serial.println("Test 3: Range tests");
+    testLEDRange(0, 10, CRGB::Green);
+    delay(1000);
+    testLEDRange(10, 20, CRGB::Blue);
+    delay(1000);
+    testLEDRange(20, 30, CRGB::Yellow);
+    delay(1000);
+    
+    // Test 4: Auto-detect strip length
+    Serial.println("Test 4: Auto-detecting strip length...");
+    findLEDCount();
+    
+    Serial.println("=== DIAGNOSTICS COMPLETE ===");
+}
+
+void LEDController::testLEDRange(int startLED, int endLED, CRGB color) {
+    FastLED.clear();
+    Serial.printf("Testing LEDs %d to %d with color RGB(%d,%d,%d)\n", 
+                  startLED, endLED-1, color.r, color.g, color.b);
+    
+    for(int i = startLED; i < endLED && i < TOTAL_LEDS; i++) {
+        leds[i] = color;
+    }
+    FastLED.show();
+}
+
+void LEDController::sequentialTest(int delayMs) {
+    Serial.println("Sequential LED test starting...");
+    FastLED.clear();
+    
+    for(int i = 0; i < TOTAL_LEDS; i++) {
+        leds[i] = CRGB(255, 0, 0); // Red
+        FastLED.show();
+        Serial.printf("LED %d\n", i);
+        delay(delayMs);
+        
+        // Also turn on as green to make a trail
+        if(i > 0) leds[i-1] = CRGB(0, 128, 0);
+    }
+    
+    delay(1000);
+    FastLED.clear();
+    FastLED.show();
+    Serial.println("Sequential test complete");
+}
+
+void LEDController::findLEDCount() {
+    Serial.println("Auto-detecting actual LED strip length...");
+    FastLED.clear();
+    
+    // Method: Light up LEDs one by one and assume user will report last working one
+    Serial.println("Watch your strip and note the LAST LED that lights up correctly");
+    Serial.println("(Ignore any that flash white or act strange)");
+    
+    for(int i = 0; i < TOTAL_LEDS; i++) {
+        FastLED.clear();
+        leds[i] = CRGB::Blue;
+        FastLED.show();
+        
+        Serial.printf("Testing LED %d - Is this LED working properly? (Press any key to continue)\n", i);
+        delay(500);
+        
+        // Light up all previous LEDs dimly to show progress
+        for(int j = 0; j <= i; j++) {
+            leds[j] = CRGB(0, 0, 64); // Dim blue
+        }
+        leds[i] = CRGB::Blue; // Current LED bright
+        FastLED.show();
+        delay(1000);
+    }
+    
+    FastLED.clear();
+    FastLED.show();
+    Serial.println("Auto-detection complete. Please update LEDS_PER_ENCODER in config.h with the correct count.");
+}
+
+void LEDController::testSignalIntegrity() {
+    Serial.println("=== SIGNAL INTEGRITY TEST ===");
+    Serial.println("This test checks for level shifting and communication issues");
+    Serial.println("Watch for: bright flashes, color corruption, or unstable behavior");
+    
+    // Test 1: Static patterns (should be rock solid)
+    Serial.println("Test 1: Static red pattern (should be stable)");
+    FastLED.clear();
+    for(int i = 0; i < TOTAL_LEDS; i++) {
+        leds[i] = CRGB(128, 0, 0); // Medium red
+    }
+    FastLED.show();
+    delay(3000);
+    
+    // Test 2: Alternating pattern (tests data integrity)
+    Serial.println("Test 2: Alternating red/blue pattern");
+    for(int i = 0; i < TOTAL_LEDS; i++) {
+        leds[i] = (i % 2 == 0) ? CRGB(128, 0, 0) : CRGB(0, 0, 128);
+    }
+    FastLED.show();
+    delay(3000);
+    
+    // Test 3: Rapid updates (stress test)
+    Serial.println("Test 3: Rapid color changes (stress test)");
+    for(int cycle = 0; cycle < 20; cycle++) {
+        CRGB colors[] = {CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Black};
+        for(int i = 0; i < TOTAL_LEDS; i++) {
+            leds[i] = colors[cycle % 4];
+        }
+        FastLED.show();
+        delay(100);
+    }
+    
+    // Test 4: Individual LED addressing
+    Serial.println("Test 4: Individual LED sweep");
+    FastLED.clear();
+    for(int i = 0; i < min(20, TOTAL_LEDS); i++) {
+        FastLED.clear();
+        leds[i] = CRGB::White;
+        FastLED.show();
+        delay(200);
+    }
+    
+    FastLED.clear();
+    FastLED.show();
+    
+    Serial.println("=== SIGNAL INTEGRITY TEST COMPLETE ===");
+    Serial.println("If you saw flashes, corruption, or instability, you likely need:");
+    Serial.println("1. Level shifter (74HCT245 or 74AHCT125)");
+    Serial.println("2. Better power supply");
+    Serial.println("3. Shorter/better wiring");
 }
 
 // Utility functions

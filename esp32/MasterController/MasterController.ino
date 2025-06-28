@@ -83,6 +83,13 @@ void setup() {
 void loop() {
   if (!systemReady) return;
   
+  // Simple heartbeat for debugging
+  static unsigned long lastHeartbeat = 0;
+  if (millis() - lastHeartbeat > 1000) {
+    Serial.println("HEARTBEAT - ESP32 is running");
+    lastHeartbeat = millis();
+  }
+  
   // Update all modules
   uart.update();           // Process UART messages
   ledController.update();  // Update LED animations
@@ -104,63 +111,54 @@ void loop() {
 void runTestMode() {
   unsigned long currentTime = millis();
   
-  // Update test pattern every 2 seconds
-  if (currentTime - lastTestUpdate > 2000) {
+  // Test patterns every 3 seconds
+  if (currentTime - lastTestUpdate > 3000) {
+    static int testStep = 0;
     
-    // Cycle through different test patterns
-    static int testPattern = 0;
+    Serial.printf("[LED CONTROLLER TEST] Step %d - Time: %lu\n", testStep, currentTime);
     
-    switch (testPattern) {
+    switch(testStep) {
       case 0:
-        // Ring fill test
-        Serial.println("[TEST] Testing ring fill pattern");
-        for (int i = 0; i < NUM_ENCODERS; i++) {
-          float value = (float)(i + 1) / NUM_ENCODERS;
-          ledController.updateEncoderRing(i, 0, 255, 128, PATTERN_RING_FILL, value);
-        }
+        Serial.println("All LEDs OFF");
+        ledController.clearAll();
         break;
         
       case 1:
-        // Pulse test
-        Serial.println("[TEST] Testing pulse pattern");
-        for (int i = 0; i < NUM_ENCODERS; i++) {
-          ledController.updateEncoderRing(i, 255, 100, 0, PATTERN_PULSE, 1.0);
-        }
+        Serial.println("All LEDs RED SOLID");
+        ledController.updateEncoderRing(0, 255, 0, 0, PATTERN_SOLID, 1.0);
         break;
         
       case 2:
-        // Rainbow test
-        Serial.println("[TEST] Testing rainbow pattern");
-        for (int i = 0; i < NUM_ENCODERS; i++) {
-          ledController.updateEncoderRing(i, 255, 255, 255, PATTERN_RAINBOW, 1.0);
-        }
+        Serial.println("All LEDs GREEN SOLID");
+        ledController.updateEncoderRing(0, 0, 255, 0, PATTERN_SOLID, 1.0);
         break;
         
       case 3:
-        // Individual encoder test
-        Serial.println("[TEST] Testing individual encoders");
-        ledController.clearAll();
-        ledController.updateEncoderRing(testEncoderIndex, 255, 0, 255, PATTERN_SOLID, 1.0);
-        testEncoderIndex = (testEncoderIndex + 1) % NUM_ENCODERS;
+        Serial.println("All LEDs BLUE SOLID");
+        ledController.updateEncoderRing(0, 0, 0, 255, PATTERN_SOLID, 1.0);
         break;
         
-      default:
-        // Reset test cycle
-        testPattern = -1;
-        ledController.clearAll();
+      case 4:
+        Serial.println("Ring Fill Pattern");
+        ledController.updateEncoderRing(0, 255, 128, 0, PATTERN_RING_FILL, 0.7);
+        break;
+        
+      case 5:
+        Serial.println("Pulse Pattern");
+        ledController.updateEncoderRing(0, 128, 0, 255, PATTERN_PULSE, 1.0);
+        break;
+        
+      case 6:
+        Serial.println("Rainbow Pattern");
+        ledController.updateEncoderRing(0, 255, 255, 255, PATTERN_RAINBOW, 1.0);
         break;
     }
     
-    testPattern = (testPattern + 1) % 5;
-    lastTestUpdate = currentTime;
+    delay(100);
+    Serial.printf("Pattern set! Free memory: %d bytes\n", ESP.getFreeHeap());
     
-    // Send test encoder message via UART
-    uart.sendEncoderUpdate(testEncoderIndex, testValue, testDirection ? 1 : -1);
-    testValue += 0.1;
-    if (testValue > 1.0) {
-      testValue = 0.0;
-      testDirection = !testDirection;
-    }
+    testStep = (testStep + 1) % 7;
+    lastTestUpdate = currentTime;
   }
 }
 
@@ -203,6 +201,41 @@ void onSystemCommandReceived(const String& command, const String& parameter) {
   }
   else if (command == "scan_i2c") {
     i2cEncoders.scanForEncoders();
+  }
+  else if (command == "run_diagnostics") {
+    Serial.println("[MAIN] Running LED diagnostics...");
+    ledController.runFullDiagnostics();
+  }
+  else if (command == "sequential_test") {
+    int delayMs = parameter.toInt();
+    if (delayMs <= 0) delayMs = 200;
+    ledController.sequentialTest(delayMs);
+  }
+  else if (command == "find_led_count") {
+    ledController.findLEDCount();
+  }
+  else if (command == "test_range") {
+    // Format: "start,end,r,g,b" e.g. "0,10,255,0,0"
+    int commaIndex1 = parameter.indexOf(',');
+    int commaIndex2 = parameter.indexOf(',', commaIndex1 + 1);
+    int commaIndex3 = parameter.indexOf(',', commaIndex2 + 1);
+    int commaIndex4 = parameter.indexOf(',', commaIndex3 + 1);
+    
+    if (commaIndex1 > 0 && commaIndex2 > 0 && commaIndex3 > 0 && commaIndex4 > 0) {
+      int start = parameter.substring(0, commaIndex1).toInt();
+      int end = parameter.substring(commaIndex1 + 1, commaIndex2).toInt();
+      int r = parameter.substring(commaIndex2 + 1, commaIndex3).toInt();
+      int g = parameter.substring(commaIndex3 + 1, commaIndex4).toInt();
+      int b = parameter.substring(commaIndex4 + 1).toInt();
+      
+      ledController.testLEDRange(start, end, CRGB(r, g, b));
+    } else {
+      uart.sendError("test_range format: start,end,r,g,b");
+    }
+  }
+  else if (command == "test_signal_integrity") {
+    Serial.println("[MAIN] Running signal integrity test...");
+    ledController.testSignalIntegrity();
   }
   else {
     uart.sendError("Unknown system command: " + command);

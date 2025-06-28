@@ -2,12 +2,18 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useWebSocketStore = defineStore('websocket', () => {
+  // Server configuration
+  const availableServers = ref([
+    { id: 'local', name: 'Local Server', url: 'ws://localhost:8765' },
+    { id: 'pi', name: 'Pi Server', url: 'ws://192.168.1.195:8765' }
+  ])
+  const selectedServerId = ref('local') // Default to local
+  
   // Connection state
   const isConnected = ref(false)
   const hasRecentSend = ref(false)
   const hasRecentReceive = ref(false)
-  // Use the current host instead of hardcoded localhost
-  const serverUrl = ref(`ws://${window.location.hostname}:8765`)
+  const isConnecting = ref(false)
   
   // Message handling
   const messageHandlers = ref(new Map())
@@ -23,9 +29,36 @@ export const useWebSocketStore = defineStore('websocket', () => {
   let receiveTimeout = null
 
   // Computed
+  const serverUrl = computed(() => {
+    const server = availableServers.value.find(s => s.id === selectedServerId.value)
+    return server ? server.url : availableServers.value[0].url
+  })
+  
+  const currentServer = computed(() => {
+    return availableServers.value.find(s => s.id === selectedServerId.value)
+  })
+  
   const connectionStatus = computed(() => 
-    isConnected.value ? 'Connected' : 'Disconnected'
+    isConnecting.value ? 'Connecting...' : (isConnected.value ? 'Connected' : 'Disconnected')
   )
+
+  // Server selection
+  const selectServer = (serverId) => {
+    if (selectedServerId.value !== serverId) {
+      console.log(`WebSocket: Switching to server: ${serverId}`)
+      selectedServerId.value = serverId
+      
+      // Reconnect to new server
+      if (isConnected.value || isConnecting.value) {
+        disconnect()
+        setTimeout(() => {
+          connect()
+        }, 100)
+      } else {
+        connect()
+      }
+    }
+  }
 
   // Message handler registration
   const registerHandler = (messageType, handler) => {
@@ -38,12 +71,20 @@ export const useWebSocketStore = defineStore('websocket', () => {
 
   // Core WebSocket methods
   const connect = () => {
+    if (isConnecting.value || isConnected.value) {
+      return // Already connecting/connected
+    }
+    
     try {
+      isConnecting.value = true
+      console.log(`WebSocket: Connecting to ${serverUrl.value}`)
       websocket = new WebSocket(serverUrl.value)
       
       websocket.onopen = () => {
         isConnected.value = true
+        isConnecting.value = false
         reconnectAttempts = 0
+        console.log(`WebSocket: Connected to ${serverUrl.value}`)
       }
       
       websocket.onmessage = (event) => {
@@ -53,6 +94,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
       
       websocket.onclose = (event) => {
         isConnected.value = false
+        isConnecting.value = false
+        console.log(`WebSocket: Disconnected from ${serverUrl.value}`)
         
         // Auto-reconnect if not manually disconnected
         if (event.code !== 1000) {
@@ -61,11 +104,13 @@ export const useWebSocketStore = defineStore('websocket', () => {
       }
       
       websocket.onerror = (error) => {
-        console.error('WebSocket: Connection error')
+        console.error(`WebSocket: Connection error to ${serverUrl.value}`)
+        isConnecting.value = false
       }
       
     } catch (error) {
-      console.error('WebSocket: Failed to connect')
+      console.error(`WebSocket: Failed to connect to ${serverUrl.value}`)
+      isConnecting.value = false
       scheduleReconnect()
     }
   }
@@ -76,6 +121,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
       websocket = null
     }
     isConnected.value = false
+    isConnecting.value = false
     
     // Clear any pending reconnect attempts
     if (reconnectInterval) {
@@ -93,6 +139,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
       showSendLight()
       return true
     } else {
+      console.log('WebSocket: Cannot send - not connected')
       return false
     }
   }
@@ -118,13 +165,18 @@ export const useWebSocketStore = defineStore('websocket', () => {
       reconnectAttempts++
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000)
       
+      console.log(`WebSocket: Scheduling reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${delay}ms`)
+      
       reconnectInterval = setTimeout(() => {
         connect()
       }, delay)
+    } else {
+      console.log('WebSocket: Max reconnect attempts reached')
     }
   }
 
   const reconnect = () => {
+    console.log('WebSocket: Manual reconnect requested')
     disconnect()
     reconnectAttempts = 0
     setTimeout(() => {
@@ -177,13 +229,18 @@ export const useWebSocketStore = defineStore('websocket', () => {
     isConnected,
     hasRecentSend,
     hasRecentReceive,
-    serverUrl,
+    isConnecting,
+    availableServers,
+    selectedServerId,
     messageHistory,
     
     // Computed
+    serverUrl,
+    currentServer,
     connectionStatus,
     
     // Methods
+    selectServer,
     registerHandler,
     unregisterHandler,
     connect,
