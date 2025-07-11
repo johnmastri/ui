@@ -1,3 +1,7 @@
+## Copy script to pi
+# From your Windows machine (in PowerShell/CMD)
+scp VSTMastrCtrl/mastrctrl/plugin/ui/python_scripts/kivy_ui.py mastrctrl@192.168.1.195:~/
+
 # WebSocket Server for Testing
 
 This directory contains Python scripts for testing the WebSocket communication between the MastrCtrl frontend and hardware emulator.

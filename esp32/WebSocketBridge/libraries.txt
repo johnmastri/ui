@@ -1,0 +1,46 @@
+# Required Arduino Libraries for WebSocket Bridge
+# Install these libraries through Arduino IDE Library Manager or PlatformIO
+
+# Core ESP32 libraries (should be included with ESP32 board package)
+ESP32
+WiFi
+WebServer
+HTTPClient
+SPIFFS
+ArduinoJson
+
+# USB/Network libraries
+TinyUSB                # For USB device functionality
+ESP32-USB-Soft-Host   # Alternative USB library if needed
+
+# WebSocket libraries
+WebSockets by Markus Sattler   # https://github.com/Links2004/arduinoWebSockets
+# OR
+ESP32WebSocketClient           # Alternative WebSocket implementation
+
+# Additional utility libraries (optional)
+ArduinoJson by Benoit Blanchon # JSON parsing and generation
+AsyncTCP                       # Asynchronous TCP library for ESP32
+ESPAsyncWebServer             # Alternative web server (if needed)
+
+# Development/Debug libraries (optional)
+ESP32TimerInterrupt   # For precise timing (if needed)
+TaskScheduler         # Task scheduling library (if needed)
+
+# Installation Commands:
+# 
+# Arduino IDE:
+# 1. Open Arduino IDE
+# 2. Go to Tools > Manage Libraries
+# 3. Search for each library name and install
+#
+# PlatformIO:
+# Add to platformio.ini:
+# lib_deps = 
+#     ArduinoJson
+#     WebSockets
+#     TinyUSB
+#
+# Manual Installation:
+# Some libraries may need to be installed manually from GitHub
+# if they're not available in the library manager 

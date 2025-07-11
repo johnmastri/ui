@@ -3,7 +3,7 @@ import { ref } from 'vue'
 export function useJuceIntegration(state = null) {
   // Default values for when no state is provided (used by Header component)
   const defaultPluginInfo = ref({
-    vendor: 'WolfSound',
+    vendor: 'Mastri Design Engineering',
     pluginName: 'MastrCtrl',
     pluginVersion: '1.0.0'
   })
@@ -13,155 +13,83 @@ export function useJuceIntegration(state = null) {
   // If state is provided, use it; otherwise use defaults
   const pluginInfo = state?.pluginInfo || defaultPluginInfo
 
-  // JUCE state objects
-  let sliderState, bypassToggleState, distortionTypeComboBoxState, nativeFunction
+  // VST Host plugin state
+  const vstPluginState = ref({
+    isLoaded: false,
+    pluginName: '',
+    parameters: []
+  })
 
   const initializeJuceStates = async () => {
-    if (!window.__JUCE__) {
+    // Set up VST host interface
+    if (window.nativeInterface) {
+      // Request initial plugin state from C++
+      window.nativeInterface.requestState()
+    } else if (!window.__JUCE__) {
       console.warn('JUCE not available - running in development mode')
-      return
-    }
-
-    try {
-      // In development mode, JUCE library might not be available
-      // Try to import it, but handle gracefully if it fails
-      let Juce = null
-
-      // Check if we're in a WebView context (has JUCE) vs browser context
-      const isInWebView = window.__JUCE__ && window.__JUCE__.initialisationData
-
-      if (isInWebView) {
-        try {
-          const juceModule = await import('../juce/index.js')
-          Juce = juceModule.default || juceModule
-        } catch (error) {
-          console.log('JUCE library import failed:', error)
-          return
+      // Set up mock interface for development
+      window.nativeInterface = {
+        loadPlugin: () => console.log('DEV: Load plugin requested'),
+        setParameter: (index, value) => console.log('DEV: Set parameter', index, value),
+        requestState: () => {
+          // Mock loaded plugin state for development
+          if (window.vueApp) {
+            window.vueApp.setPluginState(true, 'Mock Plugin (Development)')
+            window.vueApp.setParameters([
+              { index: 0, name: 'Gain', label: 'dB', currentValue: 0.5 },
+              { index: 1, name: 'Bypass', label: '', currentValue: 0.0 },
+              { index: 2, name: 'Filter', label: 'Hz', currentValue: 0.75 }
+            ])
+          }
         }
-      } else {
-        console.log('Running in browser development mode - JUCE integration disabled')
-        return
       }
-
-      // Only initialize if state is provided
-      if (!state) return
-
-      const {
-        gainValue,
-        gainStep,
-        bypassValue,
-        distortionValue,
-        distortionChoices,
-        emittedCount,
-        addDebugMessage
-      } = state
-
-      // Gain slider
-      sliderState = Juce.getSliderState("GAIN")
-      if (sliderState) {
-        gainStep.value = 1 / sliderState.properties.numSteps
-        gainValue.value = sliderState.getNormalisedValue()
-
-        sliderState.valueChangedEvent.addListener(() => {
-          gainValue.value = sliderState.getNormalisedValue()
-        })
-      }
-
-      // Bypass toggle
-      bypassToggleState = Juce.getToggleState("BYPASS")
-      if (bypassToggleState) {
-        bypassValue.value = bypassToggleState.getValue()
-
-        bypassToggleState.valueChangedEvent.addListener(() => {
-          bypassValue.value = bypassToggleState.getValue()
-        })
-      }
-
-      // Distortion type combo box
-      distortionTypeComboBoxState = Juce.getComboBoxState("DISTORTION_TYPE")
-      if (distortionTypeComboBoxState) {
-        distortionTypeComboBoxState.propertiesChangedEvent.addListener(() => {
-          distortionChoices.value = [...distortionTypeComboBoxState.properties.choices]
-        })
-
-        distortionTypeComboBoxState.valueChangedEvent.addListener(() => {
-          distortionValue.value = distortionTypeComboBoxState.getChoiceIndex()
-        })
-
-        // Initial values
-        distortionChoices.value = [...distortionTypeComboBoxState.properties.choices]
-        distortionValue.value = distortionTypeComboBoxState.getChoiceIndex()
-      }
-
-      // Native function
-      nativeFunction = Juce.getNativeFunction("nativeFunction")
-    } catch (error) {
-      console.error('Failed to initialize JUCE states:', error)
     }
   }
 
-  const updateGain = () => {
-    if (!state) return
-    if (sliderState) {
-      sliderState.setNormalisedValue(state.gainValue.value)
+  const loadVSTPlugin = () => {
+    if (window.nativeInterface) {
+      window.nativeInterface.loadPlugin()
     } else {
-      console.log('Development mode: Gain updated to', state.gainValue.value)
+      console.log('Development mode: Load VST plugin requested')
     }
   }
 
-  const updateBypass = () => {
-    if (!state) return
-    if (bypassToggleState) {
-      bypassToggleState.setValue(state.bypassValue.value)
+  const setVSTParameter = (parameterIndex, value) => {
+    if (window.nativeInterface) {
+      window.nativeInterface.setParameter(parameterIndex, value)
     } else {
-      console.log('Development mode: Bypass updated to', state.bypassValue.value)
+      console.log('Development mode: Set parameter', parameterIndex, value)
     }
   }
 
-  const updateDistortion = () => {
-    if (!state) return
-    if (distortionTypeComboBoxState) {
-      distortionTypeComboBoxState.setChoiceIndex(state.distortionValue.value)
-    } else {
-      console.log('Development mode: Distortion updated to', state.distortionValue.value)
+  const getVSTPluginState = () => {
+    return vstPluginState.value
+  }
+
+  const updateVSTPluginState = (isLoaded, pluginName, parameters = []) => {
+    vstPluginState.value = {
+      isLoaded,
+      pluginName,
+      parameters
     }
   }
 
-  const callNativeFunction = () => {
-    if (state?.addDebugMessage) state.addDebugMessage('Vue: Calling native C++ function...')
-    if (nativeFunction) {
-      nativeFunction("Vue.js", "calling", "C++").then((result) => {
-        if (state?.addDebugMessage) state.addDebugMessage(`Vue: Native function result: ${result}`)
-      }).catch((error) => {
-        if (state?.addDebugMessage) state.addDebugMessage(`Vue: Native function error: ${error}`)
-      })
-    } else {
-      if (state?.addDebugMessage) state.addDebugMessage('Vue: Development mode - Native function called with Vue.js args')
-    }
-  }
-
-  const emitEvent = () => {
-    if (!state) return
-    state.emittedCount.value++
-    if (state.addDebugMessage) state.addDebugMessage(`Vue: Emitting event with count: ${state.emittedCount.value}`)
-    if (window.__JUCE__) {
-      window.__JUCE__.backend.emitEvent("exampleJavaScriptEvent", {
-        emittedCount: state.emittedCount.value,
-      })
-      if (state.addDebugMessage) state.addDebugMessage('Vue: Event emitted to JUCE backend')
-    } else {
-      if (state.addDebugMessage) state.addDebugMessage('Vue: Development mode - Event emitted with count ' + state.emittedCount.value)
+  const updateVSTParameter = (parameterIndex, value) => {
+    const param = vstPluginState.value.parameters.find(p => p.index === parameterIndex)
+    if (param) {
+      param.currentValue = value
     }
   }
 
   return {
     pluginInfo,
     isDevelopment,
+    vstPluginState,
     initializeJuceStates,
-    updateGain,
-    updateBypass,
-    updateDistortion,
-    callNativeFunction,
-    emitEvent
+    loadVSTPlugin,
+    setVSTParameter,
+    getVSTPluginState,
+    updateVSTPluginState,
+    updateVSTParameter
   }
 }
