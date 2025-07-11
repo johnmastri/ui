@@ -293,6 +293,18 @@ export const useParameterStore = defineStore('parameters', {
       }
     },
 
+    // Update parameter from JUCE/C++ - broadcasts to WebSocket but does NOT send back to C++
+    updateParameterFromJuce(id, value) {
+      const param = this.parameters.find(p => p.id === id)
+      if (param) {
+        param.value = Math.max(0, Math.min(1, value))
+        param.text = this.generateParameterText(param.name, param.value)
+        
+        // Broadcast to WebSocket (simulates user turning webview knob)
+        this.broadcastValueUpdate(id, param.value)
+      }
+    },
+
     setParameterColor(id, color, shouldBroadcast = true) {
       const param = this.parameters.find(p => p.id === id)
       if (param) {

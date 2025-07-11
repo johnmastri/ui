@@ -108,7 +108,7 @@ window.updateParameterValue = function(parameterIndex, value) {
   // Update parameter store (find parameter by index, update by id)
   const param = parameterStore.parameters.find(p => p.index === parameterIndex || p.id === parameterIndex)
   if (param) {
-    parameterStore.updateParameter(param.id, value, false) // Don't broadcast WebSocket
+    parameterStore.updateParameterFromJuce(param.id, value) // Use new method that doesn't send back to C++
   } else {
     console.warn(`Parameter with index ${parameterIndex} not found in store`)
   }
