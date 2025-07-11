@@ -344,23 +344,16 @@ export default {
       this.addDebugMessage('Browsing for VST...')
       this.isLoadingVST = true
       
-      if (window.__JUCE__) {
-        window.__JUCE__.backend.browseForVST()
-          .then((result) => {
-            this.addDebugMessage(`VST loaded: ${result.name}`)
-            this.loadedVSTName = result.name
-            this.vstParameters = result.parameters || []
-          })
-          .catch((error) => {
-            this.addDebugMessage(`Failed to load VST: ${error}`)
-          })
-          .finally(() => {
-            this.isLoadingVST = false
-          })
-      } else {
-        this.addDebugMessage('JUCE backend not available')
+      // Use JUCE integration to load VST
+      const juceIntegration = useJuceIntegration()
+      juceIntegration.loadVSTPlugin()
+      
+      // The actual VST loading and parameter discovery happens in C++
+      // Parameters will be updated automatically via window.updatePluginState when VST loads
+      setTimeout(() => {
         this.isLoadingVST = false
-      }
+        this.addDebugMessage('VST load request sent to C++')
+      }, 100)
     },
 
     confirmUnloadVST() {

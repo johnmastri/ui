@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { getNativeFunction } from '../juce/index.js'
 
 export function useJuceIntegration(state = null) {
   // Default values for when no state is provided (used by Header component)
@@ -21,42 +22,53 @@ export function useJuceIntegration(state = null) {
   })
 
   const initializeJuceStates = async () => {
-    // Set up VST host interface
-    if (window.nativeInterface) {
-      // Request initial plugin state from C++
-      window.nativeInterface.requestState()
-    } else if (!window.__JUCE__) {
+    if (window.__JUCE__) {
+      console.log('JUCE detected - using real native functions')
+      // C++ will automatically call window.updatePluginState when ready
+    } else {
       console.warn('JUCE not available - running in development mode')
-      // Set up mock interface for development
-      window.nativeInterface = {
-        loadPlugin: () => console.log('DEV: Load plugin requested'),
-        setParameter: (index, value) => console.log('DEV: Set parameter', index, value),
-        requestState: () => {
-          // Mock loaded plugin state for development
-          if (window.vueApp) {
-            window.vueApp.setPluginState(true, 'Mock Plugin (Development)')
-            window.vueApp.setParameters([
-              { index: 0, name: 'Gain', label: 'dB', currentValue: 0.5 },
-              { index: 1, name: 'Bypass', label: '', currentValue: 0.0 },
-              { index: 2, name: 'Filter', label: 'Hz', currentValue: 0.75 }
-            ])
-          }
+      // Mock some parameters for development
+      setTimeout(() => {
+        if (window.updatePluginState) {
+          window.updatePluginState({
+            parameters: [
+              { index: 0, name: 'Gain', currentValue: 0.5, defaultValue: 0.5, isAutomatable: true },
+              { index: 1, name: 'Bypass', currentValue: 0.0, defaultValue: 0.0, isAutomatable: true },
+              { index: 2, name: 'Filter', currentValue: 0.75, defaultValue: 0.5, isAutomatable: true }
+            ]
+          })
         }
-      }
+      }, 100)
     }
   }
 
   const loadVSTPlugin = () => {
-    if (window.nativeInterface) {
-      window.nativeInterface.loadPlugin()
+    if (window.__JUCE__) {
+      // Use real JUCE native function
+      const loadVST = getNativeFunction('loadVST')
+      loadVST()
+        .then(result => {
+          console.log('VST load result:', result)
+        })
+        .catch(error => {
+          console.error('Failed to request VST load:', error)
+        })
     } else {
       console.log('Development mode: Load VST plugin requested')
     }
   }
 
   const setVSTParameter = (parameterIndex, value) => {
-    if (window.nativeInterface) {
-      window.nativeInterface.setParameter(parameterIndex, value)
+    if (window.__JUCE__) {
+      // Use real JUCE native function
+      const setParameter = getNativeFunction('setParameter')
+      setParameter(parameterIndex, value)
+        .then(result => {
+          console.log('Parameter sent to C++:', result)
+        })
+        .catch(error => {
+          console.error('Failed to send parameter to C++:', error)
+        })
     } else {
       console.log('Development mode: Set parameter', parameterIndex, value)
     }

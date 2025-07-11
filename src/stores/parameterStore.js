@@ -269,7 +269,24 @@ export const useParameterStore = defineStore('parameters', {
         param.value = Math.max(0, Math.min(1, value))
         param.text = this.generateParameterText(param.name, param.value)
         
-        // Only broadcast if this isn't from a WebSocket update
+        // Send to C++ if this is a UI update (shouldBroadcast = true means from UI)
+        if (shouldBroadcast && window.__JUCE__ && typeof param.index === 'number') {
+          // Import the JUCE function dynamically to avoid circular dependencies
+          import('../juce/index.js').then(({ getNativeFunction }) => {
+            const setParameter = getNativeFunction('setParameter')
+            setParameter(param.index, param.value)
+              .then(result => {
+                console.log(`Parameter ${param.index} sent to C++:`, result)
+              })
+              .catch(error => {
+                console.error(`Failed to send parameter ${param.index} to C++:`, error)
+              })
+          }).catch(error => {
+            console.error('Failed to load JUCE functions:', error)
+          })
+        }
+        
+        // Only broadcast WebSocket if this isn't from a WebSocket update
         if (shouldBroadcast) {
           this.broadcastValueUpdate(id, param.value)
         }

@@ -31,6 +31,7 @@
 
 <script>
 import { useParameterStore } from '../stores/parameterStore.js'
+import { useJuceIntegration } from '../composables/useJuceIntegration.js'
 import LedRing from './LedRing.vue'
 import ColorPicker from './ColorPicker.vue'
 
@@ -54,6 +55,7 @@ export default {
   data() {
     return {
       store: useParameterStore(),
+      juceIntegration: useJuceIntegration(),
       isDragging: false,
       dragStartY: 0,
       dragStartValue: 0
@@ -93,8 +95,13 @@ export default {
       // Clamp to [0, 1] (endless, but no wrapping)
       newValue = Math.max(0, Math.min(1, newValue))
       
-      // Only update parameter store - hardware display will react to data changes
+      // Update parameter store (this updates the UI)
       this.store.updateParameter(this.paramId, newValue)
+      
+      // Send parameter change to C++ via JUCE (if parameter has an index)
+      if (this.parameter && this.parameter.index !== undefined) {
+        this.juceIntegration.setVSTParameter(this.parameter.index, newValue)
+      }
       
       this.$emit('value-changed', {
         value: newValue,
