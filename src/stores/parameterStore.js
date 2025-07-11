@@ -112,8 +112,27 @@ export const useParameterStore = defineStore('parameters', {
       if (message.updates && Array.isArray(message.updates)) {
         message.updates.forEach(update => {
           if (update.id && update.value !== undefined) {
-            // Don't broadcast when receiving WebSocket updates (prevents feedback loop)
-            this.updateParameter(update.id, update.value, false)
+            // Update the parameter value in the store (don't broadcast to WebSocket)
+            const param = this.parameters.find(p => p.id === update.id)
+            if (param) {
+              param.value = Math.max(0, Math.min(1, update.value))
+              param.text = this.generateParameterText(param.name, param.value)
+              
+              // Send to C++ VST plugin (but don't broadcast to WebSocket to prevent feedback loop)
+              if (window.__JUCE__ && typeof param.index === 'number') {
+                // Import the JUCE function dynamically to avoid circular dependencies
+                import('../juce/index.js').then(({ getNativeFunction }) => {
+                  const setParameter = getNativeFunction('setParameter')
+                  setParameter(param.index, param.value)
+                    .then(result => {
+                      console.log(`WebSocket parameter ${param.index} sent to C++:`, result)
+                    })
+                    .catch(error => {
+                      console.error(`Failed to send WebSocket parameter ${param.index} to C++:`, error)
+                    })
+                })
+              }
+            }
             
             // Update color if provided
             if (update.rgbColor) {

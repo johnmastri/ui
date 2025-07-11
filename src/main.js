@@ -63,6 +63,9 @@ import { useParameterStore } from './stores/parameterStore.js'
 const juceIntegration = useJuceIntegration()
 const parameterStore = useParameterStore(pinia)
 
+// Initialize WebSocket handlers for parameter synchronization
+parameterStore.initWebSocketHandlers()
+
 // Global functions that C++ calls via evaluateJavascript
 window.updatePluginState = function(pluginState) {
   console.log('Received plugin state from C++:', pluginState)
