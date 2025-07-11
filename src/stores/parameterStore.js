@@ -132,6 +132,8 @@ export const useParameterStore = defineStore('parameters', {
                     })
                 })
               }
+            } else {
+              console.warn(`Parameter with ID ${update.id} not found in store for WebSocket update`)
             }
             
             // Update color if provided

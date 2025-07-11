@@ -80,7 +80,7 @@ window.updatePluginState = function(pluginState) {
     const color = getDefaultColor(name)
     
     return {
-      id: param.index,
+      id: `param-${param.index}`, // Use string-based ID for consistency
       index: param.index, // Keep the original index for lookup
       name: name,
       value: value,
@@ -108,8 +108,8 @@ window.updateParameterValue = function(parameterIndex, value) {
   // Update JUCE composable
   juceIntegration.updateVSTParameter(parameterIndex, value)
   
-  // Update parameter store (find parameter by index, update by id)
-  const param = parameterStore.parameters.find(p => p.index === parameterIndex || p.id === parameterIndex)
+  // Update parameter store (find parameter by index, update by string ID)
+  const param = parameterStore.parameters.find(p => p.index === parameterIndex)
   if (param) {
     parameterStore.updateParameterFromJuce(param.id, value) // Use new method that doesn't send back to C++
   } else {
