@@ -70,6 +70,20 @@ parameterStore.initWebSocketHandlers()
 window.updatePluginState = function(pluginState) {
   console.log('Received plugin state from C++:', pluginState)
   
+  // ALWAYS CLEAR PREVIOUS PARAMETERS FIRST - broadcasts clear to all clients
+  console.log('📡 Clearing previous parameters and broadcasting to all connected clients...')
+  parameterStore.clearParameters()
+  
+  // If no parameters provided (VST unloaded), just clear and exit
+  if (!pluginState.parameters || pluginState.parameters.length === 0) {
+    console.log('No parameters provided - VST unloaded or no parameters')
+    juceIntegration.updateVSTPluginState(false, 'No VST Loaded', [])
+    console.log('📡 All connected clients now show empty parameter list')
+    return
+  }
+  
+  console.log(`Processing ${pluginState.parameters.length} new parameters...`)
+  
   // Update JUCE composable
   juceIntegration.updateVSTPluginState(true, 'Loaded VST Plugin', pluginState.parameters)
   
@@ -97,9 +111,9 @@ window.updatePluginState = function(pluginState) {
     }
   })
   
-  // Populate parameter store
-  parameterStore.parameters = storeParams
-  console.log(`Updated parameter store with ${storeParams.length} parameters`)
+  // Set parameters and broadcast to all WebSocket clients
+  parameterStore.setParameters(storeParams)
+  console.log(`📡 All connected clients now have ${storeParams.length} fresh parameters`)
 }
 
 window.updateParameterValue = function(parameterIndex, value) {

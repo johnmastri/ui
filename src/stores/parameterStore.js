@@ -507,7 +507,28 @@ export const useParameterStore = defineStore('parameters', {
     },
 
     clearParameters() {
+      console.log('📡 Broadcasting parameter clear to all connected clients...')
       this.parameters = []
+      
+      // Broadcast empty parameter structure to all WebSocket clients
+      this.broadcastStructure()
+      
+      // Also reset structure tracking
+      this.currentStructureHash = null
+      this.lastStructureUpdate = Date.now()
+    },
+
+    // Set parameters and broadcast to all WebSocket clients
+    setParameters(newParameters) {
+      console.log(`📡 Setting ${newParameters.length} parameters and broadcasting to all connected clients...`)
+      
+      // Set the parameters locally
+      this.parameters = newParameters
+      
+      // Broadcast the new parameter structure to all WebSocket clients
+      this.broadcastStructure()
+      
+      console.log(`✅ Parameter structure broadcast complete - ${newParameters.length} parameters available to all clients`)
     }
   }
 }) 
