@@ -1,5 +1,5 @@
 <template>
-  <div class="vu-meter-frame">
+  <div class="vu-meter-frame" :class="{ 'hardware-mode': isHardwareRoute }">
     <!-- Bezel Frame -->
     <div class="bezel-frame">
       <!-- Main VU Meter Display -->
@@ -64,7 +64,7 @@
           <div class="red-arc-overlay"></div>
           
           <!-- Needle -->
-          <div class="needle-container" :style="{ transform: `rotate(${needleRotation}deg)` }">
+          <div ref="needleElement" class="needle-container">
             <div class="needle"></div>
           </div>
           
@@ -82,51 +82,236 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, watch } from 'vue'
+<script>
+import { gsap } from 'gsap'
 
-// Props
-const props = defineProps({
-  level: {
-    type: Number,
-    default: -10, // dB value
-    validator: value => value >= -60 && value <= 12
-  },
-  smoothing: {
-    type: Number,
-    default: 0.1,
-    validator: value => value >= 0 && value <= 1
-  }
-})
-
-// Reactive state
-const currentLevel = ref(props.level)
-
-// Computed needle rotation
-const needleRotation = computed(() => {
-  // Map dB values to rotation angles
-  // -20dB = -120deg, 0dB = 0deg, +3dB = +48deg
-  const level = Math.max(-20, Math.min(3, currentLevel.value))
+export default {
+  name: 'VUMeter',
   
-  if (level <= 0) {
-    // Linear mapping from -20dB (-120deg) to 0dB (0deg)
-    return (level + 20) * 6 - 120 // 6 degrees per dB in negative range
-  } else {
-    // Linear mapping from 0dB (0deg) to +3dB (+48deg)
-    return level * 16 // 16 degrees per dB in positive range
+  props: {
+    level: {
+      type: Number,
+      default: -10, // dB value
+      validator: value => value >= -60 && value <= 12
+    },
+    smoothing: {
+      type: Number,
+      default: 0.1,
+      validator: value => value >= 0 && value <= 1
+    },
+    animated: {
+      type: Boolean,
+      default: true // Enable realistic animation by default
+    }
+  },
+  
+  data() {
+    return {
+      currentLevel: -20, // Start at low level
+      isAnimating: false, // Track animation state
+      needleElement: null, // Will be set via ref
+      animationTimeout: null
+    }
+  },
+  
+  computed: {
+    // Route detection for hardware view
+    isHardwareRoute() {
+      return this.$route.name === 'Hardware'
+    },
+    
+    // External level display for debugging
+    displayLevel() {
+      return `${this.currentLevel.toFixed(1)} dB`
+    }
+  },
+  
+  methods: {
+    // Convert dB level to needle rotation angle
+    levelToRotation(level) {
+      // Map dB values to rotation angles
+      // -20dB = -120deg, 0dB = 0deg, +3dB = +48deg
+      const clampedLevel = Math.max(-20, Math.min(3, level))
+      
+      if (clampedLevel <= 0) {
+        // Linear mapping from -20dB (-120deg) to 0dB (0deg)
+        return (clampedLevel + 20) * 6 - 120 // 6 degrees per dB in negative range
+      } else {
+        // Linear mapping from 0dB (0deg) to +3dB (+48deg)
+        return clampedLevel * 16 // 16 degrees per dB in positive range
+      }
+    },
+    
+    // Simple animation that directly animates the needle rotation
+    animateNeedle() {
+      // Stop recursion if animation is disabled
+      if (!this.isAnimating) return
+      
+      // Store previous level for comparison
+      const previousLevel = this.currentLevel
+      
+      // Generate target level with realistic audio characteristics
+      const baseLevel = -25
+      const variation = (Math.random() - 0.5) * 20 // ±10dB variation
+      const microNoise = (Math.random() - 0.5) * 3 // ±1.5dB noise
+      
+      // Occasional peaks (30% chance)
+      const hasPeak = Math.random() < 0.3
+      const peakBoost = hasPeak ? Math.random() * 15 : 0 // 0-15dB boost for peaks
+      
+      let targetLevel = baseLevel + variation + microNoise + peakBoost
+      
+      // Clamp to realistic range
+      targetLevel = Math.max(-35, Math.min(3, targetLevel))
+      
+      // Calculate target rotation
+      const targetRotation = this.levelToRotation(targetLevel)
+      
+      // Update reactive value
+      this.currentLevel = targetLevel
+      
+      // Determine movement direction for realistic physics
+      const isMovingUp = targetLevel > previousLevel
+      const duration = hasPeak ? 0.05 : (isMovingUp ? 0.1 : 0.3) // Fast peaks, slower normal movement
+      const ease = hasPeak ? "power3.out" : (isMovingUp ? "power2.out" : "power1.inOut")
+      
+      gsap.to(this.needleElement, {
+        rotation: 10, // targetRotation,
+        duration: duration,
+        ease: ease,
+        force3D: true,
+        yoyo: true,
+        
+      })
+    },
+    
+    // Add continuous micro movements
+    addMicroMovements() {
+      // Stop recursion if animation is disabled
+      if (!this.isAnimating) return
+      
+      const currentRotation = gsap.getProperty(this.needleElement, "rotation")
+      const microVariation = (Math.random() - 0.5) * 2 // ±1 degree micro movement
+      
+      gsap.to(this.needleElement, {
+        rotation: currentRotation + microVariation,
+        duration: 0.1 + Math.random() * 0.2,
+        ease: "sine.inOut",
+        onComplete: () => {
+          // Only schedule next micro movement if animation is still enabled
+          if (this.isAnimating) {
+            gsap.delayedCall(0.05 + Math.random() * 0.1, this.addMicroMovements)
+          }
+        }
+      })
+    },
+    
+    // Simple, working GSAP animation
+    createRealisticAnimation() {
+      if (!this.animated || !this.needleElement) return
+      
+      // Set initial needle position
+      const initialRotation = this.levelToRotation(-20)
+      gsap.set(this.needleElement, {
+        rotation: initialRotation,
+        transformOrigin: "50% 50%",
+        force3D: true
+      })
+      
+      // Start both animations
+      this.animateNeedle()
+      gsap.delayedCall(0.5, this.addMicroMovements) // Start micro movements after initial movement
+    },
+    
+    // Start/stop animation
+    startAnimation() {
+      if (!this.animated || !this.needleElement || this.isAnimating) return
+      
+      console.log('🎚️ Starting VU meter animation...')
+      this.isAnimating = true
+      
+      // Start realistic animation
+      this.createRealisticAnimation()
+    },
+    
+    stopAnimation() {
+      console.log('🎚️ Stopping VU meter animation...')
+      this.isAnimating = false
+      
+      // Kill all GSAP animations on the needle
+      if (this.needleElement) {
+        gsap.killTweensOf(this.needleElement)
+      }
+      
+      // Kill any delayed calls
+      gsap.killDelayedCallsTo(this.startAnimation)
+    },
+    
+    // Toggle animation on/off
+    toggleAnimation() {
+      if (this.isAnimating) {
+        this.stopAnimation()
+      } else {
+        this.startAnimation()
+      }
+      console.log(`🎚️ VU Meter Animation: ${this.isAnimating ? '🟢 ON' : '🔴 OFF'} (Press 'N' to toggle)`)
+    },
+    
+    // External level control (for when animation is disabled)
+    updateLevel(newLevel) {
+      if (!this.animated && this.needleElement) {
+        const clampedLevel = Math.max(-60, Math.min(12, newLevel))
+        this.currentLevel = clampedLevel
+        
+        // Set needle position directly without animation
+        gsap.set(this.needleElement, {
+          rotation: this.levelToRotation(clampedLevel),
+          transformOrigin: "50% 50%",
+          force3D: true
+        })
+      }
+    },
+    
+    // Keyboard event handler
+    handleKeyDown(event) {
+      // Toggle animation with 'N' key
+      if (event.key.toLowerCase() === 'n') {
+        event.preventDefault()
+        this.toggleAnimation()
+      }
+    }
+  },
+  
+  mounted() {
+    console.log('🎚️ VU Meter mounted, animated:', this.animated, '(Press "N" to toggle animation)')
+    
+    // Get needle element reference
+    this.needleElement = this.$refs.needleElement
+    
+    // Add keyboard event listener
+    window.addEventListener('keydown', this.handleKeyDown)
+    
+    // Wait for next tick to ensure DOM element is available
+    if (this.animated) {
+      this.animationTimeout = setTimeout(() => {
+        console.log('🎚️ Starting animation after timeout...')
+        this.startAnimation()
+      }, 100)
+    }
+  },
+  
+  beforeUnmount() {
+    this.stopAnimation()
+    
+    // Clear timeout if it exists
+    if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout)
+    }
+    
+    // Remove keyboard event listener
+    window.removeEventListener('keydown', this.handleKeyDown)
   }
-})
-
-// Methods
-const updateLevel = (newLevel) => {
-  const targetLevel = Math.max(-60, Math.min(12, newLevel))
-  currentLevel.value = currentLevel.value + (targetLevel - currentLevel.value) * props.smoothing
 }
-
-// Watchers
-watch(() => props.level, (newLevel) => {
-  updateLevel(newLevel)
-}, { immediate: true })
 </script>
 
 <style scoped>
@@ -136,6 +321,35 @@ watch(() => props.level, (newLevel) => {
   position: relative;
   background: #5b5c59;
   box-shadow: 13px 10px 19.8px 0px rgba(0,0,0,0.33);
+}
+
+/* Hardware route: make VUMeter responsive to container */
+.vu-meter-frame.hardware-mode {
+  width: 100%;
+  height: 100%;
+  max-width: 800px;
+  max-height: 480px;
+  /* Scale down proportionally if container is smaller */
+  object-fit: contain;
+  /* Maintain aspect ratio */
+  aspect-ratio: 800 / 480;
+  /* Center the meter if there's extra space */
+  margin: auto;
+  /* Ensure it doesn't overflow container */
+  box-sizing: border-box;
+}
+
+/* Fallback for browsers without aspect-ratio support */
+@supports not (aspect-ratio: 800 / 480) {
+  .vu-meter-frame.hardware-mode {
+    /* Use container query or scale transform as fallback */
+    transform-origin: center center;
+  }
+  
+  .vu-meter-frame.hardware-mode:where(.container-height-420) {
+    /* When WebSocket header is visible (420px available) */
+    transform: scale(0.875); /* 420/480 = 0.875 */
+  }
 }
 
 .bezel-frame {
@@ -289,7 +503,12 @@ watch(() => props.level, (newLevel) => {
   top: 50%;
   left: 50%;
   transform-origin: 50% 50%;
-  transition: transform 0.3s ease-out;
+  /* GPU acceleration for smooth GSAP animation */
+  will-change: transform;
+  /* GSAP handles all transitions - no CSS transitions needed */
+  /* Prevent subpixel rendering issues */
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 
 .needle {

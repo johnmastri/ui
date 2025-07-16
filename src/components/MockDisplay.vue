@@ -52,15 +52,17 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { gsap } from 'gsap'
 import { useHardwareStore } from '../stores/hardwareStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import SettingsPanel from './SettingsPanel.vue'
 import VUMeter from './VUMeter.vue'
 
-// Stores
+// Stores and routing
 const hardwareStore = useHardwareStore()
 const settingsStore = useSettingsStore()
+const route = useRoute()
 
 // Template refs
 const parameterDisplayRef = ref(null)
@@ -72,8 +74,9 @@ const channelName = ref('Channel 1') // TODO: Get from DAW
 const vuMeterValue = ref('-20.0 dB')
 const vuMeterLevel = ref(-20)
 
-// Scaling
+// Scaling (disabled for hardware route)
 const scale = ref(1)
+const isHardwareRoute = computed(() => route.name === 'Hardware')
 
 // Computed properties
 const shouldShowLargeDisplay = computed(() => {
@@ -102,15 +105,39 @@ const textValueStyle = computed(() => {
 
 
 
-const displayStyle = computed(() => ({
-  transform: `scale(${scale.value})`,
-  transformOrigin: 'center center'
-}))
+const displayStyle = computed(() => {
+  if (isHardwareRoute.value) {
+    // Hardware route: no transform scaling
+    return {
+      transform: 'none',
+      width: '100%',
+      height: '100%'
+    }
+  }
+  
+  // Other routes: responsive scaling
+  return {
+    transform: `scale(${scale.value})`,
+    transformOrigin: 'center center'
+  }
+})
 
-const containerStyle = computed(() => ({
-  height: `${480 * scale.value}px`,
-  padding: '0'
-}))
+const containerStyle = computed(() => {
+  if (isHardwareRoute.value) {
+    // Hardware route: fixed dimensions, no scaling
+    return {
+      height: '100%',
+      width: '100%',
+      padding: '0'
+    }
+  }
+  
+  // Other routes: responsive scaling
+  return {
+    height: `${480 * scale.value}px`,
+    padding: '0'
+  }
+})
 
 // Animation methods
 const fadeInParameterDisplay = () => {
@@ -165,6 +192,12 @@ const openSettings = () => {
 }
 
 const calculateScale = () => {
+  // No scaling for hardware route - always use 1:1 scale
+  if (isHardwareRoute.value) {
+    scale.value = 1
+    return
+  }
+  
   const viewportWidth = window.innerWidth
   const padding = viewportWidth <= 480 ? 10 : 20
   const availableWidth = viewportWidth - padding
@@ -219,13 +252,17 @@ onMounted(() => {
     gsap.set(vuMeterDisplayRef.value, { opacity: 1, scale: 1 })
   }
   
-  // Initialize scaling
+  // Initialize scaling (only for non-hardware routes)
   calculateScale()
-  window.addEventListener('resize', calculateScale)
+  if (!isHardwareRoute.value) {
+    window.addEventListener('resize', calculateScale)
+  }
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', calculateScale)
+  if (!isHardwareRoute.value) {
+    window.removeEventListener('resize', calculateScale)
+  }
 })
 </script>
 

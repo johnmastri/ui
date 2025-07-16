@@ -79,8 +79,7 @@ export const useHardwareStore = defineStore('hardware', () => {
       handleParameterChangesEnded()
     }, 150) // 150ms debounce - adjust as needed
     
-    console.log('Hardware: Parameter data changed -', parameter.name, ':', parameter.value)
-  }
+     }
 
   const updateDisplayFromParameter = (parameter) => {
     if (!settingsStore.isLargeDisplayEnabled) return
@@ -101,7 +100,6 @@ export const useHardwareStore = defineStore('hardware', () => {
       startFadeTimer()
     }
     
-    console.log('Hardware: Parameter changes ended, fade timer started')
   }
 
   const startFadeTimer = () => {
@@ -130,16 +128,15 @@ export const useHardwareStore = defineStore('hardware', () => {
     displayText.value = 'VU Meter'
     displayValue.value = '0.0 dB'
     currentParameter.value = null
-    console.log('Hardware: Faded to VU meter')
   }
 
   // Legacy method for backward compatibility (now just logs)
   const updateDisplay = (parameterName, value) => {
-    console.log('Hardware: Legacy updateDisplay called -', parameterName, ':', value, '(now handled by data watcher)')
+   // console.log('Hardware: Legacy updateDisplay called -', parameterName, ':', value, '(now handled by data watcher)')
   }
 
   const stopInteraction = () => {
-    console.log('Hardware: Legacy stopInteraction called (now handled by data watcher)')
+ //   console.log('Hardware: Legacy stopInteraction called (now handled by data watcher)')
   }
 
   const sendHardwareCommand = (command) => {

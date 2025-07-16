@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import MainView from './views/MainView.vue'
 import VirtualHardwareView from './views/VirtualHardwareView.vue'
+import HardwareView from './views/HardwareView.vue'
 import './style.css'
 
 // Mock JUCE for development
@@ -38,6 +39,11 @@ const routes = [
     path: '/virtual',
     name: 'VirtualHardware',
     component: VirtualHardwareView
+  },
+  {
+    path: '/hardware',
+    name: 'Hardware',
+    component: HardwareView
   }
 ]
 

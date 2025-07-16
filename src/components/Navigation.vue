@@ -6,6 +6,9 @@
     <router-link to="/virtual" class="nav-link" active-class="active">
       Virtual Hardware
     </router-link>
+    <router-link to="/hardware" class="nav-link" active-class="active">
+      Hardware Display
+    </router-link>
   </div>
 </template>
 

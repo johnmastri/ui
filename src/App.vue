@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-    <!-- Development Navigation -->
-    <Navigation v-if="isDevelopment" />
+    <!-- Development Navigation (hidden on hardware route) -->
+    <Navigation v-if="isDevelopment && !isHardwareRoute" />
     <router-view />
   </div>
 </template>
@@ -17,6 +17,9 @@ export default {
   computed: {
     isDevelopment() {
       return !window.__JUCE__ || import.meta.env.DEV
+    },
+    isHardwareRoute() {
+      return this.$route?.name === 'Hardware'
     }
   }
 }

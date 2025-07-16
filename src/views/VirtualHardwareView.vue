@@ -66,17 +66,12 @@ const getParameterColor = (value) => {
 
 // Use parameters from store (populated via WebSocket)
 const parameters = computed(() => {
-  console.log('VirtualHardwareView: Parameters computed:', parameterStore.parameters.length, 'parameters')
   return parameterStore.parameters
 })
 
 // Watch for parameter changes
 watch(parameters, (newParams, oldParams) => {
-  console.log('VirtualHardwareView: Parameters changed!', {
-    old: oldParams?.length || 0,
-    new: newParams.length,
-    params: newParams.map(p => ({ id: p.id, name: p.name }))
-  })
+
 }, { deep: true })
 
 // Methods
@@ -92,8 +87,7 @@ const handleParameterValueChanged = (parameterData) => {
     paramId = arguments[1]
   }
   
-  console.log(`VirtualHardwareView: Parameter ${paramId} changed to ${value}`)
-  
+ 
   // Note: Parameter store update will trigger hardware display via data watcher
   // This just handles WebSocket broadcast and LED updates
   
@@ -112,15 +106,12 @@ const handleParameterValueChanged = (parameterData) => {
 
 const handleParameterColorChanged = (color) => {
   // Handle color changes if needed
-  console.log('Parameter color changed:', color)
+
 }
 
 // Lifecycle
 onMounted(() => {
-  console.log('VirtualHardwareView: Mounting component')
-  console.log('VirtualHardwareView: WebSocket connected?', websocketStore.isConnected)
-  console.log('VirtualHardwareView: Current parameters:', parameterStore.parameters.length)
-  
+ 
   // Initialize WebSocket handlers for parameter synchronization
   parameterStore.initWebSocketHandlers()
   
@@ -129,13 +120,13 @@ onMounted(() => {
   
   // Force WebSocket connection if not connected
   if (!websocketStore.isConnected) {
-    console.log('VirtualHardwareView: WebSocket not connected, forcing connection')
+   
     websocketStore.connect()
   }
   
   // Request current parameter state from other clients
   setTimeout(() => {
-    console.log('VirtualHardwareView: Requesting current parameter state')
+  
     const requestPayload = {
       type: 'request_parameter_state',
       timestamp: Date.now()
@@ -146,7 +137,7 @@ onMounted(() => {
   // Initialize display with VU meter
   hardwareStore.fadeToUVMeter()
   
-  console.log('VirtualHardwareView: Component mounted, data-driven display initialized')
+ 
 })
 </script>
 

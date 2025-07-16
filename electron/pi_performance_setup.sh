@@ -32,11 +32,18 @@ if ! grep -q "net.core.rmem_max = 16777216" /etc/sysctl.conf; then
     sudo sysctl -p
 fi
 
-# Create optimized kiosk script if it doesn't exist
-if [ ! -f "kiosk.js" ]; then
-    echo "Creating kiosk.js..."
-    cat > kiosk.js << 'EOF'
+# Create GPU-disabled kiosk script to fix GBM errors
+echo "Creating kiosk_no_gpu.js..."
+cat > kiosk_no_gpu.js << 'EOF'
 const { app, BrowserWindow } = require("electron")
+
+// Disable hardware acceleration to fix GBM errors on Pi
+app.disableHardwareAcceleration()
+
+// Additional flags for Pi compatibility
+app.commandLine.appendSwitch("--disable-gpu")
+app.commandLine.appendSwitch("--disable-software-rasterizer")
+app.commandLine.appendSwitch("--no-sandbox")
 
 app.whenReady().then(() => {
   const win = new BrowserWindow({
@@ -45,7 +52,8 @@ app.whenReady().then(() => {
     kiosk: true,
     show: false,
     webPreferences: {
-      nodeIntegration: false
+      nodeIntegration: false,
+      offscreen: false
     }
   })
   
@@ -61,10 +69,9 @@ app.on("window-all-closed", () => {
   app.quit()
 })
 EOF
-fi
 
-echo "Starting optimized Electron..."
-nice -n -10 electron kiosk.js &
+echo "Starting optimized Electron (no GPU)..."
+nice -n -10 electron kiosk_no_gpu.js &
 ELECTRON_PID=$!
 
 echo "Electron started with PID: $ELECTRON_PID"
