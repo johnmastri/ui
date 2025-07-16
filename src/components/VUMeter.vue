@@ -84,33 +84,25 @@
 
 <script>
 import { gsap } from 'gsap'
+import AudioAnalysisService from '../services/AudioAnalysisService'
+import { useAudioControlStore } from '../stores/audioControlStore'
 
 export default {
   name: 'VUMeter',
   
   props: {
-    level: {
-      type: Number,
-      default: -10, // dB value
-      validator: value => value >= -60 && value <= 12
-    },
-    smoothing: {
-      type: Number,
-      default: 0.1,
-      validator: value => value >= 0 && value <= 1
-    },
     animated: {
       type: Boolean,
-      default: true // Enable realistic animation by default
+      default: true
     }
   },
   
   data() {
     return {
-      currentLevel: -20, // Start at low level
-      isAnimating: false, // Track animation state
-      needleElement: null, // Will be set via ref
-      animationTimeout: null
+      needleElement: null,
+      audioService: null,
+      store: null,
+      isInitialized: false
     }
   },
   
@@ -120,196 +112,198 @@ export default {
       return this.$route.name === 'Hardware'
     },
     
-    // External level display for debugging
-    displayLevel() {
-      return `${this.currentLevel.toFixed(1)} dB`
+    // Get current volume from audio service
+    currentVolume() {
+      return this.audioService ? this.audioService.getCurrentVolume() : 0
+    },
+    
+    // Get current dB level from audio service  
+    currentDbLevel() {
+      return this.audioService ? this.audioService.getCurrentDbLevel() : -60
     }
   },
   
   methods: {
-    // Convert dB level to needle rotation angle
-    levelToRotation(level) {
-      // Map dB values to rotation angles
-      // -20dB = -120deg, 0dB = 0deg, +3dB = +48deg
-      const clampedLevel = Math.max(-20, Math.min(3, level))
+    // Convert volume (0-100) to needle rotation angle
+    volumeToAngle(volume) {
+      const restPosition = 70 // Above 2 o'clock (rest position)
+      const maxDeflection = 130 // Total range (70° to -60°)
       
-      if (clampedLevel <= 0) {
-        // Linear mapping from -20dB (-120deg) to 0dB (0deg)
-        return (clampedLevel + 20) * 6 - 120 // 6 degrees per dB in negative range
-      } else {
-        // Linear mapping from 0dB (0deg) to +3dB (+48deg)
-        return clampedLevel * 16 // 16 degrees per dB in positive range
-      }
+      // volume 0 = rest position, volume 100 = full deflection counterclockwise
+      const deflection = (volume / 100) * maxDeflection
+      return restPosition - deflection // Counterclockwise movement
     },
     
-    // Simple animation that directly animates the needle rotation
-    animateNeedle() {
-      // Stop recursion if animation is disabled
-      if (!this.isAnimating) return
+    // Simple needle update - volume -> angle -> animate
+    updateNeedle() {
+      if (!this.needleElement || !this.audioService) return
       
-      // Store previous level for comparison
-      const previousLevel = this.currentLevel
+      // 1. Get current volume level (0-100)
+      const volume = this.audioService.getCurrentVolume()
       
-      // Generate target level with realistic audio characteristics
-      const baseLevel = -25
-      const variation = (Math.random() - 0.5) * 20 // ±10dB variation
-      const microNoise = (Math.random() - 0.5) * 3 // ±1.5dB noise
+      // 2. Convert to angle
+      const targetAngle = this.volumeToAngle(volume)
       
-      // Occasional peaks (30% chance)
-      const hasPeak = Math.random() < 0.3
-      const peakBoost = hasPeak ? Math.random() * 15 : 0 // 0-15dB boost for peaks
-      
-      let targetLevel = baseLevel + variation + microNoise + peakBoost
-      
-      // Clamp to realistic range
-      targetLevel = Math.max(-35, Math.min(3, targetLevel))
-      
-      // Calculate target rotation
-      const targetRotation = this.levelToRotation(targetLevel)
-      
-      // Update reactive value
-      this.currentLevel = targetLevel
-      
-      // Determine movement direction for realistic physics
-      const isMovingUp = targetLevel > previousLevel
-      const duration = hasPeak ? 0.05 : (isMovingUp ? 0.1 : 0.3) // Fast peaks, slower normal movement
-      const ease = hasPeak ? "power3.out" : (isMovingUp ? "power2.out" : "power1.inOut")
-      
+      // 3. Animate to angle
       gsap.to(this.needleElement, {
-        rotation: 10, // targetRotation,
-        duration: duration,
-        ease: ease,
-        force3D: true,
-        yoyo: true,
-        
-      })
-    },
-    
-    // Add continuous micro movements
-    addMicroMovements() {
-      // Stop recursion if animation is disabled
-      if (!this.isAnimating) return
-      
-      const currentRotation = gsap.getProperty(this.needleElement, "rotation")
-      const microVariation = (Math.random() - 0.5) * 2 // ±1 degree micro movement
-      
-      gsap.to(this.needleElement, {
-        rotation: currentRotation + microVariation,
-        duration: 0.1 + Math.random() * 0.2,
-        ease: "sine.inOut",
-        onComplete: () => {
-          // Only schedule next micro movement if animation is still enabled
-          if (this.isAnimating) {
-            gsap.delayedCall(0.05 + Math.random() * 0.1, this.addMicroMovements)
-          }
-        }
-      })
-    },
-    
-    // Simple, working GSAP animation
-    createRealisticAnimation() {
-      if (!this.animated || !this.needleElement) return
-      
-      // Set initial needle position
-      const initialRotation = this.levelToRotation(-20)
-      gsap.set(this.needleElement, {
-        rotation: initialRotation,
-        transformOrigin: "50% 50%",
+        rotation: targetAngle,
+        duration: 0.1, // Fast response
+        ease: "power2.out",
         force3D: true
       })
-      
-      // Start both animations
-      this.animateNeedle()
-      gsap.delayedCall(0.5, this.addMicroMovements) // Start micro movements after initial movement
     },
     
-    // Start/stop animation
-    startAnimation() {
-      if (!this.animated || !this.needleElement || this.isAnimating) return
-      
-      console.log('🎚️ Starting VU meter animation...')
-      this.isAnimating = true
-      
-      // Start realistic animation
-      this.createRealisticAnimation()
-    },
-    
-    stopAnimation() {
-      console.log('🎚️ Stopping VU meter animation...')
-      this.isAnimating = false
-      
-      // Kill all GSAP animations on the needle
-      if (this.needleElement) {
-        gsap.killTweensOf(this.needleElement)
+    // Start needle update loop
+    startNeedleUpdates() {
+      const updateLoop = () => {
+        this.updateNeedle()
+        requestAnimationFrame(updateLoop)
       }
-      
-      // Kill any delayed calls
-      gsap.killDelayedCallsTo(this.startAnimation)
+      updateLoop()
+      console.log('🎚️ Needle updates started')
     },
     
-    // Toggle animation on/off
-    toggleAnimation() {
-      if (this.isAnimating) {
-        this.stopAnimation()
-      } else {
-        this.startAnimation()
-      }
-      console.log(`🎚️ VU Meter Animation: ${this.isAnimating ? '🟢 ON' : '🔴 OFF'} (Press 'N' to toggle)`)
-    },
-    
-    // External level control (for when animation is disabled)
-    updateLevel(newLevel) {
-      if (!this.animated && this.needleElement) {
-        const clampedLevel = Math.max(-60, Math.min(12, newLevel))
-        this.currentLevel = clampedLevel
+    // Initialize audio service and store integration
+    async initAudio() {
+      try {
+        // Create audio service
+        this.audioService = new AudioAnalysisService()
+        await this.audioService.init()
         
-        // Set needle position directly without animation
-        gsap.set(this.needleElement, {
-          rotation: this.levelToRotation(clampedLevel),
-          transformOrigin: "50% 50%",
-          force3D: true
-        })
+        // Get store reference
+        this.store = useAudioControlStore()
+        
+        // Connect audio service to store for modal control
+        this.store.setAudioService(this.audioService)
+        
+        // Watch for store changes
+        this.$watch(() => this.store.selectedTrackId, this.onTrackChange, { immediate: true })
+        this.$watch(() => this.store.outputGain, this.onVolumeChange, { immediate: true })
+        this.$watch(() => this.store.isPlaying, this.onPlayStateChange)
+        
+        this.isInitialized = true
+        console.log('✅ VU Meter audio initialized')
+        
+      } catch (error) {
+        console.error('❌ Failed to initialize VU Meter audio:', error)
+      }
+    },
+    
+    // Handle track changes from store
+    async onTrackChange(trackId) {
+      if (!this.audioService || !this.store) {
+        console.log('⚠️ onTrackChange: Missing audioService or store')
+        return
+      }
+      
+      const track = this.store.currentTrack
+      if (!track) {
+        console.log('⚠️ onTrackChange: No current track found for ID:', trackId)
+        return
+      }
+      
+      console.log('🔄 Loading track:', track.name, 'URL:', track.url)
+      
+      try {
+        this.store.setLoading(true)
+        const loadSuccess = await this.audioService.loadTrack(track.url)
+        
+        if (loadSuccess) {
+          this.store.markTrackLoaded(trackId, false)
+          this.store.setFallbackMode(false)
+          console.log('✅ Track loaded successfully:', track.name)
+        } else {
+          console.log('⚠️ Track load failed, using fallback audio for:', track.name)
+          // Still mark as loaded since we have fallback
+          this.store.markTrackLoaded(trackId, true)
+          this.store.setFallbackMode(true)
+        }
+        
+        this.store.setLoading(false)
+      } catch (error) {
+        console.error('❌ Failed to load track:', track.name, error)
+        this.store.setFallbackMode(true)
+        this.store.setLoading(false)
+      }
+    },
+    
+    // Handle volume changes from store
+    onVolumeChange(dbLevel) {
+      if (this.audioService) {
+        this.audioService.setVolume(dbLevel)
+      }
+    },
+    
+    // Handle play state changes from store
+    onPlayStateChange(isPlaying) {
+      if (!this.audioService) return
+      
+      if (isPlaying) {
+        this.audioService.play()
+      } else {
+        this.audioService.pause()
       }
     },
     
     // Keyboard event handler
     handleKeyDown(event) {
-      // Toggle animation with 'N' key
+      // 'N' key now toggles audio playback instead of fake animation
       if (event.key.toLowerCase() === 'n') {
         event.preventDefault()
-        this.toggleAnimation()
+        if (this.store) {
+          if (this.store.isPlaying) {
+            this.store.pause()
+          } else {
+            this.store.play()
+          }
+        }
+      }
+      
+      // 'M' key toggles audio control modal
+      if (event.key.toLowerCase() === 'm') {
+        event.preventDefault()
+        if (this.store) {
+          this.store.toggleModal()
+        }
       }
     }
   },
   
-  mounted() {
-    console.log('🎚️ VU Meter mounted, animated:', this.animated, '(Press "N" to toggle animation)')
+  async mounted() {
+    console.log('🎚️ VU Meter mounted')
     
     // Get needle element reference
     this.needleElement = this.$refs.needleElement
     
+    // Set initial needle position (rest position)
+    if (this.needleElement) {
+      gsap.set(this.needleElement, {
+        rotation: 70, // Above 2 o'clock
+        transformOrigin: "50% 50%",
+        force3D: true
+      })
+    }
+    
     // Add keyboard event listener
     window.addEventListener('keydown', this.handleKeyDown)
     
-    // Wait for next tick to ensure DOM element is available
+    // Initialize audio if animated
     if (this.animated) {
-      this.animationTimeout = setTimeout(() => {
-        console.log('🎚️ Starting animation after timeout...')
-        this.startAnimation()
-      }, 100)
+      await this.initAudio()
+      this.startNeedleUpdates()
     }
   },
   
   beforeUnmount() {
-    this.stopAnimation()
-    
-    // Clear timeout if it exists
-    if (this.animationTimeout) {
-      clearTimeout(this.animationTimeout)
-    }
-    
     // Remove keyboard event listener
     window.removeEventListener('keydown', this.handleKeyDown)
+    
+    // Cleanup audio service
+    if (this.audioService) {
+      this.audioService.destroy()
+    }
+    
+    console.log('🎚️ VU Meter unmounted')
   }
 }
 </script>

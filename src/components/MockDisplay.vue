@@ -47,6 +47,9 @@
     >
       <VUMeter :level="vuMeterLevel" />
     </div>
+    
+    <!-- Audio Control Modal (overlay) -->
+    <AudioControlModal />
   </div>
 </template>
 
@@ -58,6 +61,7 @@ import { useHardwareStore } from '../stores/hardwareStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import SettingsPanel from './SettingsPanel.vue'
 import VUMeter from './VUMeter.vue'
+import AudioControlModal from './AudioControlModal.vue'
 
 // Stores and routing
 const hardwareStore = useHardwareStore()
