@@ -1,53 +1,51 @@
 <template>
   <div class="mock-display-container" :style="containerStyle">
-    <div class="mock-display" :style="displayStyle">
+    <!-- Parameter Display Mode -->
+    <div 
+      v-show="shouldShowLargeDisplay"
+      class="mock-display" 
+      :style="displayStyle"
+    >
       <!-- Header Row -->
       <div class="header-row">
-      <div class="left-header">
-        <div class="settings-icon" @click="openSettings">⚙️</div>
-        <div class="device-name">{{ deviceName }}</div>
+        <div class="left-header">
+          <div class="settings-icon" @click="openSettings">⚙️</div>
+          <div class="device-name">{{ deviceName }}</div>
+        </div>
+        <div class="right-header">
+          <div class="channel-name">{{ channelName }}</div>
+        </div>
       </div>
-      <div class="right-header">
-        <div class="channel-name">{{ channelName }}</div>
-      </div>
-    </div>
 
-    <!-- Main Display Area -->
-    <div class="display-container">
       <!-- Parameter Display -->
-      <div 
-        ref="parameterDisplayRef"
-        v-show="shouldShowLargeDisplay" 
-        class="parameter-display"
-      >
+      <div class="display-container">
         <div 
-          class="parameter-value"
-          :class="{ 'text-value': isTextValue, 'numeric-value': !isTextValue }"
-          :style="textValueStyle"
+          ref="parameterDisplayRef"
+          class="parameter-display"
         >
-          {{ hardwareStore.displayValue }}
-        </div>
-        <div class="parameter-name">{{ hardwareStore.displayText }}</div>
-      </div>
-      
-      <!-- VU Meter Display -->
-      <div 
-        ref="vuMeterDisplayRef"
-        v-show="!shouldShowLargeDisplay"
-        class="vu-meter-display"
-      >
-        <div class="meter-value">{{ vuMeterValue }}</div>
-        <div class="meter-bar">
           <div 
-            class="meter-fill" 
-            :style="{ width: `${vuMeterPercentage}%` }"
-          ></div>
+            class="parameter-value"
+            :class="{ 'text-value': isTextValue, 'numeric-value': !isTextValue }"
+            :style="textValueStyle"
+          >
+            {{ hardwareStore.displayValue }}
+          </div>
+          <div class="parameter-name">{{ hardwareStore.displayText }}</div>
         </div>
       </div>
-    </div>
 
       <!-- Settings Panel -->
       <SettingsPanel />
+    </div>
+    
+    <!-- VU Meter Display Mode -->
+    <div 
+      ref="vuMeterDisplayRef"
+      v-show="!shouldShowLargeDisplay"
+      class="vu-meter-container"
+      :style="displayStyle"
+    >
+      <VUMeter :level="vuMeterLevel" />
     </div>
   </div>
 </template>
@@ -58,6 +56,7 @@ import { gsap } from 'gsap'
 import { useHardwareStore } from '../stores/hardwareStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import SettingsPanel from './SettingsPanel.vue'
+import VUMeter from './VUMeter.vue'
 
 // Stores
 const hardwareStore = useHardwareStore()
@@ -101,11 +100,7 @@ const textValueStyle = computed(() => {
   return { fontSize }
 })
 
-const vuMeterPercentage = computed(() => {
-  // Convert dB to percentage (0 dB = 100%, -60 dB = 0%)
-  const db = parseFloat(vuMeterValue.value)
-  return Math.max(0, Math.min(100, ((db + 60) / 60) * 100))
-})
+
 
 const displayStyle = computed(() => ({
   transform: `scale(${scale.value})`,
@@ -365,51 +360,17 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
-/* VU Meter Display */
-.vu-meter-display {
-  text-align: center;
+/* VU Meter Container */
+.vu-meter-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.meter-value {
-  font-size: 2.2em;
-  font-weight: bold;
-  color: #00ffff;
-  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
-  margin-bottom: 20px;
-  font-family: 'Courier New', monospace;
-}
-
-.meter-bar {
-  width: 280px;
-  height: 24px;
-  background: #333;
-  border: 2px solid #555;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  margin: 0 auto;
-}
-
-.meter-fill {
   height: 100%;
-  background: linear-gradient(90deg, 
-    #00ff00 0%, 
-    #88ff00 25%, 
-    #ffff00 50%, 
-    #ff8800 75%, 
-    #ff0000 100%);
-  transition: width 0.1s ease-out;
-  border-radius: 10px;
 }
 
 /* Performance optimizations */
-.parameter-display,
-.vu-meter-display {
+.parameter-display {
   will-change: opacity, transform;
 }
 

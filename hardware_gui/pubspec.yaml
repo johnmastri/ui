@@ -1,0 +1,62 @@
+name: hardware_gui
+description: Hardware Controller Flutter App for Raspberry Pi
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State management
+  provider: ^6.0.5
+  
+  # WebSocket communication
+  web_socket_channel: ^2.4.0
+  
+  # JSON handling
+  json_annotation: ^4.8.1
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  
+  # HTTP requests
+  http: ^1.1.0
+  
+  # Vector graphics
+  flutter_svg: ^2.0.7
+  
+  # Math utilities
+  vector_math: ^2.1.4
+  
+  # Icons
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  json_serializable: ^6.7.1
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+  
+  # Assets
+  assets:
+    - assets/
+    - assets/icons/
+    - assets/images/
+  
+  # Fonts - Using system defaults for now
+  # fonts:
+  #   - family: CourierNew
+  #     fonts:
+  #       - asset: assets/fonts/CourierNew.ttf
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: assets/fonts/Roboto-Regular.ttf
+  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #         weight: 700
