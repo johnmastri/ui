@@ -9,6 +9,9 @@
     <!-- Mock Display -->
     <HardwareDisplay />
     
+    <!-- LA-2A Controls -->
+    <LA2AControls />
+    
     <!-- Parameter Controls -->
     <div class="parameter-section">
       <h3 class="section-title">Master Unit Controls</h3>
@@ -32,6 +35,7 @@ import Header from '../components/Header.vue'
 import WebSocketStatusBar from '../components/WebSocketStatusBar.vue'
 import HardwareDisplay from '../components/HardwareDisplay.vue'
 import ParameterKnob from '../components/ParameterKnob.vue'
+import LA2AControls from '../components/hardware/LA2AControls.vue'
 import { useHardwareStore } from '../stores/hardwareStore'
 import { usePayloadStore } from '../stores/payloadStore'
 import { useParameterStore } from '../stores/parameterStore'

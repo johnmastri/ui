@@ -1,5 +1,16 @@
 <template>
   <div class="vu-meter-container" :class="{ 'hardware-mode': isHardwareRoute }">
+    <!-- Debug controls -->
+    <div class="debug-controls" style="position: absolute; top: 10px; right: 10px; z-index: 100;">
+      <button @click="toggleMode" style="padding: 5px 10px; background: #333; color: white; border: 1px solid #666;">
+        Mode: {{ isCompressionMode ? 'Compression' : 'Demo' }}
+      </button>
+      <div style="margin-top: 5px; font-size: 11px; color: #666;">
+        <div>N: Play/Pause</div>
+        <div>M: Audio Modal</div>
+        <div>T: Test Compression</div>
+      </div>
+    </div>
     <svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" ref="vuMeterSvg">
       <defs>
         <filter id="filter0_d_39_1020" x="-6.8" y="-9.80003" width="839.6" height="519.6" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
@@ -174,10 +185,11 @@
 <script>
 import { gsap } from 'gsap'
 import AudioAnalysisService from '../services/AudioAnalysisService'
+import CompressionService from '../services/CompressionService'
 import { useAudioControlStore } from '../stores/audioControlStore'
 import { useJuceIntegration } from '../composables/useJuceIntegration'
 import { useHardwareStore } from '../stores/hardwareStore'
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 
 export default {
   name: 'VUMeter',
@@ -210,6 +222,10 @@ export default {
     const targetValue = ref(0)
     const isAnimating = ref(false)
     
+    // Compression mode - start in demo mode to see if needle works
+    const isCompressionMode = ref(false) // True for real compression, false for demo
+    const needleAnimation = ref(null) // Store GSAP animation instance
+    
     // Animation parameters
     const SAMPLE_RATE = 44100
     const BUFFER_SIZE = 512
@@ -236,24 +252,49 @@ export default {
     
     // Update VU meter with new value
     const updateVUMeter = (dbValue) => {
+      if (!isCompressionMode.value) {
+        console.log('🎚️ Skipping update - in demo mode')
+        return // Skip if in demo mode
+      }
+      
       if (typeof dbValue !== 'number' || isNaN(dbValue)) {
         console.warn('⚠️ Invalid VU meter value:', dbValue)
         return
       }
       
-      console.log('🎚️ VU Meter update:', dbValue, 'dB')
-      targetValue.value = dbValue
+      // Get compression settings from hardware store
+      const compressionState = hardwareStore.compression
+      const peakReduction = compressionState.peakReduction
       
-      if (!isAnimating.value) {
-        isAnimating.value = true
-        nextTick(() => {
-          const angle = convertDBToAngle(dbValue)
-          console.log('🎚️ Needle angle:', angle, '°')
-          animateNeedle()
-          setTimeout(() => {
-            isAnimating.value = false
-          }, 60)
-        })
+      console.log('🎚️ Audio update:', {
+        dbValue: dbValue.toFixed(1) + ' dB',
+        peakReduction: peakReduction + (peakReduction === 0 ? ' (No compression!)' : ''),
+        mode: compressionState.meterMode
+      })
+      
+      // Calculate needle position using CompressionService
+      const targetPosition = CompressionService.calculateNeedlePosition(dbValue, peakReduction)
+      const smoothedPosition = CompressionService.smoothNeedleMovement(targetPosition)
+      
+      console.log('🎯 Needle position:', {
+        target: targetPosition.toFixed(1),
+        smoothed: smoothedPosition.toFixed(1)
+      })
+      
+      // Update store with new needle position
+      hardwareStore.updateNeedlePosition(smoothedPosition)
+      
+      // Animate needle using GSAP
+      if (vuMeterSvg.value) {
+        const needleSvg = vuMeterSvg.value.querySelector('#Needle')
+        if (needleSvg) {
+          gsap.to(needleSvg, {
+            rotation: smoothedPosition,
+            transformOrigin: "0px 400px",
+            duration: 0.1,
+            ease: "power2.out"
+          })
+        }
       }
     }
     
@@ -271,8 +312,11 @@ export default {
         // Connect audio service to store for modal control
         store.value.setAudioService(audioService.value)
         
-        // Set up VU meter callback
-        audioService.value.onVUMeterUpdate = updateVUMeter
+        // Set up VU meter callback using the correct callback name
+        audioService.value.onVolumeUpdate = (volume, dbLevel) => {
+          // Use the dB level for VU meter
+          updateVUMeter(dbLevel)
+        }
         
         console.log('✅ VU Meter audio initialized')
         
@@ -306,6 +350,15 @@ export default {
         if (store.value) {
           store.value.toggleModal()
         }
+      }
+      
+      // 'T' key for testing compression (manual trigger)
+      if (event.key.toLowerCase() === 't') {
+        event.preventDefault()
+        console.log('🧪 Manual test trigger')
+        // Simulate audio level for testing
+        const testLevel = -10 + Math.random() * 15 // Random between -10 and +5 dB
+        updateVUMeter(testLevel)
       }
     }
     
@@ -343,35 +396,86 @@ export default {
       }
     }
     
-    onMounted(async () => {
-      // Initialize needle position
-      nextTick(() => {
+    // Demo animation function (preserving old behavior)
+    const startDemoAnimation = () => {
+      if (vuMeterSvg.value) {
+        const needleSvg = vuMeterSvg.value.querySelector('#Needle')
+        if (needleSvg) {
+          // Clear all transforms first
+          gsap.set(needleSvg, { 
+            clearProps: "all"
+          })
+          
+          needleAnimation.value = gsap.fromTo(needleSvg, 
+            {
+              rotation: 33.3,
+              transformOrigin: "0px 400px"  // Pivot at bottom center of needle
+            },
+            {
+              rotation: -62.1,
+              duration: 2,
+              yoyo: true,
+              repeat: -1,
+              ease: "power2.inOut",
+            }
+          )
+          
+          console.log('🎚️ Demo needle animation started')
+        }
+      }
+    }
+    
+    // Stop demo animation
+    const stopDemoAnimation = () => {
+      if (needleAnimation.value) {
+        needleAnimation.value.kill()
+        needleAnimation.value = null
+      }
+    }
+    
+    // Toggle between demo and compression mode
+    const toggleMode = () => {
+      isCompressionMode.value = !isCompressionMode.value
+      if (isCompressionMode.value) {
+        stopDemoAnimation()
+        // Reset needle to 0
         if (vuMeterSvg.value) {
           const needleSvg = vuMeterSvg.value.querySelector('#Needle')
           if (needleSvg) {
-            // Clear all transforms first
-            gsap.set(needleSvg, { 
-              clearProps: "all"
+            gsap.set(needleSvg, {
+              rotation: 0,
+              transformOrigin: "0px 400px"
             })
-            
-            gsap.fromTo(needleSvg, 
-              {
-                rotation: 33.3,
-               transformOrigin: "0px 400px"  // Pivot at bottom center of needle
-              },
-              {
-                rotation: -62.1,
-                duration: 2,
-                yoyo: true,
-                repeat: -1,
-                ease: "power2.inOut",
-              }
-            )
-            
-            console.log('🎚️ Needle animation with pivot at bottom center of needle')
-          } else {
-            console.warn('⚠️ Needle element not found')
           }
+        }
+      } else {
+        startDemoAnimation()
+      }
+    }
+    
+    // Watch for meter mode changes from the store
+    watch(() => hardwareStore.compression.meterMode, (newMode) => {
+      console.log('🎚️ Meter mode changed to:', newMode)
+      // Additional logic for VU vs GR mode can be added here
+    })
+    
+    onMounted(async () => {
+      // Initialize needle position
+      nextTick(() => {
+        if (isCompressionMode.value) {
+          // Set needle to 0 for compression mode
+          if (vuMeterSvg.value) {
+            const needleSvg = vuMeterSvg.value.querySelector('#Needle')
+            if (needleSvg) {
+              gsap.set(needleSvg, {
+                rotation: 0,
+                transformOrigin: "0px 400px"
+              })
+            }
+          }
+        } else {
+          // Start demo animation
+          startDemoAnimation()
         }
       })
       
@@ -381,12 +485,21 @@ export default {
       // Initialize audio
       await initAudio()
       
+      // Auto-load default track for testing
+      if (store.value && !store.value.currentTrack?.isLoaded) {
+        console.log('🎵 Auto-loading default track...')
+        await loadCurrentTrack()
+      }
+      
       console.log('🎚️ VU Meter mounted and ready')
     })
     
     onUnmounted(() => {
       // Remove keyboard event listener
       window.removeEventListener('keydown', handleKeyDown)
+      
+      // Stop demo animation if running
+      stopDemoAnimation()
       
       // Cleanup audio service
       if (audioService.value) {
@@ -400,7 +513,11 @@ export default {
       isHardwareRoute,
       hardwareStore,
       vuMeterSvg,
-      updateVUMeter
+      updateVUMeter,
+      isCompressionMode,
+      toggleMode,
+      startDemoAnimation,
+      stopDemoAnimation
     }
   }
 }

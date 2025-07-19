@@ -26,6 +26,23 @@ export const useHardwareStore = defineStore('hardware', () => {
   const vuMeterValue = ref(0)        // Current VU meter reading (-40 to +3 dB)
   const needleAngle = ref(0)         // Calculated needle rotation angle
   
+  // LA-2A Compression state
+  const compression = ref({
+    // Knob values
+    gain: 50,              // 0-100 (50 = unity gain)
+    peakReduction: 0,      // 0-100 (amount of compression)
+    
+    // Calculated values
+    needlePosition: 0,     // Current needle position in degrees
+    gainDB: 0,             // Gain in dB (-20 to +20)
+    
+    // Meter mode
+    meterMode: 'GR',       // 'GR' (Gain Reduction) or 'VU' (Output Level)
+    
+    // State
+    isCompressing: false   // Whether compression is active
+  })
+  
   // Visual state controls
   const dimmerOpacity = ref(0)       // Dimmer overlay opacity (0-1)
   const backgroundBrightness = ref(1) // Background brightness multiplier
@@ -194,6 +211,26 @@ export const useHardwareStore = defineStore('hardware', () => {
     lastChangeTimestamp.value = 0
   }
 
+  // Compression methods
+  const updateCompressionGain = (value) => {
+    compression.value.gain = Math.max(0, Math.min(100, value))
+    // Convert to dB: 50 = 0dB, 0 = -20dB, 100 = +20dB
+    compression.value.gainDB = (compression.value.gain - 50) * 0.4
+  }
+
+  const updatePeakReduction = (value) => {
+    compression.value.peakReduction = Math.max(0, Math.min(100, value))
+  }
+
+  const updateNeedlePosition = (position) => {
+    compression.value.needlePosition = position
+    compression.value.isCompressing = position < -1 // Compressing if needle moved more than 1 degree
+  }
+
+  const toggleMeterMode = () => {
+    compression.value.meterMode = compression.value.meterMode === 'GR' ? 'VU' : 'GR'
+  }
+
   return {
     // WebSocket state (delegated to websocketStore)
     isWebSocketConnected: computed(() => websocketStore.isConnected),
@@ -222,6 +259,9 @@ export const useHardwareStore = defineStore('hardware', () => {
     // Hardware state
     hardwareConnected,
     
+    // Compression state
+    compression,
+    
     // Methods
     initParameterWatcher,
     handleParameterDataChange,
@@ -235,6 +275,12 @@ export const useHardwareStore = defineStore('hardware', () => {
     sendLEDUpdate,
     reconnectWebSocket: reconnect,
     resetDisplay,
+    
+    // Compression methods
+    updateCompressionGain,
+    updatePeakReduction,
+    updateNeedlePosition,
+    toggleMeterMode,
     
     // Legacy methods (for backward compatibility)
     updateDisplay,
