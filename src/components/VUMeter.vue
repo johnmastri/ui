@@ -149,7 +149,9 @@
         </g>
         
         <!-- Needle -->
-        <path id="Needle" d="M408.86 226.958C408.86 226.657 408.837 226.311 408.814 225.929C408.618 223.571 407.833 221.317 406.679 219.236C403.021 212.635 399.617 202.092 397.367 189.26C396.986 187.11 396.675 184.983 396.386 182.855C396.144 182.312 395.971 182 395.89 182C395.81 182 395.636 182.312 395.394 182.855C395.106 184.971 394.794 187.11 394.413 189.26C392.163 202.092 388.759 212.635 385.102 219.236C383.959 221.305 383.175 223.559 382.967 225.929C382.932 226.311 382.921 226.646 382.921 226.958C382.921 232.831 386.74 237.744 391.979 239.432L388.505 431.668H403.264L399.79 239.432C405.029 237.744 408.848 232.831 408.848 226.958H408.86Z" fill="black"/>
+        <g id="Needle">
+          <path id="Needle_2" d="M515.887 227.664C515.977 227.377 516.059 227.04 516.152 226.669C516.671 224.36 516.598 221.974 516.12 219.643C514.608 212.25 514.519 201.171 516.217 188.255C516.498 186.089 516.838 183.966 517.2 181.851C517.132 181.26 517.06 180.91 516.983 180.886C516.906 180.862 516.647 181.107 516.253 181.553C515.344 183.485 514.406 185.432 513.399 187.37C507.408 198.938 501.001 207.977 495.534 213.179C493.824 214.811 492.4 216.726 491.492 218.925C491.345 219.279 491.233 219.595 491.14 219.893C489.38 225.496 491.552 231.327 496.044 234.507L404.328 514.981L418.408 519.403L503.497 236.848C509.001 236.807 514.117 233.264 515.876 227.661L515.887 227.664Z" fill="black"/>
+        </g>
         
         <!-- Bezel Frame -->
         <g id="BezelFrame" filter="url(#filter0_d_39_1020)">
@@ -163,20 +165,7 @@
         <rect id="Dimmer" width="800" height="480" fill="#060606" fill-opacity="0.85" :style="{ opacity: hardwareStore.dimmerOpacity }" pointer-events="none"/>
         
         <!-- Parameter Overlay Group -->
-        <g id="ParameterOverlay">
-          <text id="PARAMETER-NAME" x="400" y="200" text-anchor="middle" fill="#FFA500" font-family="Arial" font-size="16">
-            {{ hardwareStore.displayText }}
-          </text>
-          <text id="TRACK-NAME" x="400" y="220" text-anchor="middle" fill="#FFA500" font-family="Arial" font-size="14">
-            {{ hardwareStore.trackName }}
-          </text>
-          <text id="PARAMETER-VALUE" x="400" y="240" text-anchor="middle" fill="#FFA500" font-family="Arial" font-size="18" font-weight="bold">
-            {{ hardwareStore.displayValue }}
-          </text>
-          <text id="PLUGIN-NAME" x="400" y="260" text-anchor="middle" fill="#FFA500" font-family="Arial" font-size="12">
-            {{ hardwareStore.pluginName }}
-          </text>
-        </g>
+        <ParameterOverlay />
       </g>
     </svg>
   </div>
@@ -192,6 +181,10 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 
 export default {
   name: 'VUMeter',
+  
+  components: {
+    ParameterOverlay: () => import('./ParameterOverlay.vue')
+  },
   
   props: {
     animated: {
@@ -364,16 +357,16 @@ export default {
             // Test animation: oscillate between -50° and +50° with pivot at bottom center of needle
             gsap.fromTo(needleSvg, 
               {
-                rotation: -50,
-                transformOrigin: "bottom center"  // Pivot at bottom center of needle
+                rotation: 33.3,
+               transformOrigin: "0px 400px"  // Pivot at bottom center of needle
               },
               {
-                rotation: 50,
+                rotation: -62,
                 duration: 2,
                 yoyo: true,
                 repeat: -1,
                 ease: "power2.inOut",
-               // transformOrigin: "bottom center"  // Pivot at bottom center of needle
+              //  transformOrigin: "bottom center"  // Pivot at bottom center of needle
               }
             )
             
@@ -617,8 +610,8 @@ export default {
   width: 4px;
   height: 120px;
   background: #000;
-  left: -2px;
-  top: -110px;
+  /* left: -2px;
+  top: -110px; */
   clip-path: polygon(0% 100%, 50% 85%, 100% 100%, 45% 0%, 55% 0%);
 }
 
