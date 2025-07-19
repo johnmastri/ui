@@ -11,14 +11,14 @@
     
     <!-- Mock Display - Full 800x480 -->
     <div class="display-container" :class="displayContainerClass" :style="displayContainerStyle">
-      <MockDisplay />
+      <HardwareDisplay />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import MockDisplay from '../components/MockDisplay.vue'
+import HardwareDisplay from '../components/HardwareDisplay.vue'
 import WebSocketStatusBar from '../components/WebSocketStatusBar.vue'
 import { useWebSocketStore } from '../stores/websocketStore'
 
@@ -117,7 +117,7 @@ onUnmounted(() => {
   position: relative;
 }
 
-/* Ensure MockDisplay fills the container exactly */
+/* Ensure HardwareDisplay fills the container exactly */
 .display-container :deep(.mock-display-container) {
   margin: 0;
   padding: 0;

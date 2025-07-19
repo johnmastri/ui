@@ -114,4 +114,18 @@ app.whenReady().then(() => {
 scp "VSTMastrCtrl\mastrctrl\plugin\ui\electron\pi_performance_setup.sh" pi@192.168.1.195:/home/pi/mastrctrl/flutter/web/
 
 
-scp "VSTMastrCtrl\mastrctrl\plugin\ui\electron\kiosk_no_gpu.js" mastrctrl@192.168.1.195:~/mastrctrl/flutter/web/
+scp "VSTMastrCtrl\mastrctrl\plugin\ui\electron\kiosk_no_shm.js" mastrctrl@192.168.1.195:~/mastrctrl/flutter/web/
+
+DISPLAY=:0 electron kiosk_chromium_optimized.js
+
+
+
+
+# ########### THIS WORKS ###################
+
+# Start bare X server on display :0
+sudo X :0 -nolisten tcp &
+sleep 5
+
+# Now run electron
+DISPLAY=:0 electron kiosk.js

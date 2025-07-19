@@ -1,4 +1,4 @@
-# MockDisplay Implementation Test Guide
+# HardwareDisplay Implementation Test Guide
 
 ## What We've Implemented
 
@@ -24,7 +24,7 @@
 - ✅ Click outside to close
 - ✅ Placeholder for future settings
 
-### 4. Updated MockDisplay Component (`MockDisplay.vue`)
+### 4. Updated HardwareDisplay Component (`HardwareDisplay.vue`)
 - ✅ GSAP animations (300ms fade in, 1000ms fade out)
 - ✅ New layout: Settings + Device Name | Channel Name
 - ✅ Auto-scaling text values
@@ -48,7 +48,7 @@
 5. **Turn multiple knobs rapidly** - display should update instantly between parameters
 
 ### Settings Panel Test
-1. **Click settings icon** (⚙️) in upper left of MockDisplay
+1. **Click settings icon** (⚙️) in upper left of HardwareDisplay
 2. **Verify settings panel opens** with blur backdrop
 3. **Toggle large display off** - knob turns should NOT show large display
 4. **Toggle large display back on** - functionality should return
@@ -105,7 +105,7 @@
 - ✅ `stores/settingsStore.js` (NEW)
 - ✅ `components/SettingsPanel.vue` (NEW)
 - ✅ `stores/hardwareStore.js` (UPDATED)
-- ✅ `components/MockDisplay.vue` (UPDATED)
+- ✅ `components/HardwareDisplay.vue` (UPDATED)
 - ✅ `components/ParameterKnob.vue` (UPDATED)
 
 ## Success Criteria

@@ -1,8 +1,8 @@
-# Data-Driven MockDisplay Implementation
+# Data-Driven HardwareDisplay Implementation
 
 ## 🎯 **Architecture Overview**
 
-The MockDisplay is now **completely data-driven** and reactive to parameter store changes, not UI interactions.
+The HardwareDisplay is now **completely data-driven** and reactive to parameter store changes, not UI interactions.
 
 ## 🔄 **Data Flow**
 
@@ -13,7 +13,7 @@ Parameter Store Update
   ↓
 Hardware Store Watcher Triggered
   ↓
-MockDisplay Updates (via computed properties)
+HardwareDisplay Updates (via computed properties)
   ↓
 Debounce Timer (150ms) → Fade Timer (user configurable)
   ↓
@@ -34,7 +34,7 @@ Return to VU Meter
 - ✅ **Data-Driven Timing**: Timer starts when data stops changing, not when UI interaction ends
 - ✅ **Source Agnostic**: Works for any parameter change source
 
-### **MockDisplay.vue**
+### **HardwareDisplay.vue**
 - ✅ **Reactive**: Uses computed properties watching hardware store
 - ✅ **GSAP Animations**: Still has smooth fade in/out
 - ✅ **Settings Integration**: Respects user preferences

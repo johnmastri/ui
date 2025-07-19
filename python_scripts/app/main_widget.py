@@ -15,7 +15,7 @@ from kivy.core.window import Window
 from stores.parameter_store import ParameterStore
 from stores.websocket_manager import WebSocketManager
 from components.knob_components import KnobContainer
-from components.mock_display import MockDisplayContainer
+from components.hardware_display import HardwareDisplayContainer
 
 class MIDIControllerWidget(BoxLayout):
     def __init__(self, **kwargs):
@@ -152,7 +152,7 @@ class MIDIControllerWidget(BoxLayout):
         
     def create_display_view(self):
         """Create the display view"""
-        self.display_container = MockDisplayContainer(self.parameter_store)
+        self.display_container = HardwareDisplayContainer(self.parameter_store)
         # Register display container with WebSocket manager for updates
         self.websocket_manager.register_display_container(self.display_container)
         

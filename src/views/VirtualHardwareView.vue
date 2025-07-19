@@ -7,7 +7,7 @@
     <WebSocketStatusBar />
     
     <!-- Mock Display -->
-    <MockDisplay />
+    <HardwareDisplay />
     
     <!-- Parameter Controls -->
     <div class="parameter-section">
@@ -30,7 +30,7 @@
 import { computed, onMounted, watch } from 'vue'
 import Header from '../components/Header.vue'
 import WebSocketStatusBar from '../components/WebSocketStatusBar.vue'
-import MockDisplay from '../components/MockDisplay.vue'
+import HardwareDisplay from '../components/HardwareDisplay.vue'
 import ParameterKnob from '../components/ParameterKnob.vue'
 import { useHardwareStore } from '../stores/hardwareStore'
 import { usePayloadStore } from '../stores/payloadStore'

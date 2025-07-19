@@ -69,7 +69,7 @@ src/
 ├── components/             # UI components
 │   ├── Header.vue         # Plugin header with info
 │   ├── ParameterKnob.vue  # Rotary parameter controls
-│   ├── MockDisplay.vue    # Large parameter display
+│   ├── HardwareDisplay.vue    # Large parameter display
 │   └── SettingsPanel.vue  # User settings
 ├── composables/           # Vue.js composables
 │   ├── useJuceIntegration.js  # JUCE bridge integration

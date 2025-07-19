@@ -52,7 +52,7 @@ The UI uses a **data-driven reactive architecture** with centralized state manag
 - **WebSocket Store**: Real-time communication with hardware/external systems
 
 ### Key Design Patterns
-1. **Data-Driven Display**: MockDisplay reacts to parameter store changes, not UI interactions
+1. **Data-Driven Display**: HardwareDisplay reacts to parameter store changes, not UI interactions
 2. **Debounced Change Detection**: 150ms debounce detects when parameter changes stop
 3. **Universal Parameter Sources**: Works with UI knobs, MIDI controllers, DAW automation, WebSocket updates
 4. **Settings-Driven Behavior**: User-configurable display timeouts and preferences
@@ -69,7 +69,7 @@ The UI uses a **data-driven reactive architecture** with centralized state manag
 - `src/App.vue` - Main application component with development/production mode detection
 - `src/views/MainView.vue` - Primary control interface
 - `src/views/VirtualHardwareView.vue` - Virtual hardware simulation
-- `src/components/MockDisplay.vue` - Large parameter display with GSAP animations
+- `src/components/HardwareDisplay.vue` - Large parameter display with GSAP animations
 - `src/components/ParameterKnob.vue` - Rotary parameter controls
 - `src/components/SettingsPanel.vue` - User settings modal
 
@@ -94,7 +94,7 @@ The UI uses a **data-driven reactive architecture** with centralized state manag
 ### Parameter Change Flow
 ```
 Parameter Change (any source) → Parameter Store → Hardware Store Watcher → 
-150ms Debounce → MockDisplay Update → User-Configurable Fade Timer → 
+150ms Debounce → HardwareDisplay Update → User-Configurable Fade Timer → 
 Return to VU Meter
 ```
 
@@ -122,7 +122,7 @@ Return to VU Meter
 
 ### Adding New Parameters
 1. Add parameter definition to `parameterStore.js`
-2. Parameter changes automatically trigger MockDisplay updates
+2. Parameter changes automatically trigger HardwareDisplay updates
 3. No manual hardware store integration needed (data-driven)
 
 ### Testing Hardware Integration
