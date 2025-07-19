@@ -1,0 +1,1 @@
+https://www.reddit.com/r/audioengineering/comments/63z53d/the_la2a_has_two_knobs_and_theyre_both_in_the/

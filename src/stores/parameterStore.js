@@ -114,9 +114,15 @@ export const useParameterStore = defineStore('parameters', {
     },
 
     handleValueSync(message) {
+      console.log('📡 Parameter Store: Received value sync message:', message)
+      
       if (message.updates && Array.isArray(message.updates)) {
+        console.log('📡 Parameter Store: Processing', message.updates.length, 'updates')
+        
         message.updates.forEach(update => {
           if (update.id && update.value !== undefined) {
+            console.log('📡 Parameter Store: Processing update for', update.id, '=', update.value)
+            
             // Find the parameter
             const param = this.parameters.find(p => p.id === update.id)
             
@@ -128,6 +134,7 @@ export const useParameterStore = defineStore('parameters', {
             
             // Update the parameter value in the store (don't broadcast to WebSocket)
             if (param) {
+              console.log('📡 Parameter Store: Updating parameter', param.name, 'from', param.value, 'to', update.value)
               param.value = Math.max(0, Math.min(1, update.value))
               param.text = this.generateParameterText(param.name, param.value)
               
@@ -388,7 +395,8 @@ export const useParameterStore = defineStore('parameters', {
         case "Tone":
         case "Output Level":
         case "Mix":
-          return Math.round(value * 100) + '%'
+          // return Math.round(value * 100) + '%'
+          return Math.round(value * 100).toString()
         case "Attack":
           return Math.round(value * 100) + 'ms'
         case "Release":
@@ -404,7 +412,8 @@ export const useParameterStore = defineStore('parameters', {
           const kneeIndex = Math.floor(value * (knees.length - 1))
           return knees[kneeIndex]
         default:
-          return Math.round(value * 100) + '%'
+          // return Math.round(value * 100) + '%'
+          return Math.round(value * 100).toString()
       }
     },
 
@@ -426,7 +435,7 @@ export const useParameterStore = defineStore('parameters', {
           value: 0.75,
           defaultValue: 0.5,
           label: "Input",
-          text: "75%",
+          text: "75",
           color: this.colorPresets['Input Gain'],
           rgbColor: this.hexToRgb(this.colorPresets['Input Gain']),
           ledCount: 28
@@ -438,7 +447,7 @@ export const useParameterStore = defineStore('parameters', {
           value: 0.3,
           defaultValue: 0.0,
           label: "Drive",
-          text: "30%",
+          text: "30",
           color: this.colorPresets['Drive'],
           rgbColor: this.hexToRgb(this.colorPresets['Drive']),
           ledCount: 28
@@ -450,7 +459,7 @@ export const useParameterStore = defineStore('parameters', {
           value: 0.6,
           defaultValue: 0.5,
           label: "Tone",
-          text: "60%",
+          text: "60",
           color: this.colorPresets['Tone'],
           rgbColor: this.hexToRgb(this.colorPresets['Tone']),
           ledCount: 28
@@ -462,7 +471,7 @@ export const useParameterStore = defineStore('parameters', {
           value: 0.8,
           defaultValue: 0.7,
           label: "Output",
-          text: "80%",
+          text: "80",
           color: this.colorPresets['Output Level'],
           rgbColor: this.hexToRgb(this.colorPresets['Output Level']),
           ledCount: 28
@@ -474,7 +483,7 @@ export const useParameterStore = defineStore('parameters', {
           value: 0.5,
           defaultValue: 0.5,
           label: "Mix",
-          text: "50%",
+          text: "50",
           color: this.colorPresets['Mix'],
           rgbColor: this.hexToRgb(this.colorPresets['Mix']),
           ledCount: 28

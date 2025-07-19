@@ -164,6 +164,15 @@
           <path id="Needle_2" d="M515.887 227.664C515.977 227.377 516.059 227.04 516.152 226.669C516.671 224.36 516.598 221.974 516.12 219.643C514.608 212.25 514.519 201.171 516.217 188.255C516.498 186.089 516.838 183.966 517.2 181.851C517.132 181.26 517.06 180.91 516.983 180.886C516.906 180.862 516.647 181.107 516.253 181.553C515.344 183.485 514.406 185.432 513.399 187.37C507.408 198.938 501.001 207.977 495.534 213.179C493.824 214.811 492.4 216.726 491.492 218.925C491.345 219.279 491.233 219.595 491.14 219.893C489.38 225.496 491.552 231.327 496.044 234.507L404.328 514.981L418.408 519.403L503.497 236.848C509.001 236.807 514.117 233.264 515.876 227.661L515.887 227.664Z" fill="black"/>
         </g>
         
+        
+         <!-- Foreground for fade out -->
+       <rect id="Foreground" width="800" height="480" fill="url(#paint0_linear_39_1020)" :style="{ opacity: hardwareStore.foregroundOpacity }"/>
+
+       
+         <!-- Parameter Overlay Group -->
+         <ParameterOverlay />
+
+
         <!-- Bezel Frame -->
         <g id="BezelFrame" filter="url(#filter0_d_39_1020)">
           <rect width="50" height="480" fill="#5B5C59"/>
@@ -175,10 +184,19 @@
         <!-- Dimmer overlay -->
         <rect id="Dimmer" width="800" height="480" fill="#060606" fill-opacity="0.85" :style="{ opacity: hardwareStore.dimmerOpacity }" pointer-events="none"/>
         
-        <!-- Parameter Overlay Group -->
-        <ParameterOverlay />
+       
       </g>
     </svg>
+    
+    <!-- Debug test button (temporary) -->
+    <div style="position: absolute; top: 10px; right: 10px; z-index: 1000;">
+      <button 
+        @click="testParameterOverlay" 
+        style="background: red; color: white; padding: 10px; border: none; cursor: pointer;"
+      >
+        Test Parameter Overlay
+      </button>
+    </div>
   </div>
 </template>
 
@@ -190,12 +208,13 @@ import { useAudioControlStore } from '../stores/audioControlStore'
 import { useJuceIntegration } from '../composables/useJuceIntegration'
 import { useHardwareStore } from '../stores/hardwareStore'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
+import ParameterOverlay from './ParameterOverlay.vue'
 
 export default {
   name: 'VUMeter',
   
   components: {
-    ParameterOverlay: () => import('./ParameterOverlay.vue')
+    ParameterOverlay
   },
   
   props: {
@@ -222,8 +241,8 @@ export default {
     const targetValue = ref(0)
     const isAnimating = ref(false)
     
-    // Compression mode - start in demo mode to see if needle works
-    const isCompressionMode = ref(false) // True for real compression, false for demo
+    // Compression mode - start in compression mode for real parameter updates
+    const isCompressionMode = ref(true) // True for real compression, false for demo
     const needleAnimation = ref(null) // Store GSAP animation instance
     
     // Animation parameters
@@ -235,6 +254,18 @@ export default {
     const convertDBToAngle = (dbValue) => {
       // Return 0 to keep needle in original position for now
       return 0
+    }
+    
+    // Test function for ParameterOverlay
+    const testParameterOverlay = () => {
+      console.log('🧪 VUMeter: Testing ParameterOverlay...')
+      const testParameter = {
+        id: 'test-param',
+        name: 'Test Parameter',
+        value: 0.75,
+        text: '75%'
+      }
+      hardwareStore.updateDisplayFromParameter(testParameter)
     }
     
     // Animate needle to target position - DISABLED for original position testing
@@ -529,7 +560,8 @@ export default {
       isCompressionMode,
       toggleMode,
       startDemoAnimation,
-      stopDemoAnimation
+      stopDemoAnimation,
+      testParameterOverlay
     }
   }
 }

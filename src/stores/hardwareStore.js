@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
+import { gsap } from 'gsap'
 import { useWebSocketStore } from './websocketStore'
 import { useSettingsStore } from './settingsStore'
 import { useParameterStore } from './parameterStore'
@@ -52,6 +53,7 @@ export const useHardwareStore = defineStore('hardware', () => {
   // Visual state controls
   const dimmerOpacity = ref(0)       // Dimmer overlay opacity (0-1)
   const backgroundBrightness = ref(1) // Background brightness multiplier
+  const foregroundOpacity = ref(0)   // Foreground overlay opacity (0-1)
   
   // Parameter animation states
   const parameterAnimation = ref({
@@ -73,12 +75,20 @@ export const useHardwareStore = defineStore('hardware', () => {
 
   // Initialize parameter store watcher
   const initParameterWatcher = () => {
+    console.log('🎛️ Hardware Store: Initializing parameter watcher...')
+    
     // Watch for parameter value changes by mapping each parameter's value
     // This avoids the issue where deep watching gives us the same array reference
     watch(
       () => parameterStore.parameters.map(p => ({ id: p.id, value: p.value, name: p.name, text: p.text })),
       (newValues, oldValues) => {
-        if (!oldValues || !newValues) return
+        console.log('🎛️ Hardware Store: Parameter watcher triggered')
+        console.log('🎛️ Hardware Store: New values:', newValues?.length, 'Old values:', oldValues?.length)
+        
+        if (!oldValues || !newValues) {
+          console.log('🎛️ Hardware Store: No old or new values, skipping')
+          return
+        }
         
         // Find which parameter value changed
         for (let i = 0; i < newValues.length; i++) {
@@ -86,10 +96,14 @@ export const useHardwareStore = defineStore('hardware', () => {
           const oldValue = oldValues[i]
           
           if (oldValue && newValue.value !== oldValue.value) {
+            console.log('🎛️ Hardware Store: Parameter value changed:', newValue.name, oldValue.value, '→', newValue.value)
+            
             // Find the full parameter object to pass to the handler
             const fullParameter = parameterStore.parameters.find(p => p.id === newValue.id)
             if (fullParameter) {
               handleParameterDataChange(fullParameter)
+            } else {
+              console.log('❌ Hardware Store: Full parameter not found for ID:', newValue.id)
             }
             break
           }
@@ -97,10 +111,13 @@ export const useHardwareStore = defineStore('hardware', () => {
       },
       { deep: true }
     )
+    
+    console.log('✅ Hardware Store: Parameter watcher initialized')
   }
 
   // Handle parameter data changes (the core logic)
   const handleParameterDataChange = (parameter) => {
+    console.log('🎛️ Hardware Store: Parameter change detected:', parameter.name, '=', parameter.value)
     const now = Date.now()
     
     // Update display immediately
@@ -123,16 +140,32 @@ export const useHardwareStore = defineStore('hardware', () => {
      }
 
   const updateDisplayFromParameter = (parameter) => {
-    if (!settingsStore.isLargeDisplayEnabled) return
+    console.log('🎛️ Hardware Store: updateDisplayFromParameter called with:', parameter.name)
+    console.log('🎛️ Hardware Store: isLargeDisplayEnabled =', settingsStore.isLargeDisplayEnabled)
+    
+    if (!settingsStore.isLargeDisplayEnabled) {
+      console.log('❌ Hardware Store: Large display is disabled, skipping parameter display')
+      return
+    }
     
     // Clear any existing fade timer
     clearDisplayTimer()
     
     // Update display
     displayText.value = parameter.name
-    displayValue.value = parameter.text || `${Math.round(parameter.value * 100)}%`
+    // displayValue.value = parameter.text || `${Math.round(parameter.value * 100)}%`
+    displayValue.value = parameter.text || `${Math.round(parameter.value * 100)}`
     isDisplayActive.value = true
     currentParameter.value = parameter.name
+    
+    // Fade in foreground opacity to 90%
+    gsap.to(foregroundOpacity, {
+      value: 0.9,
+      duration: 0.3,
+      ease: "power2.out"
+    })
+    
+    console.log('✅ Hardware Store: Display updated - isDisplayActive =', isDisplayActive.value)
   }
 
   const handleParameterChangesEnded = () => {
@@ -166,9 +199,16 @@ export const useHardwareStore = defineStore('hardware', () => {
 
   const fadeToUVMeter = () => {
     isDisplayActive.value = false
-    displayText.value = 'VU Meter'
-    displayValue.value = '0.0 dB'
+    // displayText.value = 'VU Meter'
+    // displayValue.value = '0.0 dB'
     currentParameter.value = null
+    
+    // Fade out foreground opacity to 0
+    gsap.to(foregroundOpacity, {
+      value: 0,
+      duration: 1,
+      ease: "power2.inOut"
+    })
   }
 
   // Legacy method for backward compatibility (now just logs)
@@ -278,6 +318,7 @@ export const useHardwareStore = defineStore('hardware', () => {
     needleAngle,
     dimmerOpacity,
     backgroundBrightness,
+    foregroundOpacity,
     parameterAnimation,
     
     // Hardware state
