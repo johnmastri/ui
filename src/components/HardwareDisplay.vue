@@ -6,8 +6,10 @@
       class="mock-display" 
       :style="displayStyle"
     >
-      <!-- Header Row -->
-      <div class="header-row">
+ 
+   
+   <!-- Header Row -->
+      <!-- <div class="header-row">
         <div class="left-header">
           <div class="settings-icon" @click="openSettings">⚙️</div>
           <div class="device-name">{{ deviceName }}</div>
@@ -18,8 +20,8 @@
       </div>
 
       <!-- Parameter Display -->
-      <div class="display-container">
-        <div 
+      <!-- <div class="display-container">
+        <!-- <div 
           ref="parameterDisplayRef"
           class="parameter-display"
         >
@@ -31,8 +33,10 @@
             {{ hardwareStore.displayValue }}
           </div>
           <div class="parameter-name">{{ hardwareStore.displayText }}</div>
-        </div>
-      </div>
+        </div> 
+      </div> -->
+      
+
 
       <!-- Settings Panel -->
       <SettingsPanel />

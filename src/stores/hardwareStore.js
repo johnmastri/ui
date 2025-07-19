@@ -18,6 +18,24 @@ export const useHardwareStore = defineStore('hardware', () => {
   const lastParameterChange = ref(null)
   const parameterChangeDebounceTimeout = ref(null)
 
+  // New SVG parameter overlay properties
+  const trackName = ref('')
+  const pluginName = ref('MastrCtrl')
+  
+  // VU meter control
+  const vuMeterValue = ref(0)        // Current VU meter reading (-40 to +3 dB)
+  const needleAngle = ref(0)         // Calculated needle rotation angle
+  
+  // Visual state controls
+  const dimmerOpacity = ref(0)       // Dimmer overlay opacity (0-1)
+  const backgroundBrightness = ref(1) // Background brightness multiplier
+  
+  // Parameter animation states
+  const parameterAnimation = ref({
+    isAnimating: false,
+    animationType: 'none' // 'slide', 'fade', 'bounce'
+  })
+
   // Hardware state
   const currentParameter = ref(null)
   const hardwareConnected = ref(false)
@@ -191,6 +209,15 @@ export const useHardwareStore = defineStore('hardware', () => {
     isDisplayActive,
     currentParameter,
     lastChangedParameterId,
+    
+    // SVG parameter overlay state
+    trackName,
+    pluginName,
+    vuMeterValue,
+    needleAngle,
+    dimmerOpacity,
+    backgroundBrightness,
+    parameterAnimation,
     
     // Hardware state
     hardwareConnected,
