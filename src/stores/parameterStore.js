@@ -100,6 +100,11 @@ export const useParameterStore = defineStore('parameters', {
         this.parameters = []
         
         message.parameters.forEach(param => {
+          // Filter out MIDI CC parameters
+          if (param.name && param.name.includes('MIDI CC')) {
+            console.log(`Filtering out parameter: ${param.name}`)
+            return
+          }
           this.addParameter(param)
         })
         
@@ -112,8 +117,16 @@ export const useParameterStore = defineStore('parameters', {
       if (message.updates && Array.isArray(message.updates)) {
         message.updates.forEach(update => {
           if (update.id && update.value !== undefined) {
-            // Update the parameter value in the store (don't broadcast to WebSocket)
+            // Find the parameter
             const param = this.parameters.find(p => p.id === update.id)
+            
+            // Skip if parameter has MIDI CC in the name
+            if (param && param.name && param.name.includes('MIDI CC')) {
+              console.log(`Filtering out MIDI CC parameter update: ${param.name}`)
+              return
+            }
+            
+            // Update the parameter value in the store (don't broadcast to WebSocket)
             if (param) {
               param.value = Math.max(0, Math.min(1, update.value))
               param.text = this.generateParameterText(param.name, param.value)
@@ -152,6 +165,13 @@ export const useParameterStore = defineStore('parameters', {
       if (message.updates && Array.isArray(message.updates)) {
         message.updates.forEach(update => {
           if (update.id && (update.color || update.rgbColor)) {
+            // Find the parameter and check if it's a MIDI CC parameter
+            const param = this.parameters.find(p => p.id === update.id)
+            if (param && param.name && param.name.includes('MIDI CC')) {
+              console.log(`Filtering out MIDI CC parameter color update: ${param.name}`)
+              return
+            }
+            
             // Don't broadcast when receiving WebSocket updates (prevents feedback loop)
             if (update.color) {
               this.setParameterColor(update.id, update.color, false)
@@ -194,19 +214,27 @@ export const useParameterStore = defineStore('parameters', {
         const payload = {
           type: 'parameter_structure_sync',
           structure_hash: structureHash,
-          parameters: this.parameters.map(p => ({
-            id: p.id,
-            name: p.name,
-            value: p.value,
-            min: p.min || 0,
-            max: p.max || 1,
-            step: p.step || 0.01,
-            format: p.format || 'percentage',
-            defaultValue: p.defaultValue || 0.5,
-            color: p.color,
-            rgbColor: p.rgbColor,
-            ledCount: p.ledCount || 28
-          })),
+          parameters: this.parameters
+            .filter(p => {
+              // Filter out MIDI CC parameters from broadcasting
+              if (p.name && p.name.includes('MIDI CC')) {
+                return false
+              }
+              return true
+            })
+            .map(p => ({
+              id: p.id,
+              name: p.name,
+              value: p.value,
+              min: p.min || 0,
+              max: p.max || 1,
+              step: p.step || 0.01,
+              format: p.format || 'percentage',
+              defaultValue: p.defaultValue || 0.5,
+              color: p.color,
+              rgbColor: p.rgbColor,
+              ledCount: p.ledCount || 28
+            })),
           timestamp: Date.now()
         }
         
@@ -223,6 +251,12 @@ export const useParameterStore = defineStore('parameters', {
       import('./websocketStore.js').then(({ useWebSocketStore }) => {
         const websocketStore = useWebSocketStore()
         const param = this.parameters.find(p => p.id === paramId)
+        
+        // Skip broadcasting if parameter has MIDI CC in the name
+        if (param && param.name && param.name.includes('MIDI CC')) {
+          console.log(`Filtering out MIDI CC parameter broadcast: ${param.name}`)
+          return
+        }
         
         if (param) {
           const payload = {
@@ -244,6 +278,13 @@ export const useParameterStore = defineStore('parameters', {
     broadcastColorUpdate(paramId, color, rgbColor) {
       import('./websocketStore.js').then(({ useWebSocketStore }) => {
         const websocketStore = useWebSocketStore()
+        const param = this.parameters.find(p => p.id === paramId)
+        
+        // Skip broadcasting if parameter has MIDI CC in the name
+        if (param && param.name && param.name.includes('MIDI CC')) {
+          console.log(`Filtering out MIDI CC parameter color broadcast: ${param.name}`)
+          return
+        }
         
         const payload = {
           type: 'parameter_color_sync',

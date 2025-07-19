@@ -72,6 +72,39 @@ const parameterStore = useParameterStore(pinia)
 // Initialize WebSocket handlers for parameter synchronization
 parameterStore.initWebSocketHandlers()
 
+// Request parameter state from other clients when page loads
+import { useWebSocketStore } from './stores/websocketStore.js'
+const websocketStore = useWebSocketStore()
+
+// Function to request parameter state from other clients
+const requestParameterState = () => {
+  console.log('📡 Requesting current parameter state from other clients...')
+  const requestPayload = {
+    type: 'request_parameter_state',
+    timestamp: Date.now()
+  }
+  websocketStore.send(requestPayload)
+  
+  // Set a timeout to log if no response is received
+  setTimeout(() => {
+    if (parameterStore.parameters.length === 0) {
+      console.log('📡 No parameter state received from other clients after 5 seconds')
+      console.log('📡 This is normal if no other clients have parameters loaded')
+    }
+  }, 5000)
+}
+
+// Add connection listener to request parameters when WebSocket connects
+websocketStore.addConnectionListener(() => {
+  // Wait a short delay to ensure connection is fully established
+  setTimeout(requestParameterState, 500)
+})
+
+// If already connected, request parameters immediately
+if (websocketStore.isConnected) {
+  setTimeout(requestParameterState, 1000)
+}
+
 // Global functions that C++ calls via evaluateJavascript
 window.updatePluginState = function(pluginState) {
   console.log('Received plugin state from C++:', pluginState)
@@ -94,32 +127,41 @@ window.updatePluginState = function(pluginState) {
   juceIntegration.updateVSTPluginState(true, 'Loaded VST Plugin', pluginState.parameters)
   
   // Convert C++ parameter format to Vue store format
-  const storeParams = pluginState.parameters.map(param => {
-    const value = param.currentValue || param.value || 0
-    const name = param.name
-    const color = getDefaultColor(name)
-    
-    return {
-      id: `param-${param.index}`, // Use string-based ID for consistency
-      index: param.index, // Keep the original index for lookup
-      name: name,
-      value: value,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      format: 'percentage',
-      defaultValue: param.defaultValue || 0.5,
-      color: color,
-      rgbColor: hexToRgb(color),
-      text: generateParameterText(name, value),
-      ledCount: 28,
-      isAutomatable: param.isAutomatable !== false
-    }
-  })
+  const storeParams = pluginState.parameters
+    .filter(param => {
+      // Filter out MIDI CC parameters
+      if (param.name && param.name.includes('MIDI CC')) {
+        console.log(`Filtering out MIDI CC parameter from C++: ${param.name}`)
+        return false
+      }
+      return true
+    })
+    .map(param => {
+      const value = param.currentValue || param.value || 0
+      const name = param.name
+      const color = getDefaultColor(name)
+      
+      return {
+        id: `param-${param.index}`, // Use string-based ID for consistency
+        index: param.index, // Keep the original index for lookup
+        name: name,
+        value: value,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        format: 'percentage',
+        defaultValue: param.defaultValue || 0.5,
+        color: color,
+        rgbColor: hexToRgb(color),
+        text: generateParameterText(name, value),
+        ledCount: 28,
+        isAutomatable: param.isAutomatable !== false
+      }
+    })
   
   // Set parameters and broadcast to all WebSocket clients
   parameterStore.setParameters(storeParams)
-  console.log(`📡 All connected clients now have ${storeParams.length} fresh parameters`)
+  console.log(`📡 All connected clients now have ${storeParams.length} fresh parameters (filtered from ${pluginState.parameters.length})`)
 }
 
 window.updateParameterValue = function(parameterIndex, value) {

@@ -20,6 +20,9 @@ export const useWebSocketStore = defineStore('websocket', () => {
   const messageHistory = ref([])
   const maxHistorySize = 50
   
+  // Connection event listeners
+  const connectionListeners = ref([])
+  
   // WebSocket instance and reconnection
   let websocket = null
   let reconnectAttempts = 0
@@ -69,6 +72,28 @@ export const useWebSocketStore = defineStore('websocket', () => {
     messageHandlers.value.delete(messageType)
   }
 
+  // Connection event handling
+  const addConnectionListener = (listener) => {
+    connectionListeners.value.push(listener)
+  }
+
+  const removeConnectionListener = (listener) => {
+    const index = connectionListeners.value.indexOf(listener)
+    if (index > -1) {
+      connectionListeners.value.splice(index, 1)
+    }
+  }
+
+  const triggerConnectionEvent = () => {
+    connectionListeners.value.forEach(listener => {
+      try {
+        listener()
+      } catch (error) {
+        console.error('Error in connection listener:', error)
+      }
+    })
+  }
+
   // Core WebSocket methods
   const connect = () => {
     if (isConnecting.value || isConnected.value) {
@@ -85,6 +110,9 @@ export const useWebSocketStore = defineStore('websocket', () => {
         isConnecting.value = false
         reconnectAttempts = 0
         console.log(`WebSocket: Connected to ${serverUrl.value}`)
+        
+        // Trigger connection event for listeners
+        triggerConnectionEvent()
       }
       
       websocket.onmessage = (event) => {
@@ -243,6 +271,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
     selectServer,
     registerHandler,
     unregisterHandler,
+    addConnectionListener,
+    removeConnectionListener,
     connect,
     disconnect,
     send,
