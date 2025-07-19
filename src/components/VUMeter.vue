@@ -266,23 +266,32 @@ export default {
       const compressionState = hardwareStore.compression
       const peakReduction = compressionState.peakReduction
       
+      /*
       console.log('🎚️ Audio update:', {
         dbValue: dbValue.toFixed(1) + ' dB',
         peakReduction: peakReduction + (peakReduction === 0 ? ' (No compression!)' : ''),
         mode: compressionState.meterMode
       })
+      */
       
       // Calculate needle position using CompressionService
-      const targetPosition = CompressionService.calculateNeedlePosition(dbValue, peakReduction)
+      const targetPosition = CompressionService.calculateNeedlePosition(
+        dbValue, 
+        peakReduction,
+        compressionState.reactivityMultiplier,
+        compressionState.overshootMultiplier
+      )
       const smoothedPosition = CompressionService.smoothNeedleMovement(
         targetPosition, 
         compressionState.smoothingMultiplier
       )
       
+      /*
       console.log('🎯 Needle position:', {
         target: targetPosition.toFixed(1),
         smoothed: smoothedPosition.toFixed(1)
       })
+      */
       
       // Update store with new needle position
       hardwareStore.updateNeedlePosition(smoothedPosition)

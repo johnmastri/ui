@@ -42,8 +42,8 @@
       />
     </div>
     
-    <!-- Response Knob (Below, centered) -->
-    <div class="response-knob-container">
+    <!-- Auxiliary Knobs (Below, three in a row) -->
+    <div class="auxiliary-knobs-container">
       <HardwareKnob
         v-model="smoothingFactor"
         label="RESPONSE"
@@ -51,7 +51,25 @@
         :max="100"
         :displayFormat="formatResponse"
         @update:modelValue="updateSmoothingFactor"
-        class="response-knob"
+        class="auxiliary-knob"
+      />
+      <HardwareKnob
+        v-model="reactivity"
+        label="REACTIVITY"
+        :min="0"
+        :max="200"
+        :displayFormat="formatReactivity"
+        @update:modelValue="updateReactivity"
+        class="auxiliary-knob"
+      />
+      <HardwareKnob
+        v-model="overshoot"
+        label="OVERSHOOT"
+        :min="0"
+        :max="100"
+        :displayFormat="formatOvershoot"
+        @update:modelValue="updateOvershoot"
+        class="auxiliary-knob"
       />
     </div>
     
@@ -78,7 +96,9 @@ export default {
     return {
       gain: 50,
       peakReduction: 0,
-      smoothingFactor: 15
+      smoothingFactor: 16,
+      reactivity: 200,
+      overshoot: 100
     }
   },
   
@@ -101,6 +121,8 @@ export default {
     this.gain = this.hardwareStore.compression.gain
     this.peakReduction = this.hardwareStore.compression.peakReduction
     this.smoothingFactor = this.hardwareStore.compression.smoothingFactor
+    this.reactivity = this.hardwareStore.compression.reactivity
+    this.overshoot = this.hardwareStore.compression.overshoot
   },
   
   methods: {
@@ -133,6 +155,22 @@ export default {
     },
     
     formatResponse(value) {
+      return value.toString()
+    },
+    
+    updateReactivity(value) {
+      this.hardwareStore.updateReactivity(value)
+    },
+    
+    formatReactivity(value) {
+      return value.toString()
+    },
+    
+    updateOvershoot(value) {
+      this.hardwareStore.updateOvershoot(value)
+    },
+    
+    formatOvershoot(value) {
       return value.toString()
     }
   }
@@ -247,35 +285,36 @@ export default {
   text-transform: uppercase;
 }
 
-/* Response knob styling */
-.response-knob-container {
+/* Auxiliary knobs styling */
+.auxiliary-knobs-container {
   display: flex;
   justify-content: center;
+  gap: 30px;
   margin-top: 15px;
 }
 
-.response-knob :deep(.knob-body) {
+.auxiliary-knob :deep(.knob-body) {
   width: 45px;
   height: 45px;
 }
 
-.response-knob :deep(.knob-pointer) {
+.auxiliary-knob :deep(.knob-pointer) {
   width: 3px;
   height: 15px;
   top: 3px;
 }
 
-.response-knob :deep(.knob-center) {
+.auxiliary-knob :deep(.knob-center) {
   width: 15px;
   height: 15px;
 }
 
-.response-knob :deep(.knob-label) {
+.auxiliary-knob :deep(.knob-label) {
   font-size: 10px;
   margin-top: 5px;
 }
 
-.response-knob :deep(.knob-value) {
+.auxiliary-knob :deep(.knob-value) {
   font-size: 12px;
 }
 

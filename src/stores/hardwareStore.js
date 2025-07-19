@@ -31,12 +31,16 @@ export const useHardwareStore = defineStore('hardware', () => {
     // Knob values
     gain: 50,              // 0-100 (50 = unity gain)
     peakReduction: 0,      // 0-100 (amount of compression)
-    smoothingFactor: 15,   // 0-100 (response speed, 15 = default VU)
+    smoothingFactor: 16,   // 0-100 (response speed, 16 = VU-like)
+    reactivity: 200,       // 0-200 (visual amplification, 200 = 2x)
+    overshoot: 100,        // 0-100 (transient overshoot, 100 = maximum)
     
     // Calculated values
     needlePosition: 0,     // Current needle position in degrees
     gainDB: 0,             // Gain in dB (-20 to +20)
-    smoothingMultiplier: 0.15, // Actual smoothing value (0-1)
+    smoothingMultiplier: 0.16, // Actual smoothing value (0-1)
+    reactivityMultiplier: 2.0,  // Actual reactivity multiplier (0-2)
+    overshootMultiplier: 10.0,  // Actual overshoot multiplier (0-10)
     
     // Meter mode
     meterMode: 'GR',       // 'GR' (Gain Reduction) or 'VU' (Output Level)
@@ -239,6 +243,18 @@ export const useHardwareStore = defineStore('hardware', () => {
     compression.value.smoothingMultiplier = compression.value.smoothingFactor / 100
   }
 
+  const updateReactivity = (value) => {
+    compression.value.reactivity = Math.max(0, Math.min(200, value))
+    // Convert to 0-2 range for actual use
+    compression.value.reactivityMultiplier = compression.value.reactivity / 100
+  }
+
+  const updateOvershoot = (value) => {
+    compression.value.overshoot = Math.max(0, Math.min(100, value))
+    // Convert to 0-10 range for actual use (more dramatic overshoot)
+    compression.value.overshootMultiplier = (compression.value.overshoot / 100) * 10
+  }
+
   return {
     // WebSocket state (delegated to websocketStore)
     isWebSocketConnected: computed(() => websocketStore.isConnected),
@@ -290,6 +306,8 @@ export const useHardwareStore = defineStore('hardware', () => {
     updateNeedlePosition,
     toggleMeterMode,
     updateSmoothingFactor,
+    updateReactivity,
+    updateOvershoot,
     
     // Legacy methods (for backward compatibility)
     updateDisplay,
