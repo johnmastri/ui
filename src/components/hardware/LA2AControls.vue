@@ -42,6 +42,19 @@
       />
     </div>
     
+    <!-- Response Knob (Below, centered) -->
+    <div class="response-knob-container">
+      <HardwareKnob
+        v-model="smoothingFactor"
+        label="RESPONSE"
+        :min="0"
+        :max="100"
+        :displayFormat="formatResponse"
+        @update:modelValue="updateSmoothingFactor"
+        class="response-knob"
+      />
+    </div>
+    
     <!-- Status indicator -->
     <div class="compression-status" v-if="isCompressing">
       <div class="status-led"></div>
@@ -64,7 +77,8 @@ export default {
   data() {
     return {
       gain: 50,
-      peakReduction: 0
+      peakReduction: 0,
+      smoothingFactor: 15
     }
   },
   
@@ -86,6 +100,7 @@ export default {
     // Initialize from store
     this.gain = this.hardwareStore.compression.gain
     this.peakReduction = this.hardwareStore.compression.peakReduction
+    this.smoothingFactor = this.hardwareStore.compression.smoothingFactor
   },
   
   methods: {
@@ -110,6 +125,14 @@ export default {
     },
     
     formatPeakReduction(value) {
+      return value.toString()
+    },
+    
+    updateSmoothingFactor(value) {
+      this.hardwareStore.updateSmoothingFactor(value)
+    },
+    
+    formatResponse(value) {
       return value.toString()
     }
   }
@@ -222,6 +245,38 @@ export default {
   color: #ff6666;
   letter-spacing: 1px;
   text-transform: uppercase;
+}
+
+/* Response knob styling */
+.response-knob-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.response-knob :deep(.knob-body) {
+  width: 45px;
+  height: 45px;
+}
+
+.response-knob :deep(.knob-pointer) {
+  width: 3px;
+  height: 15px;
+  top: 3px;
+}
+
+.response-knob :deep(.knob-center) {
+  width: 15px;
+  height: 15px;
+}
+
+.response-knob :deep(.knob-label) {
+  font-size: 10px;
+  margin-top: 5px;
+}
+
+.response-knob :deep(.knob-value) {
+  font-size: 12px;
 }
 
 /* Responsive adjustments */

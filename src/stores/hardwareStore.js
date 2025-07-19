@@ -31,10 +31,12 @@ export const useHardwareStore = defineStore('hardware', () => {
     // Knob values
     gain: 50,              // 0-100 (50 = unity gain)
     peakReduction: 0,      // 0-100 (amount of compression)
+    smoothingFactor: 15,   // 0-100 (response speed, 15 = default VU)
     
     // Calculated values
     needlePosition: 0,     // Current needle position in degrees
     gainDB: 0,             // Gain in dB (-20 to +20)
+    smoothingMultiplier: 0.15, // Actual smoothing value (0-1)
     
     // Meter mode
     meterMode: 'GR',       // 'GR' (Gain Reduction) or 'VU' (Output Level)
@@ -231,6 +233,12 @@ export const useHardwareStore = defineStore('hardware', () => {
     compression.value.meterMode = compression.value.meterMode === 'GR' ? 'VU' : 'GR'
   }
 
+  const updateSmoothingFactor = (value) => {
+    compression.value.smoothingFactor = Math.max(0, Math.min(100, value))
+    // Convert to 0-1 range for actual use
+    compression.value.smoothingMultiplier = compression.value.smoothingFactor / 100
+  }
+
   return {
     // WebSocket state (delegated to websocketStore)
     isWebSocketConnected: computed(() => websocketStore.isConnected),
@@ -281,6 +289,7 @@ export const useHardwareStore = defineStore('hardware', () => {
     updatePeakReduction,
     updateNeedlePosition,
     toggleMeterMode,
+    updateSmoothingFactor,
     
     // Legacy methods (for backward compatibility)
     updateDisplay,

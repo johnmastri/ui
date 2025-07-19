@@ -5,8 +5,7 @@ class CompressionService {
     this.lastUpdateTime = performance.now()
     this.currentNeedlePosition = 0
     
-    // Smoothing parameters
-    this.smoothingFactor = 0.15 // How quickly needle responds
+    // Note: smoothingFactor now comes from hardwareStore
   }
 
   /**
@@ -53,15 +52,16 @@ class CompressionService {
   /**
    * Smooth needle movement with adjustable ballistics
    * @param {number} targetPosition - Target needle position
+   * @param {number} smoothingFactor - Smoothing factor from store (0-1)
    * @param {number} deltaTime - Time since last update in ms
    * @returns {number} Smoothed needle position
    */
-  smoothNeedleMovement(targetPosition, deltaTime = 16) {
+  smoothNeedleMovement(targetPosition, smoothingFactor = 0.15, deltaTime = 16) {
     // VU-style ballistics with different attack/release times
     const isAttacking = Math.abs(targetPosition) > Math.abs(this.currentNeedlePosition)
     
     // Faster attack, slower release for authentic VU behavior
-    const smoothing = isAttacking ? this.smoothingFactor * 1.5 : this.smoothingFactor * 0.7
+    const smoothing = isAttacking ? smoothingFactor * 1.5 : smoothingFactor * 0.7
     
     // Exponential smoothing
     this.currentNeedlePosition += (targetPosition - this.currentNeedlePosition) * smoothing

@@ -274,7 +274,10 @@ export default {
       
       // Calculate needle position using CompressionService
       const targetPosition = CompressionService.calculateNeedlePosition(dbValue, peakReduction)
-      const smoothedPosition = CompressionService.smoothNeedleMovement(targetPosition)
+      const smoothedPosition = CompressionService.smoothNeedleMovement(
+        targetPosition, 
+        compressionState.smoothingMultiplier
+      )
       
       console.log('🎯 Needle position:', {
         target: targetPosition.toFixed(1),
