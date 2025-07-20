@@ -160,7 +160,7 @@ export const useHardwareStore = defineStore('hardware', () => {
     
     // Fade in foreground opacity to 90%
     gsap.to(foregroundOpacity, {
-      value: 0.9,
+      value: 0.95,
       duration: 0.3,
       ease: "power2.out"
     })

@@ -102,7 +102,7 @@ const fadeInOverlay = () => {
   if (parameterOverlayRef.value) {
     gsap.set(parameterOverlayRef.value, {
       opacity: 0,
-      y: 20
+      y: 20,
     })
     
     gsap.to(parameterOverlayRef.value, {
