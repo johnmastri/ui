@@ -3,6 +3,8 @@
     ref="BackButton"
     id="BackButton"
     @click="handleBack"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
     style="cursor:pointer; pointer-events: auto !important;"
   >
     <rect 
@@ -10,30 +12,39 @@
       y="55" 
       width="128" 
       height="370" 
-      fill="#792929" 
-      fill-opacity="0.64"
+      :fill="isSelected ? '#3ED72A' : '#792929'"
+      :fill-opacity="isSelected ? 0.8 : 0.64"
     />
-    <g id="arrow_design_elements">
+    <rect 
+      ref="backHighlight"
+      id="BackHighlight" 
+      y="55" 
+      width="128" 
+      height="370" 
+      fill='#3ED72A' 
+      :fill-opacity="1"
+    />
+    <g id="arrow_design_elements" ref="arrowElements">
       <path 
-        id="Vector 7" 
+        id="Vector7" 
         d="M54.3137 106L43 117.314L54.3137 128.627V106Z" 
-        fill="black"
+        :fill="isSelected ? '#fff' : '#000'"
       />
       <path 
-        id="Vector 8" 
+        id="Vector8" 
         d="M54.3137 339.686L43 351L54.3137 362.314V339.686Z" 
-        fill="black"
+        :fill="isSelected ? '#fff' : '#000'"
       />
       <path 
-        id="Vector 9" 
+        id="Vector9" 
         d="M54.3137 222.686L43 234L54.3137 245.314V222.686Z" 
-        fill="black"
+        :fill="isSelected ? '#fff' : '#000'"
       />
     </g>
     <text 
       id="BACK" 
       transform="translate(65 60)" 
-      fill="white" 
+      :fill="isSelected ? '#000' : '#fff'"
       xml:space="preserve" 
       style="white-space: pre" 
       font-family="Barlow" 
@@ -46,7 +57,7 @@
     <path 
       id="corner_triangle" 
       d="M28 40H0V68L28 40Z" 
-      fill="black"
+      :fill="isSelected ? '#000' : '#000'"
     />
   </g>
 </template>
@@ -56,7 +67,35 @@ import { gsap } from 'gsap'
 
 export default {
   name: 'BackButton',
-  
+  props: {
+    isSelected: {
+      type: Boolean,
+      default: false
+    }
+  },
+  data() {
+    return {
+      arrowTween: null
+    }
+  },
+  watch: {
+    isSelected(newVal) {
+      if (newVal) {
+        this.startArrowAnimation()
+        this.highlight()
+      } else {
+        this.stopArrowAnimation()
+        this.unhighlight()
+      }
+    }
+  },
+  mounted() {
+    // Set initial state for back highlight
+    gsap.set(this.$refs.backHighlight, {
+      transformOrigin: 'bottom left',
+      scaleY: 0
+    })
+  },
   methods: {
     fadeIn() {
       gsap.to(this.$refs.BackButton, {
@@ -74,11 +113,61 @@ export default {
       })
     },
 
+    highlight() {
+      gsap.to(this.$refs.backHighlight, {
+        scaleY: 1,
+        duration: 0.3,
+        ease: 'power2.out'
+      })
+    },
+
+    unhighlight() {
+      gsap.to(this.$refs.backHighlight, {
+        scaleY: 0,
+        duration: 0.3,
+        ease: 'power2.out'
+      })
+    },
+
     handleBack() {
       console.log('BackButton: handleBack called')
       console.log('BackButton: Element style:', this.$el.style.pointerEvents)
       this.$emit('back')
+    },
+
+    handleMouseEnter() {
+      if (!this.isSelected) {
+        this.startArrowAnimation()
+      }
+    },
+
+    handleMouseLeave() {
+      if (!this.isSelected) {
+        this.stopArrowAnimation()
+      }
+    },
+
+    startArrowAnimation() {
+      if (this.arrowTween) return
+      this.arrowTween = gsap.to(this.$refs.arrowElements, {
+        x: 20,
+        repeat: -1,
+        yoyo: true,
+        duration: 0.5,
+        ease: 'power1.inOut'
+      })
+    },
+
+    stopArrowAnimation() {
+      if (this.arrowTween) {
+        this.arrowTween.kill()
+        this.arrowTween = null
+        gsap.set(this.$refs.arrowElements, { x: 0 })
+      }
     }
+  },
+  beforeUnmount() {
+    this.stopArrowAnimation()
   }
 }
 </script>

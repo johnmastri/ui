@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
   // Settings menu buttons with opacity variations (keep existing)
@@ -25,7 +25,7 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
           id: 'firmwareVersion',
           label: 'Firmware Version',
           type: 'display',
-          value: 'v2.1.4'
+          value: 'v1.0.0'
         },
         {
           id: 'updateFirmware',
@@ -57,19 +57,6 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
           value: '1',
           options: ['1', '2', '3', '4', '5', '10', '50', '100', '255']
         },
-        {
-          id: 'rj45DaisyChain',
-          label: 'RJ45 Daisy-Chain',
-          type: 'select',
-          value: 'Auto Detect',
-          options: ['Auto Detect', 'Manual Setup']
-        },
-        {
-          id: 'pingTest',
-          label: 'Ping Test',
-          type: 'button',
-          value: 'TEST'
-        }
       ]
     },
     {
@@ -121,13 +108,58 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
   // Currently hovered button - default to device
   const currentSelectedButton = ref('device')
   
+  // Currently selected parameter index for mouse wheel navigation (includes back button)
+  const selectedParameterIndex = ref(0)
+  
+  // Navigation mode: 'menu' | 'parameters' | 'modal'
+  const navigationMode = ref('menu')
+  
+  // Track if back button is selected during parameter navigation
+  const isBackButtonSelected = ref(false)
+  
+  const setNavigationMode = (mode) => {
+    navigationMode.value = mode
+    // Reset back button selection when switching modes
+    if (mode === 'menu') {
+      isBackButtonSelected.value = false
+      selectedParameterIndex.value = 0
+    }
+  }
+  
+  const setBackButtonSelected = (selected) => {
+    isBackButtonSelected.value = selected
+  }
+
+  // Helper: get current parameters for selected button
+  const currentParameters = computed(() => {
+    const setting = getSettingForButton(currentSelectedButton.value)
+    return setting ? setting.parameters : []
+  })
+
+  // Helper: total selectable items (parameters + 1 for back button when in parameters mode)
+  const totalSelectableItems = computed(() => {
+    if (navigationMode.value === 'parameters') {
+      return currentParameters.value.length + 1 // +1 for back button
+    }
+    return currentParameters.value.length
+  })
+
   // Actions
   const setHoveredButton = (buttonId) => {
     currentSelectedButton.value = buttonId
+    selectedParameterIndex.value = 0 // Reset to first parameter when changing settings
   }
   
   const clearHoveredButton = () => {
     currentSelectedButton.value = 'device'
+    selectedParameterIndex.value = 0
+  }
+
+  const setSelectedParameterIndex = (index) => {
+    // Clamp index between 0 and totalSelectableItems-1
+    if (index < 0) index = totalSelectableItems.value - 1
+    if (index >= totalSelectableItems.value) index = 0
+    selectedParameterIndex.value = index
   }
   
   // Helper function to get settings for a button
@@ -140,10 +172,18 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
     buttons,
     settings,
     currentSelectedButton,
-    
+    selectedParameterIndex,
+    navigationMode,
+    isBackButtonSelected,
+    // Computed
+    currentParameters,
+    totalSelectableItems,
     // Actions
     setHoveredButton,
     clearHoveredButton,
+    setSelectedParameterIndex,
+    setNavigationMode,
+    setBackButtonSelected,
     getSettingForButton
   }
 }) 

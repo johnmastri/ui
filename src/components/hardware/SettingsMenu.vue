@@ -33,7 +33,11 @@
     </g>
  
       <SettingsHolder ref="SettingsHolder" />
-      <BackButton ref="BackButton" @back="handleBack" />
+      <BackButton 
+        ref="BackButton" 
+        :is-selected="hardwareSettingsStore.isBackButtonSelected"
+        @back="handleBack" 
+      />
   
     
   </g>
@@ -126,6 +130,8 @@ export default {
       this.isAnimating = true
       this.animatingButtonId = buttonId
       this.animateButtonToFullScreen(buttonId)
+      // Set navigation mode to parameters when a category is expanded
+      this.hardwareSettingsStore.setNavigationMode('parameters');
     },
     
     animateButtonToFullScreen(buttonId) {
@@ -537,24 +543,27 @@ export default {
       
       // Call the animate function to return the expanded button to original state
       this.animateButtonBackToOriginal(this.expandedButtonId)
+      // Set navigation mode back to menu when returning
+      this.hardwareSettingsStore.setNavigationMode('menu');
     },
     
     handleWheel(event) {
-      // If there's an expanded button, do nothing - no mouse events should work
-      if (this.expandedButtonId) {
-        event.preventDefault()
-        return
+      event.preventDefault();
+      const mode = this.hardwareSettingsStore.navigationMode;
+      if (mode === 'menu') {
+        this.cycleCategories(event.deltaY);
+      } else if (mode === 'parameters') {
+        this.cycleParameters(event.deltaY);
       }
-      
-      event.preventDefault()
-      
+    },
+    cycleCategories(deltaY) {
       // Define clockwise order: device → network → midi → display → close → device...
       const clockwiseOrder = ['device', 'network', 'midi', 'display', 'close']
       const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
       const currentIndex = clockwiseOrder.indexOf(currentButtonId)
       
       let nextIndex
-      if (event.deltaY > 0) {
+      if (deltaY > 0) {
         // Scroll down - move clockwise
         nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % clockwiseOrder.length
       } else {
@@ -567,7 +576,41 @@ export default {
       // Set the new selected button
       this.hardwareSettingsStore.setHoveredButton(nextButton)
     },
-    
+    cycleParameters(deltaY) {
+      const dir = deltaY > 0 ? 1 : -1;
+      const currentIdx = this.hardwareSettingsStore.selectedParameterIndex;
+      const paramCount = this.hardwareSettingsStore.currentParameters.length;
+      const isBackSelected = this.hardwareSettingsStore.isBackButtonSelected;
+      
+      console.log('SettingsMenu: cycleParameters - currentIdx:', currentIdx, 'paramCount:', paramCount, 'isBackSelected:', isBackSelected, 'dir:', dir)
+      
+      if (isBackSelected) {
+        // Currently on back button
+        if (dir < 0) {
+          // Scroll up: go to last parameter
+          console.log('SettingsMenu: going from back button to last parameter')
+          this.hardwareSettingsStore.setBackButtonSelected(false);
+          this.hardwareSettingsStore.setSelectedParameterIndex(paramCount - 1);
+        }
+        // Scroll down: stay on back button (do nothing)
+      } else {
+        // Currently on a parameter
+        const newIdx = currentIdx + dir;
+        console.log('SettingsMenu: newIdx would be:', newIdx)
+        if (newIdx >= 0 && newIdx < paramCount) {
+          // Valid parameter index
+          console.log('SettingsMenu: setting selectedParameterIndex to:', newIdx)
+          this.hardwareSettingsStore.setSelectedParameterIndex(newIdx);
+        } else if (newIdx >= paramCount && dir > 0) {
+          // Scrolled past last parameter: select back button
+          console.log('SettingsMenu: selecting back button, setting selectedParameterIndex to:', paramCount - 1)
+          this.hardwareSettingsStore.setBackButtonSelected(true);
+          // Keep the marker at the last parameter position
+          this.hardwareSettingsStore.setSelectedParameterIndex(paramCount - 1);
+        }
+        // Scrolled before first parameter: do nothing (stay at 0)
+      }
+    },
     handleMouseDown(event) {
       // If there's an expanded button, do nothing - no mouse events should work
       if (this.expandedButtonId) {

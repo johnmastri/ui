@@ -1,9 +1,20 @@
 <template>
   <g :transform="`translate(0, ${yPosition})`">
+    <!-- Highlight background if selected -->
+    <rect
+      v-if="showBg"
+      x="128"
+      y="150"
+      width="620"
+      height="50"
+      fill="#222"
+      :opacity="bgOpacity"
+      rx="8"
+    />
     <g id="ParameterLabelAndValue">
       <text 
         id="SettingsLabel" 
-        fill="#3ED72A" 
+        :fill="isSelected ? '#3ED72A' : '#F8F8F8'"
         xml:space="preserve" 
         style="white-space: pre" 
         font-family="Barlow" 
@@ -53,6 +64,7 @@ import ToggleButton from './ToggleButton.vue'
 import SettingsParameterValue from './SettingsParameterValue.vue'
 import SettingsSelect from './SettingsSelect.vue'
 import SettingsButton from './SettingsButton.vue'
+import { gsap } from 'gsap'
 
 export default {
   name: 'SettingsParameterTemplate',
@@ -70,6 +82,32 @@ export default {
     yPosition: {
       type: Number,
       default: 0
+    },
+    isSelected: {
+      type: Boolean,
+      default: false
+    }
+  },
+  data() {
+    return {
+      bgOpacity: 0,
+      showBg: false
+    }
+  },
+  watch: {
+    isSelected(newVal) {
+      if (newVal) {
+        this.showBg = true
+        gsap.to(this, { bgOpacity: 0.85, duration: 0.25, ease: 'power2.out' })
+      } else {
+        gsap.to(this, { bgOpacity: 0, duration: 0.2, ease: 'power2.in', onComplete: () => { this.showBg = false } })
+      }
+    }
+  },
+  mounted() {
+    if (this.isSelected) {
+      this.bgOpacity = 0.85
+      this.showBg = true
     }
   },
   methods: {
