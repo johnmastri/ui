@@ -1,10 +1,17 @@
 <template>
   <g>
     <!-- 2x2 Grid of Settings Buttons -->
-    <g v-for="(btn, idx) in buttons" :key="btn.id" :transform="`translate(${btn.x}, ${btn.y})`">
+    <g 
+      v-for="(btn, idx) in hardwareSettingsStore.buttons" 
+      :key="btn.id" 
+      :transform="`translate(${btn.x}, ${btn.y})`"
+      @mouseenter="handleMouseEnter(btn.id)"
+      @mouseleave="handleMouseLeave"
+    >
       <SettingsButton 
         :label="btn.label"
-        @click="handleButtonClick(btn.id)"
+        :button-id="btn.id"
+        :is-selected="isButtonSelected(btn.id)"
       />
     </g>
     
@@ -29,6 +36,7 @@
 
 <script>
 import SettingsButton from './SettingsButton.vue'
+import { useHardwareSettingsStore } from '../../stores/hardwareSettingsStore'
 
 export default {
   name: 'SettingsMenu',
@@ -36,22 +44,38 @@ export default {
     SettingsButton
   },
   emits: ['close'],
-  data() {
+  setup() {
+    const hardwareSettingsStore = useHardwareSettingsStore()
+    
+    const isButtonSelected = (buttonId) => {
+      return hardwareSettingsStore.currentSelectedButton === buttonId
+    }
+    
+    const handleMouseEnter = (buttonId) => {
+      hardwareSettingsStore.setHoveredButton(buttonId)
+    }
+    
+    const handleMouseLeave = () => {
+      hardwareSettingsStore.clearHoveredButton()
+    }
+    
+    const emitClose = () => {
+      hardwareSettingsStore.clearHoveredButton()
+      // Note: We'll need to emit the close event, but we need to access the emit function
+      // This will be handled in the methods section
+    }
+    
     return {
-      buttons: [
-        { id: 'device', label: 'DEVICE', x: 0,   y: 0 },
-        { id: 'network', label: 'NETWORK', x: 400, y: 0 },
-        { id: 'display', label: 'DISPLAY', x: 0,   y: 240 },
-        { id: 'midi', label: 'MIDI', x: 400, y: 240 }
-      ]
+      hardwareSettingsStore,
+      isButtonSelected,
+      handleMouseEnter,
+      handleMouseLeave,
+      emitClose
     }
   },
   methods: {
-    handleButtonClick(id) {
-      // Placeholder for future submenu logic
-      console.log('Settings button clicked:', id)
-    },
     emitClose() {
+      this.hardwareSettingsStore.clearHoveredButton()
       this.$emit('close')
     }
   }
