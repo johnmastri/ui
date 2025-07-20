@@ -11,7 +11,7 @@
         <div>T: Test Compression</div>
       </div>
     </div>
-    <svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" ref="vuMeterSvg">
+    <svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" ref="vuMeterSvg" @click="showSettingsMenu = true">
       <defs>
         <filter id="filter0_d_39_1020" x="-6.8" y="-9.80003" width="839.6" height="519.6" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
           <feFlood flood-opacity="0" result="BackgroundImageFix"/>
@@ -184,10 +184,11 @@
         <!-- Dimmer overlay -->
         <rect id="Dimmer" width="800" height="480" fill="#060606" fill-opacity="0.85" :style="{ opacity: hardwareStore.dimmerOpacity }" pointer-events="none"/>
         
+        <SettingsMenu v-if="showSettingsMenu" style="position:absolute;top:0;left:0;z-index:200;" @close="onCloseSettingsMenu" @click.stop />
        
       </g>
     </svg>
-    
+ 
     <!-- Debug test button (temporary) -->
     <div style="position: absolute; top: 10px; right: 10px; z-index: 1000;">
       <button 
@@ -209,12 +210,14 @@ import { useJuceIntegration } from '../composables/useJuceIntegration'
 import { useHardwareStore } from '../stores/hardwareStore'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import ParameterOverlay from './ParameterOverlay.vue'
+import SettingsMenu from './hardware/SettingsMenu.vue'
 
 export default {
   name: 'VUMeter',
   
   components: {
-    ParameterOverlay
+    ParameterOverlay,
+    SettingsMenu
   },
   
   props: {
@@ -227,6 +230,7 @@ export default {
   setup() {
     const { isHardwareRoute } = useJuceIntegration()
     const hardwareStore = useHardwareStore()
+    const showSettingsMenu = ref(false)
     
     // SVG element refs
     const vuMeterSvg = ref(null)
@@ -502,6 +506,11 @@ export default {
       // Additional logic for VU vs GR mode can be added here
     })
     
+    const onCloseSettingsMenu = (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      showSettingsMenu.value = false
+    }
+    
     onMounted(async () => {
       // Initialize needle position
       nextTick(() => {
@@ -556,6 +565,8 @@ export default {
       isHardwareRoute,
       hardwareStore,
       vuMeterSvg,
+      showSettingsMenu,
+      onCloseSettingsMenu,
       updateVUMeter,
       isCompressionMode,
       toggleMode,
