@@ -1,5 +1,9 @@
 <template>
-  <g>
+  <g
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+    style="cursor: pointer;"
+  >
     <!-- Original background color as overlay -->
     <rect 
       ref="backgroundRect"
@@ -27,6 +31,7 @@
       :x="labelX"
       :y="labelY"
       text-anchor="middle"
+      dominant-baseline="middle"
     >
       {{ label }}
     </text>
@@ -85,6 +90,18 @@ export default {
   mounted() {
     // Set initial opacity to button's default
     this.backgroundOpacity = this.defaultOpacity
+  },
+  
+  methods: {
+    handleMouseEnter() {
+      const hardwareSettingsStore = useHardwareSettingsStore()
+      hardwareSettingsStore.setHoveredButton(this.buttonId)
+    },
+    
+    handleMouseLeave() {
+      const hardwareSettingsStore = useHardwareSettingsStore()
+      hardwareSettingsStore.clearHoveredButton()
+    }
   },
   
   watch: {

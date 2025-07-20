@@ -1,8 +1,9 @@
 <template>
   <g
+    ref="closeButtonElement"
     @click="$emit('close')"
-    @mouseenter="$emit('mouseenter')"
-    @mouseleave="$emit('mouseleave')"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
     style="cursor:pointer;"
     :transform="'translate(359,199)'"
   >
@@ -44,6 +45,26 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    }
+  },
+  
+  methods: {
+    animateIn() {
+      if (this.$refs.closeButtonElement) {
+        gsap.to(this.$refs.closeButtonElement, {
+          opacity: 1,
+          duration: 0.8,
+          ease: "bounce.out"
+        })
+      }
+    },
+    
+    handleMouseEnter() {
+      this.$emit('mouseenter')
+    },
+    
+    handleMouseLeave() {
+      this.$emit('mouseleave')
     }
   },
   

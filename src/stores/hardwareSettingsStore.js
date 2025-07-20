@@ -10,18 +10,16 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
     { id: 'midi', label: 'MIDI', x: 400, y: 240, defaultOpacity: 0.55 }       // -18%
   ])
   
-  // Currently hovered button
-  const currentSelectedButton = ref(null)
+  // Currently hovered button - default to device
+  const currentSelectedButton = ref('device')
   
   // Actions
   const setHoveredButton = (buttonId) => {
     currentSelectedButton.value = buttonId
-    console.log('Hardware Settings: Hovered button:', buttonId)
   }
   
   const clearHoveredButton = () => {
-    currentSelectedButton.value = null
-    console.log('Hardware Settings: Cleared hover state')
+    currentSelectedButton.value = 'device'
   }
   
   return {

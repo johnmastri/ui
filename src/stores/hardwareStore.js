@@ -213,6 +213,7 @@ export const useHardwareStore = defineStore('hardware', () => {
     gsap.to(dimmerOpacity, {
       value: 1,
       duration: 0.3,
+      delay: 0.2,
       ease: "power2.out"
     })
   }
