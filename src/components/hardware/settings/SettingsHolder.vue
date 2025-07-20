@@ -1,105 +1,18 @@
 <template>
   <g id="SettingsHolder">
     <!-- Settings Parameter Templates -->
-    <g id="SettingsParameterTemplate">
-      <g id="ParameterLabelAndValue">
-        <text 
-          id="SettingsLabel" 
-          fill="#3ED72A" 
-          xml:space="preserve" 
-          style="white-space: pre" 
-          font-family="Barlow" 
-          font-size="32" 
-          font-weight="600" 
-          letter-spacing="0.04em"
-        >
-          <tspan x="148" y="182.8">Large Parameter Display</tspan>
-        </text>
-        <g id="ToggleButton">
-          <rect 
-            x="540.5" 
-            y="158" 
-            width="66" 
-            height="24" 
-            rx="12" 
-            stroke="#DCDCDC"
-          />
-          <circle 
-            id="Ellipse 4" 
-            cx="553.5" 
-            cy="170" 
-            r="9" 
-            fill="#EBEBEB" 
-            stroke="#D0D0D0"
-          />
-        </g>
-        <g id="SettingsParameterValue">
-          <text 
-            id="SettingsParameterValue_2" 
-            fill="#3ED72A" 
-            xml:space="preserve" 
-            style="white-space: pre" 
-            font-family="Barlow" 
-            font-size="24" 
-            font-weight="bold" 
-            letter-spacing="0.04em"
-          >
-            <tspan x="672.49" y="179.6">1 SEC</tspan>
-          </text>
-        </g>
-      </g>
-      <path id="Vector 3" d="M148 204H736" stroke="#792929"/>
-    </g>
-
-    <g id="SettingsParameterTemplate_2">
-      <g id="ParameterLabelAndValue_2">
-        <text 
-          id="SettingsLabel_2" 
-          fill="#3ED72A" 
-          xml:space="preserve" 
-          style="white-space: pre" 
-          font-family="Barlow" 
-          font-size="32" 
-          font-weight="600" 
-          letter-spacing="0.04em"
-        >
-          <tspan x="148" y="249.8">Large Parameter Display</tspan>
-        </text>
-        <g id="ToggleButton_2">
-          <rect 
-            x="540.5" 
-            y="225" 
-            width="66" 
-            height="24" 
-            rx="12" 
-            stroke="#DCDCDC"
-          />
-          <circle 
-            id="Ellipse 4_2" 
-            cx="553.5" 
-            cy="237" 
-            r="9" 
-            fill="#EBEBEB" 
-            stroke="#D0D0D0"
-          />
-        </g>
-        <g id="SettingsParameterValue_3">
-          <text 
-            id="SettingsParameterValue_4" 
-            fill="#3ED72A" 
-            xml:space="preserve" 
-            style="white-space: pre" 
-            font-family="Barlow" 
-            font-size="24" 
-            font-weight="bold" 
-            letter-spacing="0.04em"
-          >
-            <tspan x="672.49" y="246.6">1 SEC</tspan>
-          </text>
-        </g>
-      </g>
-      <path id="Vector 3_2" d="M148 271H736" stroke="#792929"/>
-    </g>
+    <SettingsParameterTemplate 
+      label="Display Brightness"
+      value="75%"
+      :enabled="settings.displayBrightness"
+      @toggle-change="handleSettingChange"
+    />
+    <SettingsParameterTemplate 
+      label="Auto Sleep"
+      value="5 MIN"
+      :enabled="settings.autoSleep"
+      @toggle-change="handleSettingChange"
+    />
 
     <!-- Green marker -->
     <rect 
@@ -128,7 +41,39 @@
 </template>
 
 <script>
+import SettingsParameterTemplate from './SettingsParameterTemplate.vue'
+
 export default {
-  name: 'SettingsHolder'
+  name: 'SettingsHolder',
+  components: {
+    SettingsParameterTemplate
+  },
+  data() {
+    return {
+      settings: {
+        displayBrightness: true,
+        autoSleep: false
+      }
+    }
+  },
+  methods: {
+    handleSettingChange({ label, enabled }) {
+      // Update the corresponding setting
+      if (label === 'Display Brightness') {
+        this.settings.displayBrightness = enabled
+      } else if (label === 'Auto Sleep') {
+        this.settings.autoSleep = enabled
+      }
+      
+      // Emit the change to parent component
+      this.$emit('settings-change', {
+        setting: label,
+        enabled: enabled,
+        allSettings: this.settings
+      })
+      
+      console.log(`Setting "${label}" changed to: ${enabled}`)
+    }
+  }
 }
 </script> 

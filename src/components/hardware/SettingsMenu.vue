@@ -32,15 +32,17 @@
       />
     </g>
 
+    
+    <!-- Settings Holder -->
+    <g transform="translate(0, 0)" style="opacity: 1; pointer-events: auto;">
+      <SettingsHolder />
+    </g>
+
     <!-- Back Button -->
     <g transform="translate(0, 0)" style="opacity: 1; pointer-events: auto;">
       <BackButton @back="handleBack" />
     </g>
 
-    <!-- Settings Holder -->
-    <g transform="translate(0, 0)" style="opacity: 1; pointer-events: auto;">
-      <SettingsHolder />
-    </g>
 
     
   </g>
