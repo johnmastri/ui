@@ -31,12 +31,26 @@
         @mouseleave="handleMouseLeave"
       />
     </g>
+
+    <!-- Back Button -->
+    <g transform="translate(0, 0)" style="opacity: 1; pointer-events: auto;">
+      <BackButton @back="handleBack" />
+    </g>
+
+    <!-- Settings Holder -->
+    <g transform="translate(0, 0)" style="opacity: 1; pointer-events: auto;">
+      <SettingsHolder />
+    </g>
+
+    
   </g>
 </template>
 
 <script>
 import SettingsButton from './SettingsButton.vue'
 import CloseButton from './CloseButton.vue'
+import BackButton from './settings/BackButton.vue'
+import SettingsHolder from './settings/SettingsHolder.vue'
 import { useHardwareSettingsStore } from '../../stores/hardwareSettingsStore'
 import { gsap } from 'gsap'
 
@@ -44,7 +58,9 @@ export default {
   name: 'SettingsMenu',
   components: {
     SettingsButton,
-    CloseButton
+    CloseButton,
+    BackButton,
+    SettingsHolder
   },
   emits: ['close'],
   setup() {
@@ -196,9 +212,10 @@ export default {
       // Animate the text position to center of new size using refs
       if (settingsButtonComponent.$refs.textElement) {
         gsap.to(settingsButtonComponent.$refs.textElement, {
-          x: 400, // Center of 800px width
-          y: 240, // Center of 480px height
-          duration: 0.3,
+         // x: 400, // Center of 800px width
+        //  y: 240, // Center of 480px height
+          opacity: 0,
+          duration: 0.1,
           ease: "power2.inOut",
           onComplete: () => {
             this.isAnimating = false
@@ -329,8 +346,8 @@ export default {
       // Animate the background rectangle back to original size
       if (settingsButtonComponent.$refs.backgroundRect) {
         gsap.to(settingsButtonComponent.$refs.backgroundRect, {
-          width: 82,
-          height: 82,
+          width: 400,
+          height: 240,
           duration: 0.3,
           ease: "power2.inOut"
         })
@@ -351,49 +368,57 @@ export default {
         }
         
         gsap.to(settingsButtonComponent.$refs.diagonalLines.$refs.background, {
-          width: 82,
-          height: 82,
+          width: 400,
+          height: 240,
+          duration: 0.3,
+          ease: "power2.inOut"
+        })
+        
+        // Also animate the diagonal lines container back to original size
+        gsap.to(settingsButtonComponent.$refs.diagonalLines, {
+          width: 400,
+          height: 240,
           duration: 0.3,
           ease: "power2.inOut"
         })
       }
       
-      // Animate the text position back to center of original size
+      // Complete the main animation immediately
+      this.isAnimating = false
+      this.animatingButtonId = null
+      this.expandedButtonId = null
+      
+      // Reset pointer events
+      this.resetPointerEvents()
+      
+      // Move the button back to its original position in the DOM
+      const parentContainer = buttonElement.parentNode
+      if (parentContainer) {
+        // Find the position where this button should be in the original order
+        const buttonOrder = ['device', 'network', 'midi', 'display']
+        const currentIndex = buttonOrder.indexOf(buttonId)
+        const targetIndex = currentIndex
+        
+        // Move the button to the correct position
+        const allButtons = Array.from(parentContainer.children).filter(child => 
+          child !== this.closeButtonWrapper
+        )
+        
+        if (targetIndex < allButtons.length) {
+          parentContainer.insertBefore(buttonElement, allButtons[targetIndex])
+        } else {
+          parentContainer.appendChild(buttonElement)
+        }
+      }
+      
+      // Ensure text is visible and in correct position (it should never move) - with delay
       if (settingsButtonComponent.$refs.textElement) {
         gsap.to(settingsButtonComponent.$refs.textElement, {
-          x: 41, // Center of 82px width
-          y: 41, // Center of 82px height
           opacity: 1,
+          transform: 'none',
           duration: 0.3,
-          ease: "power2.inOut",
-          onComplete: () => {
-            this.isAnimating = false
-            this.animatingButtonId = null
-            this.expandedButtonId = null
-            
-            // Reset pointer events
-            this.resetPointerEvents()
-            
-            // Move the button back to its original position in the DOM
-            const parentContainer = buttonElement.parentNode
-            if (parentContainer) {
-              // Find the position where this button should be in the original order
-              const buttonOrder = ['device', 'network', 'midi', 'display']
-              const currentIndex = buttonOrder.indexOf(buttonId)
-              const targetIndex = currentIndex
-              
-              // Move the button to the correct position
-              const allButtons = Array.from(parentContainer.children).filter(child => 
-                child !== this.closeButtonWrapper
-              )
-              
-              if (targetIndex < allButtons.length) {
-                parentContainer.insertBefore(buttonElement, allButtons[targetIndex])
-              } else {
-                parentContainer.appendChild(buttonElement)
-              }
-            }
-          }
+          delay: .25,
+          ease: "power2.inOut"
         })
       }
       
@@ -402,10 +427,10 @@ export default {
         // Find the CloseButton element within the wrapper
         const closeButtonElement = this.closeButtonWrapper.querySelector('g')
         if (closeButtonElement) {
-          // Move the CloseButton back to original position
+          // Move the CloseButton back to original position (359, 199)
           gsap.to(closeButtonElement, {
-            x: 0,
-            y: 0,
+            x: 359,
+            y: 199,
             duration: 0.3,
             ease: "power2.inOut"
           })
@@ -461,6 +486,16 @@ export default {
       
       this.hardwareSettingsStore.clearHoveredButton()
       this.$emit('close')
+    },
+    
+    handleBack() {
+      // If there's an expanded button, do nothing - no mouse events should work
+      // if (this.expandedButtonId) {
+      //   return
+      // }
+      
+      // Call the animate function to return the expanded button to original state
+      this.animateButtonBackToOriginal(this.expandedButtonId)
     },
     
     handleWheel(event) {
