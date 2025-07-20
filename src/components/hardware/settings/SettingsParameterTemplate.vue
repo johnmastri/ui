@@ -1,5 +1,5 @@
 <template>
-  <g id="SettingsParameterTemplate">
+  <g :transform="`translate(0, ${yPosition})`">
     <g id="ParameterLabelAndValue">
       <text 
         id="SettingsLabel" 
@@ -11,15 +11,38 @@
         font-weight="600" 
         letter-spacing="0.04em"
       >
-        <tspan x="148" y="182.8">{{ label }}</tspan>
+        <tspan x="148" y="182.8">{{ parameter.label }}</tspan>
       </text>
+      
+      <!-- Toggle Button -->
       <ToggleButton 
-        v-model="isEnabled"
-        :x="540.5" 
+        v-if="parameter.type === 'toggle'"
+        v-model="parameter.value"
+        :x="596" 
         :y="158"
-        @change="handleToggleChange"
+        @change="handleParameterChange"
       />
-      <SettingsParameterValue :value="value" />
+      
+      <!-- Select Component -->
+      <SettingsSelect 
+        v-else-if="parameter.type === 'select'"
+        v-model="parameter.value"
+        :options="parameter.options"
+        @change="handleParameterChange"
+      />
+      
+      <!-- Display Component -->
+      <SettingsParameterValue 
+        v-else-if="parameter.type === 'display'"
+        :value="parameter.value"
+      />
+      
+      <!-- Button Component -->
+      <SettingsButton 
+        v-else-if="parameter.type === 'button'"
+        :value="parameter.value"
+        @click="handleButtonClick"
+      />
     </g>
     <path id="Vector 3" d="M148 204H736" stroke="#792929"/>
   </g>
@@ -28,44 +51,41 @@
 <script>
 import ToggleButton from './ToggleButton.vue'
 import SettingsParameterValue from './SettingsParameterValue.vue'
+import SettingsSelect from './SettingsSelect.vue'
+import SettingsButton from './SettingsButton.vue'
 
 export default {
   name: 'SettingsParameterTemplate',
   components: {
     ToggleButton,
-    SettingsParameterValue
+    SettingsParameterValue,
+    SettingsSelect,
+    SettingsButton
   },
   props: {
-    label: {
-      type: String,
-      default: 'Large Parameter Display'
+    parameter: {
+      type: Object,
+      required: true
     },
-    value: {
-      type: String,
-      default: '1 SEC'
-    },
-    enabled: {
-      type: Boolean,
-      default: false
-    }
-  },
-  data() {
-    return {
-      isEnabled: this.enabled
+    yPosition: {
+      type: Number,
+      default: 0
     }
   },
   methods: {
-    handleToggleChange(newValue) {
-      this.isEnabled = newValue
-      this.$emit('toggle-change', {
-        label: this.label,
-        enabled: newValue
+    handleParameterChange(newValue) {
+      this.$emit('parameter-change', {
+        id: this.parameter.id,
+        value: newValue,
+        type: this.parameter.type
       })
-    }
-  },
-  watch: {
-    enabled(newValue) {
-      this.isEnabled = newValue
+    },
+    handleButtonClick(value) {
+      this.$emit('button-click', {
+        id: this.parameter.id,
+        value: value,
+        type: this.parameter.type
+      })
     }
   }
 }

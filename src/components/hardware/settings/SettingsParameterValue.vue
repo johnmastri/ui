@@ -9,8 +9,9 @@
       font-size="24" 
       font-weight="bold" 
       letter-spacing="0.04em"
+      text-anchor="end"
     >
-      <tspan x="672.49" y="179.6">{{ value }}</tspan>
+      <tspan x="716" y="179.6">{{ value }}</tspan>
     </text>
   </g>
 </template>

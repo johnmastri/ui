@@ -1,14 +1,15 @@
 <template>
   <g
+    ref="BackButton"
     id="BackButton"
     @click="handleBack"
-    style="cursor:pointer;"
+    style="cursor:pointer; pointer-events: auto !important;"
   >
     <rect 
       id="TransparentBack" 
-      y="40" 
+      y="55" 
       width="128" 
-      height="389" 
+      height="370" 
       fill="#792929" 
       fill-opacity="0.64"
     />
@@ -31,7 +32,7 @@
     </g>
     <text 
       id="BACK" 
-      transform="translate(64 47)" 
+      transform="translate(65 60)" 
       fill="white" 
       xml:space="preserve" 
       style="white-space: pre" 
@@ -51,13 +52,39 @@
 </template>
 
 <script>
+import { gsap } from 'gsap'
+
 export default {
   name: 'BackButton',
   
   methods: {
+    fadeIn() {
+      gsap.to(this.$refs.BackButton, {
+        opacity: 1,
+        duration: 0.5,
+        ease: "power2.out"
+      })
+    },
+
+    fadeOut() {
+      gsap.to(this.$refs.BackButton, {
+        opacity: 0,
+        duration: 0.3,
+        ease: "power2.in"
+      })
+    },
+
     handleBack() {
+      console.log('BackButton: handleBack called')
+      console.log('BackButton: Element style:', this.$el.style.pointerEvents)
       this.$emit('back')
     }
   }
 }
-</script> 
+</script>
+
+<style scoped>
+#BackButton {
+  opacity: 0;
+}
+</style> 

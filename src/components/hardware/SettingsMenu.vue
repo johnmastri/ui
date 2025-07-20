@@ -31,19 +31,10 @@
         @mouseleave="handleMouseLeave"
       />
     </g>
-
-    
-    <!-- Settings Holder -->
-    <g transform="translate(0, 0)" style="opacity: 1; pointer-events: auto;">
-      <SettingsHolder />
-    </g>
-
-    <!-- Back Button -->
-    <g transform="translate(0, 0)" style="opacity: 1; pointer-events: auto;">
-      <BackButton @back="handleBack" />
-    </g>
-
-
+ 
+      <SettingsHolder ref="SettingsHolder" />
+      <BackButton ref="BackButton" @back="handleBack" />
+  
     
   </g>
 </template>
@@ -55,6 +46,10 @@ import BackButton from './settings/BackButton.vue'
 import SettingsHolder from './settings/SettingsHolder.vue'
 import { useHardwareSettingsStore } from '../../stores/hardwareSettingsStore'
 import { gsap } from 'gsap'
+import { CSSPlugin } from 'gsap/CSSPlugin'
+
+// Register the CSSPlugin
+gsap.registerPlugin(CSSPlugin)
 
 export default {
   name: 'SettingsMenu',
@@ -92,6 +87,10 @@ export default {
     },
     
     handleMouseLeave() {
+      // Don't clear hover state if we're animating or have an expanded button
+      if (this.isAnimating || this.expandedButtonId) {
+        return
+      }
       this.hardwareSettingsStore.clearHoveredButton()
     },
     
@@ -118,6 +117,11 @@ export default {
       }
       
       if (this.isAnimating) return // Prevent multiple animations
+      
+      // Set the current selected button in the store
+      console.log('SettingsMenu: Setting selected button to:', buttonId)
+      this.hardwareSettingsStore.setHoveredButton(buttonId)
+      console.log('SettingsMenu: Current selected button is now:', this.hardwareSettingsStore.currentSelectedButton)
       
       this.isAnimating = true
       this.animatingButtonId = buttonId
@@ -207,7 +211,13 @@ export default {
           width: 800,
           height: 480,
           duration: 0.3,
-          ease: "power2.inOut"
+          ease: "power2.inOut",
+          onComplete: () => {
+            // Restart the diagonal lines animation after size change
+            if (settingsButtonComponent.$refs.diagonalLines && settingsButtonComponent.$refs.diagonalLines.startAnimations) {
+              settingsButtonComponent.$refs.diagonalLines.startAnimations()
+            }
+          }
         })
       }
       
@@ -223,12 +233,13 @@ export default {
             this.isAnimating = false
             this.animatingButtonId = null
             this.expandedButtonId = buttonId // Set the expanded button
-            // Keep pointer events disabled on the main container to block all mouse events
+            // Don't disable pointer events on main container - be more selective
             const mainContainer = this.$el
             if (mainContainer) {
-              mainContainer.style.pointerEvents = 'none'
               mainContainer.style.cursor = 'pointer'
             }
+
+
             // Keep the expanded button's pointer events disabled
             buttonElement.style.pointerEvents = 'none'
             // Keep all other buttons disabled
@@ -237,6 +248,22 @@ export default {
                 ref.style.pointerEvents = 'none'
               }
             })
+            
+            // Back button pointer events are handled by CSS !important rule
+            
+            // Fade in the settings holder and back button after the main animation completes
+            console.log('SettingsMenu: Calling fadeIn on SettingsHolder')
+            console.log('SettingsMenu: SettingsHolder ref:', this.$refs.SettingsHolder)
+            if (this.$refs.SettingsHolder && typeof this.$refs.SettingsHolder.fadeIn === 'function') {
+              this.$refs.SettingsHolder.fadeIn();
+            } else {
+              console.error('SettingsMenu: SettingsHolder ref or fadeIn method not found')
+            }
+            
+            // Fade in the back button
+            if (this.$refs.BackButton && typeof this.$refs.BackButton.fadeIn === 'function') {
+              this.$refs.BackButton.fadeIn();
+            }
           }
         })
       }
@@ -330,6 +357,12 @@ export default {
       const settingsButtonComponent = this.settingsButtonRefs[buttonId]
       if (!buttonElement || !settingsButtonComponent) return
       
+      // Fade out the settings holder and back button first
+      this.$refs.SettingsHolder.fadeOut();
+      if (this.$refs.BackButton && typeof this.$refs.BackButton.fadeOut === 'function') {
+        this.$refs.BackButton.fadeOut();
+      }
+      
       this.isAnimating = true
       this.animatingButtonId = buttonId
       
@@ -378,10 +411,14 @@ export default {
         
         // Also animate the diagonal lines container back to original size
         gsap.to(settingsButtonComponent.$refs.diagonalLines, {
-          width: 400,
-          height: 240,
           duration: 0.3,
-          ease: "power2.inOut"
+          ease: "power2.inOut",
+          onComplete: () => {
+            // Restart the diagonal lines animation after size change
+            if (settingsButtonComponent.$refs.diagonalLines && settingsButtonComponent.$refs.diagonalLines.startAnimations) {
+              settingsButtonComponent.$refs.diagonalLines.startAnimations()
+            }
+          }
         })
       }
       
@@ -417,7 +454,6 @@ export default {
       if (settingsButtonComponent.$refs.textElement) {
         gsap.to(settingsButtonComponent.$refs.textElement, {
           opacity: 1,
-          transform: 'none',
           duration: 0.3,
           delay: .25,
           ease: "power2.inOut"
@@ -491,6 +527,9 @@ export default {
     },
     
     handleBack() {
+      console.log('SettingsMenu: handleBack called')
+      console.log('SettingsMenu: expandedButtonId:', this.expandedButtonId)
+      
       // If there's an expanded button, do nothing - no mouse events should work
       // if (this.expandedButtonId) {
       //   return

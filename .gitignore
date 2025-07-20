@@ -2,3 +2,7 @@
 backend/
 
 vs-build/
+
+node_modules/.vite/deps_temp_ec2c435e/
+
+node_modules/.vite/deps/
