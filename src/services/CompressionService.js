@@ -40,13 +40,13 @@ class CompressionService {
     const gainReductionDB = -inputStrength * sensitivity * 45 // Increased to 45 for aggressive LA-2A compression
     
     // Debug logging
-    console.log('🎚️ GR Calculation:', {
-      dbLevel,
-      peakReduction,
-      sensitivity: sensitivity.toFixed(3),
-      inputStrength: inputStrength.toFixed(3),
-      gainReductionDB: gainReductionDB.toFixed(1),
-    })
+    // console.log('🎚️ GR Calculation:', {
+    //   dbLevel,
+    //   peakReduction,
+    //   sensitivity: sensitivity.toFixed(3),
+    //   inputStrength: inputStrength.toFixed(3),
+    //   gainReductionDB: gainReductionDB.toFixed(1),
+    // })
     
     // Convert dB to degrees
     // VU meter: -20dB = -62.1°, 0dB = 0°, +3dB = 33.3°
@@ -54,12 +54,12 @@ class CompressionService {
     const degreesPerDB = 3.105
     let targetPosition = gainReductionDB * degreesPerDB * reactivityMultiplier
     
-    console.log('🎯 Final rotation:', {
-      gainReductionDB: gainReductionDB.toFixed(1),
-      degreesPerDB,
-      reactivityMultiplier,
-      targetPosition: targetPosition.toFixed(1) + '°'
-    })
+    // console.log('🎯 Final rotation:', {
+    //   gainReductionDB: gainReductionDB.toFixed(1),
+    //   degreesPerDB,
+    //   reactivityMultiplier,
+    //   targetPosition: targetPosition.toFixed(1) + '°'
+    // })
     
     // Detect transient (rapid increase in compression)
     const delta = Math.abs(targetPosition) - Math.abs(this.previousTargetPosition)

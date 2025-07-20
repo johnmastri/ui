@@ -11,7 +11,7 @@
         <div>T: Test Compression</div>
       </div>
     </div>
-    <svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" ref="vuMeterSvg" @click="showSettingsMenu = true">
+    <svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" ref="vuMeterSvg" @click="onOpenSettingsMenu">
       <defs>
         <filter id="filter0_d_39_1020" x="-6.8" y="-9.80003" width="839.6" height="519.6" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
           <feFlood flood-opacity="0" result="BackgroundImageFix"/>
@@ -508,7 +508,43 @@ export default {
     
     const onCloseSettingsMenu = (e) => {
       if (e && e.stopPropagation) e.stopPropagation();
+      console.log('Closing settings menu')
+      console.log('fadeOutDimmer available:', typeof hardwareStore.fadeOutDimmer)
       showSettingsMenu.value = false
+      
+      // Fade out dimmer using store method
+      if (typeof hardwareStore.fadeOutDimmer === 'function') {
+        hardwareStore.fadeOutDimmer()
+      } else {
+        console.error('fadeOutDimmer is not a function')
+        // Fallback to direct animation
+        gsap.to({ value: hardwareStore.dimmerOpacity }, {
+          value: 0,
+          duration: 0.3,
+          ease: "power2.out"
+        })
+      }
+    }
+    
+    // Handle settings menu opening
+    const onOpenSettingsMenu = () => {
+      console.log('Opening settings menu')
+      console.log('Hardware store methods:', Object.keys(hardwareStore))
+      console.log('fadeInDimmer available:', typeof hardwareStore.fadeInDimmer)
+      showSettingsMenu.value = true
+      
+      // Fade in dimmer using store method
+      if (typeof hardwareStore.fadeInDimmer === 'function') {
+        hardwareStore.fadeInDimmer()
+      } else {
+        console.error('fadeInDimmer is not a function')
+        // Fallback to direct animation
+        gsap.to({ value: hardwareStore.dimmerOpacity }, {
+          value: 1,
+          duration: 0.3,
+          ease: "power2.out"
+        })
+      }
     }
     
     onMounted(async () => {
@@ -567,6 +603,7 @@ export default {
       vuMeterSvg,
       showSettingsMenu,
       onCloseSettingsMenu,
+      onOpenSettingsMenu,
       updateVUMeter,
       isCompressionMode,
       toggleMode,
