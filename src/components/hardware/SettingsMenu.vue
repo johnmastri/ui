@@ -1,5 +1,5 @@
 <template>
-  <g>
+  <g @wheel="handleWheel">
     <!-- 2x2 Grid of Settings Buttons -->
     <g 
       v-for="(btn, idx) in hardwareSettingsStore.buttons" 
@@ -16,32 +16,25 @@
     </g>
     
     <!-- Close Button -->
-    <g
-      @click="emitClose"
-      style="cursor:pointer;"
-      :transform="'translate(359,199)'"
-    >
-      <!-- CloseButton.svg -->
-      <svg width="82" height="82" viewBox="0 0 82 82" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <g id="Close Button">
-          <rect id="Rectangle 10" width="82" height="82" fill="#101010"/>
-          <g id="X">
-            <path id="Icon" d="M61.5 20.5L20.5 61.5M20.5 20.5L61.5 61.5" stroke="#EDEDED" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-        </g>
-      </svg>
-    </g>
+    <CloseButton 
+      :is-selected="isButtonSelected('close')"
+      @close="emitClose"
+      @mouseenter="handleMouseEnter('close')"
+      @mouseleave="handleMouseLeave"
+    />
   </g>
 </template>
 
 <script>
 import SettingsButton from './SettingsButton.vue'
+import CloseButton from './CloseButton.vue'
 import { useHardwareSettingsStore } from '../../stores/hardwareSettingsStore'
 
 export default {
   name: 'SettingsMenu',
   components: {
-    SettingsButton
+    SettingsButton,
+    CloseButton
   },
   emits: ['close'],
   setup() {
@@ -77,6 +70,27 @@ export default {
     emitClose() {
       this.hardwareSettingsStore.clearHoveredButton()
       this.$emit('close')
+    },
+    
+    handleWheel(event) {
+      event.preventDefault()
+      
+      // Define clockwise order: device → network → midi → display → close → device...
+      const clockwiseOrder = ['device', 'network', 'midi', 'display', 'close']
+      const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
+      const currentIndex = clockwiseOrder.indexOf(currentButtonId)
+      
+      let nextIndex
+      if (event.deltaY > 0) {
+        // Scroll down - move clockwise
+        nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % clockwiseOrder.length
+      } else {
+        // Scroll up - move counter-clockwise
+        nextIndex = currentIndex === -1 ? clockwiseOrder.length - 1 : (currentIndex - 1 + clockwiseOrder.length) % clockwiseOrder.length
+      }
+      
+      // Set the new selected button
+      this.hardwareSettingsStore.setHoveredButton(clockwiseOrder[nextIndex])
     }
   }
 }
