@@ -45,6 +45,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isExpanded: {
+      type: Boolean,
+      default: false
     }
   },
   
@@ -60,16 +64,25 @@ export default {
     },
     
     handleMouseEnter() {
-      this.$emit('mouseenter')
+      if (!this.isExpanded) {
+        this.$emit('mouseenter')
+      }
     },
     
     handleMouseLeave() {
-      this.$emit('mouseleave')
+      if (!this.isExpanded) {
+        this.$emit('mouseleave')
+      }
     }
   },
   
   watch: {
     isSelected(newValue) {
+      // Don't change colors if the button is expanded
+      if (this.isExpanded) {
+        return
+      }
+      
       if (newValue) {
         // Scale up background square
         gsap.to(this.$refs.closeButtonBg, {

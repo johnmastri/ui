@@ -2,6 +2,7 @@
   <g
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @click="handleClick"
     style="cursor: pointer;"
   >
     <!-- Original background color as overlay -->
@@ -14,12 +15,17 @@
     />
 
     <!-- Animated diagonal lines background -->
-    <DiagonalLines :should-animate="isSelected" :button-id="buttonId" />
+    <DiagonalLines 
+      :should-animate="isSelected || buttonId === expandedButtonId" 
+      :button-id="buttonId" 
+      ref="diagonalLines"
+    />
     
     <!-- SVG lines omitted for brevity, copy from SettingsButton.svg -->
     <g><!-- ... lines ... --></g>
     
     <text
+      ref="textElement"
       fill="white"
       xml:space="preserve"
       style="white-space: pre"
@@ -60,8 +66,18 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isAnimating: {
+      type: Boolean,
+      default: false
+    },
+    expandedButtonId: {
+      type: String,
+      default: null
     }
   },
+  
+  emits: ['click'],
   
   data() {
     return {
@@ -94,13 +110,24 @@ export default {
   
   methods: {
     handleMouseEnter() {
-      const hardwareSettingsStore = useHardwareSettingsStore()
-      hardwareSettingsStore.setHoveredButton(this.buttonId)
+      if (!this.isAnimating && this.buttonId !== this.expandedButtonId) {
+        const hardwareSettingsStore = useHardwareSettingsStore()
+        hardwareSettingsStore.setHoveredButton(this.buttonId)
+      }
     },
     
     handleMouseLeave() {
-      const hardwareSettingsStore = useHardwareSettingsStore()
-      hardwareSettingsStore.clearHoveredButton()
+      if (!this.isAnimating && this.buttonId !== this.expandedButtonId) {
+        const hardwareSettingsStore = useHardwareSettingsStore()
+        hardwareSettingsStore.clearHoveredButton()
+      }
+    },
+    
+    handleClick(event) {
+      if (event) {
+        event.stopPropagation()
+      }
+      this.$emit('click')
     }
   },
   

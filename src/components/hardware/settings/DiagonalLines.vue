@@ -48,11 +48,14 @@ export default {
   },
   
   watch: {
-    shouldAnimate(newValue) {
-      if (newValue) {
-        this.startAnimations()
-      } else {
-        this.stopAnimations()
+    shouldAnimate(newValue, oldValue) {
+      // Only start/stop if the value actually changed
+      if (newValue !== oldValue) {
+        if (newValue) {
+          this.startAnimations()
+        } else {
+          this.stopAnimations()
+        }
       }
     }
   },
@@ -72,6 +75,15 @@ export default {
       // Stop any existing animations first
       this.stopAnimations()
       
+      // Ensure refs are available
+      if (!this.$refs.pattern || !this.$refs.diagonalLine) {
+        return
+      }
+      
+      // Reset pattern position to ensure clean start
+      this.$refs.pattern.setAttribute('x', 0)
+      this.$refs.pattern.setAttribute('y', 0)
+      
       // Animate the pattern's x and y attributes for seamless movement
       this.animations.pattern = gsap.to(this.$refs.pattern, {
         attr: { x: -20, y: -20 },
@@ -87,10 +99,10 @@ export default {
         }
       })
       
-      // Animate line width from 2 to 5 and stay at 5
+      // Animate line width from 2 to 9 and stay at 9
       this.animations.line = gsap.to(this.$refs.diagonalLine, {
         attr: { "stroke-width": 9 },
-        duration: .5,
+        duration: 0.5,
         ease: "power2.out"
       })
     },
@@ -103,6 +115,12 @@ export default {
       if (this.animations.line) {
         this.animations.line.kill()
         this.animations.line = null
+      }
+      
+      // Reset pattern position to ensure clean state
+      if (this.$refs.pattern) {
+        this.$refs.pattern.setAttribute('x', 0)
+        this.$refs.pattern.setAttribute('y', 0)
       }
       
       // Animate line width back to 2 when stopping
