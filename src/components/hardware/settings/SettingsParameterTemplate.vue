@@ -39,6 +39,7 @@
         v-else-if="parameter.type === 'select'"
         v-model="parameter.value"
         :options="parameter.options"
+        :parameter-id="parameter.id"
         @change="handleParameterChange"
       />
       

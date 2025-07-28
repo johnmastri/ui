@@ -45,7 +45,7 @@
 import SettingsParameterTemplate from './SettingsParameterTemplate.vue'
 import { useHardwareSettingsStore } from '../../../stores/hardwareSettingsStore'
 import { gsap } from 'gsap'
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 
 export default {
   name: 'SettingsHolder',
@@ -160,30 +160,13 @@ export default {
       console.log('SettingsHolder: reset marker position to:', correctY, 'for index:', validIndex)
     }
 
-    // Mouse wheel navigation
-    const onWheel = (e) => {
-      e.preventDefault()
-      const dir = e.deltaY > 0 ? 1 : -1
-      const newIndex = selectedParameterIndex.value + dir
-      // Clamp to valid parameter range (0 to parameters.length - 1)
-      if (newIndex >= 0 && newIndex < currentParameters.value.length) {
-        hardwareSettingsStore.setSelectedParameterIndex(newIndex)
-      }
-    }
+
 
     onMounted(() => {
       nextTick(() => {
-        if (SettingsHolder.value) {
-          SettingsHolder.value.addEventListener('wheel', onWheel, { passive: false })
-        }
         // Reset marker position on mount to ensure it's correct
         resetMarkerPosition()
       })
-    })
-    onBeforeUnmount(() => {
-      if (SettingsHolder.value) {
-        SettingsHolder.value.removeEventListener('wheel', onWheel)
-      }
     })
 
     return {
@@ -197,7 +180,7 @@ export default {
       resetMarkerPosition,
       headerText: computed(() => {
         const currentButton = hardwareSettingsStore.buttons.find(
-          btn => btn.id === hardwareSettingsStore.currentSelectedButton
+          btn => btn.id === hardwareSettingsStore.currentMenu
         )
         return currentButton ? currentButton.label.toLowerCase() : 'settings'
       })
@@ -221,14 +204,14 @@ export default {
     },
     handleParameterChange({ id, value, type }) {
       const currentSetting = this.hardwareSettingsStore.getSettingForButton(
-        this.hardwareSettingsStore.currentSelectedButton
+        this.hardwareSettingsStore.currentMenu
       )
       if (currentSetting) {
         const parameter = currentSetting.parameters.find(p => p.id === id)
         if (parameter) {
           parameter.value = value
           this.$emit('settings-change', {
-            category: this.hardwareSettingsStore.currentSelectedButton,
+            category: this.hardwareSettingsStore.currentMenu,
             parameterId: id,
             value: value,
             type: type
@@ -238,13 +221,13 @@ export default {
     },
     handleButtonClick({ id, value, type }) {
       const currentSetting = this.hardwareSettingsStore.getSettingForButton(
-        this.hardwareSettingsStore.currentSelectedButton
+        this.hardwareSettingsStore.currentMenu
       )
       if (currentSetting) {
         const parameter = currentSetting.parameters.find(p => p.id === id)
         if (parameter) {
           this.$emit('button-click', {
-            category: this.hardwareSettingsStore.currentSelectedButton,
+            category: this.hardwareSettingsStore.currentMenu,
             parameterId: id,
             value: value,
             type: type

@@ -1,5 +1,5 @@
 <template>
-  <g @wheel="handleWheel" @mousedown="handleMouseDown">
+  <g @wheel="handleWheel" @mousedown="handleMouseDown" @click="() => console.log('SettingsMenu: Raw click event detected')">
         <!-- 2x2 Grid of Settings Buttons -->
     <g 
       v-for="(btn, idx) in hardwareSettingsStore.buttons" 
@@ -25,7 +25,7 @@
     <g :ref="el => closeButtonWrapper = el" style="opacity: 0; pointer-events: auto;">
       <CloseButton 
         :is-selected="isButtonSelected('close')"
-        :is-expanded="isAnimating"
+        :is-expanded="isAnimating || hardwareSettingsStore.navigationMode === 'parameters'"
         @close="emitClose"
         @mouseenter="handleMouseEnter('close')"
         @mouseleave="handleMouseLeave"
@@ -81,6 +81,26 @@ export default {
       expandedButtonId: null
     }
   },
+  watch: {
+    'hardwareSettingsStore.navigationMode'(newMode, oldMode) {
+      console.log('SettingsMenu: Navigation mode changed from', oldMode, 'to:', newMode)
+      // Only clear expandedButtonId when returning to menu mode
+      if (oldMode === 'parameters' && newMode === 'menu') {
+        console.log('SettingsMenu: Clearing expandedButtonId when returning to menu')
+        this.expandedButtonId = null
+        // Re-enable close button pointer events when returning to menu
+        if (this.closeButtonWrapper) {
+          this.closeButtonWrapper.style.pointerEvents = 'auto'
+        }
+      } else if (newMode === 'parameters') {
+        // Disable close button pointer events when entering parameters mode
+        console.log('SettingsMenu: Disabling close button pointer events for parameters mode')
+        if (this.closeButtonWrapper) {
+          this.closeButtonWrapper.style.pointerEvents = 'none'
+        }
+      }
+    }
+  },
   methods: {
     handleMouseEnter(buttonId) {
       // Don't set hover state for any button when animation is active, if it's the expanded button, or if any button is expanded
@@ -115,23 +135,30 @@ export default {
     },
     
     handleButtonClick(buttonId) {
-      // If there's an expanded button, do nothing - no mouse events should work
-      if (this.expandedButtonId) {
+      console.log('SettingsMenu: handleButtonClick called with buttonId:', buttonId)
+      console.log('SettingsMenu: isAnimating:', this.isAnimating)
+      console.log('SettingsMenu: expandedButtonId:', this.expandedButtonId)
+      
+
+      
+      // Original main menu logic
+      console.log('SettingsMenu: Setting selected button to:', buttonId)
+      this.hardwareSettingsStore.setHoveredButton(buttonId)
+      
+      // Don't animate if already animating
+      if (this.isAnimating) {
+        console.log('SettingsMenu: Already animating, ignoring click')
         return
       }
       
-      if (this.isAnimating) return // Prevent multiple animations
+      // Don't animate if there's already an expanded button
+      if (this.expandedButtonId) {
+        console.log('SettingsMenu: Button already expanded, ignoring click')
+        return
+      }
       
-      // Set the current selected button in the store
-      console.log('SettingsMenu: Setting selected button to:', buttonId)
-      this.hardwareSettingsStore.setHoveredButton(buttonId)
-      console.log('SettingsMenu: Current selected button is now:', this.hardwareSettingsStore.currentSelectedButton)
-      
-      this.isAnimating = true
-      this.animatingButtonId = buttonId
+      console.log('SettingsMenu: Starting button animation for:', buttonId)
       this.animateButtonToFullScreen(buttonId)
-      // Set navigation mode to parameters when a category is expanded
-      this.hardwareSettingsStore.setNavigationMode('parameters');
     },
     
     animateButtonToFullScreen(buttonId) {
@@ -239,6 +266,12 @@ export default {
             this.isAnimating = false
             this.animatingButtonId = null
             this.expandedButtonId = buttonId // Set the expanded button
+            
+            // Set navigation mode to parameters after animation completes
+            this.hardwareSettingsStore.setNavigationMode('parameters')
+            // Set the current menu to the button that was clicked
+            this.hardwareSettingsStore.setCurrentMenu(buttonId)
+            
             // Don't disable pointer events on main container - be more selective
             const mainContainer = this.$el
             if (mainContainer) {
@@ -536,11 +569,6 @@ export default {
       console.log('SettingsMenu: handleBack called')
       console.log('SettingsMenu: expandedButtonId:', this.expandedButtonId)
       
-      // If there's an expanded button, do nothing - no mouse events should work
-      // if (this.expandedButtonId) {
-      //   return
-      // }
-      
       // Call the animate function to return the expanded button to original state
       this.animateButtonBackToOriginal(this.expandedButtonId)
       // Set navigation mode back to menu when returning
@@ -550,17 +578,62 @@ export default {
     handleWheel(event) {
       event.preventDefault();
       const mode = this.hardwareSettingsStore.navigationMode;
+      
+      // Check if we're in select focus mode
+      if (this.hardwareSettingsStore.isSelectFocused) {
+        console.log('SettingsMenu: In select focus mode, delegating wheel event to SettingsSelect')
+        // Delegate the wheel event to the SettingsSelect component
+        this.delegateWheelToSettingsSelect(event);
+        return
+      }
+      
+      console.log('SettingsMenu: handleWheel - mode:', mode, 'deltaY:', event.deltaY)
+      
       if (mode === 'menu') {
         this.cycleCategories(event.deltaY);
       } else if (mode === 'parameters') {
         this.cycleParameters(event.deltaY);
       }
     },
+    
+    delegateWheelToSettingsSelect(event) {
+      console.log('SettingsMenu: Delegating wheel event to SettingsSelect');
+      // Directly call the store method that handles wheel events in focus mode
+      const dir = event.deltaY > 0 ? 1 : -1;
+      this.hardwareSettingsStore.updateHighlightedSelectIndex(dir);
+    },
+    
+    handleParameterInteraction(parameter) {
+      console.log('SettingsMenu: handleParameterInteraction called for:', parameter)
+      
+      // Check if we're in select focus mode
+      if (this.hardwareSettingsStore.isSelectFocused) {
+        console.log('SettingsMenu: Already in focus mode, confirming selection')
+        // Already in focus mode - confirm selection and exit
+        this.hardwareSettingsStore.confirmSelectSelection()
+      } else {
+        console.log('SettingsMenu: Not in focus mode, checking parameter type')
+        
+        if (parameter.type === 'select') {
+          console.log('SettingsMenu: Entering select focus mode')
+          // Enter focus mode for this select parameter
+          this.hardwareSettingsStore.setSelectFocusMode(true, parameter.id)
+        } else if (parameter.type === 'toggle') {
+          console.log('SettingsMenu: Toggling parameter')
+          // Toggle the parameter value
+          parameter.value = !parameter.value
+        }
+      }
+    },
+    
     cycleCategories(deltaY) {
+      console.log('SettingsMenu: cycleCategories called with deltaY:', deltaY)
       // Define clockwise order: device → network → midi → display → close → device...
       const clockwiseOrder = ['device', 'network', 'midi', 'display', 'close']
       const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
       const currentIndex = clockwiseOrder.indexOf(currentButtonId)
+      
+      console.log('SettingsMenu: Current button:', currentButtonId, 'Current index:', currentIndex)
       
       let nextIndex
       if (deltaY > 0) {
@@ -572,6 +645,7 @@ export default {
       }
       
       const nextButton = clockwiseOrder[nextIndex]
+      console.log('SettingsMenu: Next button:', nextButton, 'Next index:', nextIndex)
       
       // Set the new selected button
       this.hardwareSettingsStore.setHoveredButton(nextButton)
@@ -612,24 +686,68 @@ export default {
       }
     },
     handleMouseDown(event) {
-      // If there's an expanded button, do nothing - no mouse events should work
+      console.log('SettingsMenu: handleMouseDown called', event.button, event.target)
+      console.log('SettingsMenu: expandedButtonId:', this.expandedButtonId)
+      console.log('SettingsMenu: isAnimating:', this.isAnimating)
+      console.log('SettingsMenu: navigationMode:', this.hardwareSettingsStore.navigationMode)
+      
+      // Check if it's a middle mouse click (button 1)
+      if (event.button === 1) {
+        console.log('SettingsMenu: Middle mouse click detected')
+        event.preventDefault()
+        
+        const mode = this.hardwareSettingsStore.navigationMode
+        console.log('SettingsMenu: Current mode:', mode)
+        
+        // Allow parameter interactions even when there's an expanded button
+        if (mode === 'parameters') {
+          console.log('SettingsMenu: In parameters mode, handling parameter interaction')
+          
+          // Check if back button is selected
+          if (this.hardwareSettingsStore.isBackButtonSelected) {
+            console.log('SettingsMenu: Back button selected, going back')
+            this.handleBack()
+            return
+          }
+          
+          // Get the currently selected parameter
+          const currentParams = this.hardwareSettingsStore.currentParameters
+          const currentIndex = this.hardwareSettingsStore.selectedParameterIndex
+          
+          if (currentIndex >= 0 && currentIndex < currentParams.length) {
+            const currentParam = currentParams[currentIndex]
+            console.log('SettingsMenu: Interacting with parameter:', currentParam)
+            
+            // Handle the parameter interaction
+            this.handleParameterInteraction(currentParam)
+          }
+          return
+        }
+        
+        // Handle menu mode middle mouse clicks (only when no expanded button)
+        if (mode === 'menu' && !this.expandedButtonId) {
+          console.log('SettingsMenu: In menu mode, handling button click')
+          // Get the currently selected button
+          const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
+          
+          // Don't trigger animation for the close button
+          if (currentButtonId !== 'close') {
+            this.handleButtonClick(currentButtonId)
+          }
+        }
+        
+        return
+      }
+      
+      // For all other cases, if there's an expanded button, do nothing - no mouse events should work
       if (this.expandedButtonId) {
+        console.log('SettingsMenu: expanded button active, preventing event')
         event.preventDefault()
         return
       }
       
-      // Check if it's a middle mouse click (button 1)
-      if (event.button === 1) {
-        event.preventDefault()
-        
-        // Get the currently selected button
-        const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
-        
-        // Don't trigger animation for the close button
-        if (currentButtonId !== 'close') {
-          this.handleButtonClick(currentButtonId)
-        }
-      }
+      // Handle non-middle mouse clicks (only when no expanded button)
+      console.log('SettingsMenu: Not a middle mouse click, button was:', event.button)
     }
   },
   

@@ -1,7 +1,7 @@
 <template>
   <g 
     id="ToggleButton" 
-    @click="toggle"
+    @click="handleClick"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
     style="cursor: pointer"
@@ -51,6 +51,12 @@ export default {
     }
   },
   methods: {
+    handleClick(event) {
+      // Only handle left clicks (button 0) - let middle clicks bubble up
+      if (event.button === 0 || event.button === undefined) {
+        this.toggle()
+      }
+    },
     toggle() {
       this.$emit('update:modelValue', !this.modelValue)
       this.$emit('change', !this.modelValue)

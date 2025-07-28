@@ -108,6 +108,9 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
   // Currently hovered button - default to device
   const currentSelectedButton = ref('device')
   
+  // Currently active menu (which menu we're in when in parameters mode)
+  const currentMenu = ref('device')
+  
   // Currently selected parameter index for mouse wheel navigation (includes back button)
   const selectedParameterIndex = ref(0)
   
@@ -116,6 +119,11 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
   
   // Track if back button is selected during parameter navigation
   const isBackButtonSelected = ref(false)
+  
+  // Focus mode state for SettingsSelect
+  const isSelectFocused = ref(false)
+  const highlightedSelectIndex = ref(0)
+  const focusedParameterId = ref(null)
   
   const setNavigationMode = (mode) => {
     navigationMode.value = mode
@@ -132,7 +140,7 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
 
   // Helper: get current parameters for selected button
   const currentParameters = computed(() => {
-    const setting = getSettingForButton(currentSelectedButton.value)
+    const setting = getSettingForButton(currentMenu.value)
     return setting ? setting.parameters : []
   })
 
@@ -148,6 +156,10 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
   const setHoveredButton = (buttonId) => {
     currentSelectedButton.value = buttonId
     selectedParameterIndex.value = 0 // Reset to first parameter when changing settings
+  }
+  
+  const setCurrentMenu = (menuId) => {
+    currentMenu.value = menuId
   }
   
   const clearHoveredButton = () => {
@@ -167,23 +179,105 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
     return settings.value.find(s => s.id === buttonId)
   }
   
+  // Focus mode actions
+  const setSelectFocusMode = (focused, parameterId = null) => {
+    console.log('Store: setSelectFocusMode called', focused, parameterId)
+    isSelectFocused.value = focused
+    focusedParameterId.value = parameterId
+    if (focused && parameterId) {
+      // Find the parameter and set initial highlighted index
+      const setting = getSettingForButton(currentMenu.value)
+      if (setting) {
+        const parameter = setting.parameters.find(p => p.id === parameterId)
+        if (parameter && parameter.options) {
+          highlightedSelectIndex.value = parameter.options.indexOf(parameter.value)
+          if (highlightedSelectIndex.value === -1) highlightedSelectIndex.value = 0
+          console.log('Store: Set highlighted index to', highlightedSelectIndex.value)
+        }
+      }
+    } else {
+      highlightedSelectIndex.value = 0
+    }
+    console.log('Store: Focus mode state updated', isSelectFocused.value, focusedParameterId.value)
+  }
+  
+  const updateHighlightedSelectIndex = (delta) => {
+    console.log('Store: updateHighlightedSelectIndex called with delta:', delta)
+    console.log('Store: isSelectFocused:', isSelectFocused.value, 'focusedParameterId:', focusedParameterId.value)
+    
+    if (!isSelectFocused.value || !focusedParameterId.value) {
+      console.log('Store: Not in focus mode or no focused parameter, returning')
+      return
+    }
+    
+    const setting = getSettingForButton(currentMenu.value)
+    if (setting) {
+      const parameter = setting.parameters.find(p => p.id === focusedParameterId.value)
+      if (parameter && parameter.options) {
+        const newIndex = highlightedSelectIndex.value + delta
+        console.log('Store: Current index:', highlightedSelectIndex.value, 'New index:', newIndex, 'Options length:', parameter.options.length)
+        
+        if (newIndex >= 0 && newIndex < parameter.options.length) {
+          highlightedSelectIndex.value = newIndex
+          console.log('Store: Set highlighted index to:', newIndex)
+        } else if (newIndex < 0) {
+          highlightedSelectIndex.value = parameter.options.length - 1
+          console.log('Store: Wrapped to end, set highlighted index to:', parameter.options.length - 1)
+        } else {
+          highlightedSelectIndex.value = 0
+          console.log('Store: Wrapped to beginning, set highlighted index to: 0')
+        }
+      }
+    }
+  }
+  
+  const confirmSelectSelection = () => {
+    console.log('Store: confirmSelectSelection called')
+    if (!isSelectFocused.value || !focusedParameterId.value) {
+      console.log('Store: Not in focus mode, returning')
+      return
+    }
+    
+    const setting = getSettingForButton(currentMenu.value)
+    if (setting) {
+      const parameter = setting.parameters.find(p => p.id === focusedParameterId.value)
+      if (parameter && parameter.options) {
+        const newValue = parameter.options[highlightedSelectIndex.value]
+        console.log('Store: Setting parameter value to', newValue)
+        parameter.value = newValue
+      }
+    }
+    console.log('Store: Exiting focus mode')
+    setSelectFocusMode(false)
+  }
+  
   return {
     // State
     buttons,
     settings,
     currentSelectedButton,
+    currentMenu,
     selectedParameterIndex,
     navigationMode,
     isBackButtonSelected,
+    // Focus mode state
+    isSelectFocused,
+    highlightedSelectIndex,
+    focusedParameterId,
     // Computed
     currentParameters,
     totalSelectableItems,
     // Actions
     setHoveredButton,
+    setCurrentMenu,
     clearHoveredButton,
     setSelectedParameterIndex,
     setNavigationMode,
     setBackButtonSelected,
-    getSettingForButton
+    getSettingForButton,
+    // Focus mode actions
+    setSelectFocusMode,
+    updateHighlightedSelectIndex,
+    confirmSelectSelection
   }
 }) 

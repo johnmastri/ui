@@ -48,7 +48,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
   // Server selection
   const selectServer = (serverId) => {
     if (selectedServerId.value !== serverId) {
-      console.log(`WebSocket: Switching to server: ${serverId}`)
+    //  console.log(`WebSocket: Switching to server: ${serverId}`)
       selectedServerId.value = serverId
       
       // Reconnect to new server
@@ -89,7 +89,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
       try {
         listener()
       } catch (error) {
-        console.error('Error in connection listener:', error)
+      //  console.error('Error in connection listener:', error)
       }
     })
   }
@@ -102,7 +102,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
     
     try {
       isConnecting.value = true
-      console.log(`WebSocket: Connecting to ${serverUrl.value}`)
+    //  console.log(`WebSocket: Connecting to ${serverUrl.value}`)
       websocket = new WebSocket(serverUrl.value)
       
       websocket.onopen = () => {
@@ -123,7 +123,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
       websocket.onclose = (event) => {
         isConnected.value = false
         isConnecting.value = false
-        console.log(`WebSocket: Disconnected from ${serverUrl.value}`)
+     //   console.log(`WebSocket: Disconnected from ${serverUrl.value}`)
         
         // Auto-reconnect if not manually disconnected
         if (event.code !== 1000) {
@@ -132,12 +132,12 @@ export const useWebSocketStore = defineStore('websocket', () => {
       }
       
       websocket.onerror = (error) => {
-        console.error(`WebSocket: Connection error to ${serverUrl.value}`)
+  //      console.error(`WebSocket: Connection error to ${serverUrl.value}`)
         isConnecting.value = false
       }
       
     } catch (error) {
-      console.error(`WebSocket: Failed to connect to ${serverUrl.value}`)
+  //    console.error(`WebSocket: Failed to connect to ${serverUrl.value}`)
       isConnecting.value = false
       scheduleReconnect()
     }
@@ -167,7 +167,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
       showSendLight()
       return true
     } else {
-      console.log('WebSocket: Cannot send - not connected')
+  //    console.log('WebSocket: Cannot send - not connected')
       return false
     }
   }
@@ -183,7 +183,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
         handler(message)
       }
     } catch (error) {
-      console.error('WebSocket: Failed to parse incoming message:', error)
+    //  console.error('WebSocket: Failed to parse incoming message:', error)
     }
   }
 
@@ -193,7 +193,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
       reconnectAttempts++
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000)
       
-      console.log(`WebSocket: Scheduling reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${delay}ms`)
+     // console.log(`WebSocket: Scheduling reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${delay}ms`)
       
       reconnectInterval = setTimeout(() => {
         connect()
@@ -204,7 +204,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
   }
 
   const reconnect = () => {
-    console.log('WebSocket: Manual reconnect requested')
+   // console.log('WebSocket: Manual reconnect requested')
     disconnect()
     reconnectAttempts = 0
     setTimeout(() => {
