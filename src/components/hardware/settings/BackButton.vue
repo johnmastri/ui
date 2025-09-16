@@ -130,8 +130,6 @@ export default {
     },
 
     handleBack() {
-      console.log('BackButton: handleBack called')
-      console.log('BackButton: Element style:', this.$el.style.pointerEvents)
       this.$emit('back')
     },
 

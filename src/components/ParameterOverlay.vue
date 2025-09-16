@@ -115,7 +115,7 @@ const fadeInOverlay = () => {
 }
 
 const fadeOutOverlay = () => {
-  console.log('🎬 ParameterOverlay: Fading out...')
+
   if (parameterOverlayRef.value) {
     gsap.to(parameterOverlayRef.value, {
       opacity: 0,
@@ -128,7 +128,7 @@ const fadeOutOverlay = () => {
 
 // Manual test function
 const testOverlay = () => {
-  console.log('🧪 Testing ParameterOverlay manually...')
+
   const testParameter = {
     id: 'test-param',
     name: 'Test Parameter',
@@ -145,7 +145,7 @@ if (typeof window !== 'undefined') {
 
 // Watchers for animations
 watch(() => hardwareStore.isDisplayActive, async (newValue, oldValue) => {
-  console.log('👀 ParameterOverlay: isDisplayActive changed from', oldValue, 'to', newValue)
+
   if (newValue === oldValue) return
   
   await nextTick()
@@ -171,13 +171,7 @@ watch(() => hardwareStore.displayValue, (newValue) => {
 
 // Lifecycle
 onMounted(() => {
-  console.log('🎬 ParameterOverlay mounted with GSAP animations')
-  console.log('📊 Initial state:', {
-    isDisplayActive: hardwareStore.isDisplayActive,
-    displayText: hardwareStore.displayText,
-    displayValue: hardwareStore.displayValue,
-    isLargeDisplayEnabled: settingsStore.isLargeDisplayEnabled
-  })
+ 
   
   // Initialize overlay state
   if (hardwareStore.isDisplayActive) {

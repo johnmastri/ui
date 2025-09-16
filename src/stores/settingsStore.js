@@ -27,7 +27,6 @@ export const useSettingsStore = defineStore('settings', {
     // Display settings
     toggleLargeDisplay() {
       this.showLargeDisplay = !this.showLargeDisplay
-      console.log('Settings: Large display toggled to:', this.showLargeDisplay)
     },
 
     setLargeDisplay(enabled) {
@@ -69,12 +68,10 @@ export const useSettingsStore = defineStore('settings', {
     // Future: Load/save settings from localStorage or backend
     loadSettings() {
       // TODO: Load from localStorage or backend
-      console.log('Settings: Loading settings (not implemented)')
     },
 
     saveSettings() {
       // TODO: Save to localStorage or backend
-      console.log('Settings: Saving settings (not implemented)')
     }
   }
 }) 

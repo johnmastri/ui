@@ -78,7 +78,6 @@ export default {
 
     // Animate marker when selection changes
     watch(selectedParameterIndex, (newIdx) => {
-      console.log('SettingsHolder: selectedParameterIndex changed to:', newIdx, 'isBackSelected:', isBackButtonSelected.value)
       // Only animate Y position if back button is not selected
       if (!isBackButtonSelected.value) {
         // Kill previous animation immediately
@@ -90,7 +89,6 @@ export default {
         // Ensure index is within bounds (0 to parameters.length - 1)
         const validIndex = Math.max(0, Math.min(newIdx, currentParameters.value.length - 1))
         const newY = calculateMarkerYPosition(validIndex)
-        console.log('SettingsHolder: setting markerY to:', newY, 'for index:', validIndex)
         
         // Animate to exact position
         markerAnimation = gsap.to(markerY, {
@@ -98,14 +96,11 @@ export default {
           duration: 0.3,
           ease: 'power2.out'
         })
-      } else {
-        console.log('SettingsHolder: back button selected, not animating Y position')
       }
     })
 
     // Watch for back button selection changes
     watch(isBackButtonSelected, (isSelected) => {
-      console.log('SettingsHolder: isBackButtonSelected changed to:', isSelected)
       // Handle marker scaling directly in setup
       if (marker.value) {
         // Kill previous scale animation
@@ -130,7 +125,6 @@ export default {
           
           const currentIdx = selectedParameterIndex.value
           const newY = calculateMarkerYPosition(currentIdx)
-          console.log('SettingsHolder: returning from back button, setting marker at:', newY)
           
           // Animate to exact position
           markerAnimation = gsap.to(markerY, {
@@ -157,7 +151,6 @@ export default {
       const validIndex = Math.max(0, Math.min(selectedParameterIndex.value, currentParameters.value.length - 1))
       const correctY = calculateMarkerYPosition(validIndex)
       markerY.value = correctY
-      console.log('SettingsHolder: reset marker position to:', correctY, 'for index:', validIndex)
     }
 
 

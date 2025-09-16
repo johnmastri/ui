@@ -109,7 +109,6 @@ export const useWebSocketStore = defineStore('websocket', () => {
         isConnected.value = true
         isConnecting.value = false
         reconnectAttempts = 0
-        console.log(`WebSocket: Connected to ${serverUrl.value}`)
         
         // Trigger connection event for listeners
         triggerConnectionEvent()
@@ -198,8 +197,6 @@ export const useWebSocketStore = defineStore('websocket', () => {
       reconnectInterval = setTimeout(() => {
         connect()
       }, delay)
-    } else {
-      console.log('WebSocket: Max reconnect attempts reached')
     }
   }
 
