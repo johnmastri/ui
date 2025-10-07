@@ -213,11 +213,11 @@ void UARTComm::handleLEDUpdate(DynamicJsonDocument& doc) {
     }
     
     int encoderId = doc["encoder_id"];
-    uint8_t r = doc["color"]["r"] | 0;
-    uint8_t g = doc["color"]["g"] | 0;  
-    uint8_t b = doc["color"]["b"] | 0;
+    uint8_t r = doc["color"]["r"].as<uint8_t>();
+    uint8_t g = doc["color"]["g"].as<uint8_t>();  
+    uint8_t b = doc["color"]["b"].as<uint8_t>();
     String patternStr = doc["pattern"];
-    float value = doc["value"] | 0.0;
+    float value = doc["value"].as<float>();
     
     Serial.print("│   Encoder: ");
     Serial.println(encoderId);

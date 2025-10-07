@@ -16,6 +16,7 @@
             background: #1a1a1a;
             color: #e0e0e0;
             padding: 20px;
+            user-select: none;
         }
         
         .container {
@@ -161,6 +162,11 @@
             box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
         }
         
+        button.active {
+            background: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+        }
+        
         .custom-message {
             display: flex;
             gap: 10px;
@@ -286,6 +292,68 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        .knob-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+        }
+        
+        .knob-svg {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        
+        .knob-svg:active {
+            cursor: grabbing;
+        }
+        
+        .knob-track {
+            fill: none;
+            stroke: #4b5563;
+            stroke-width: 12;
+        }
+        
+        .knob-progress {
+            fill: none;
+            stroke: #667eea;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.05s, stroke 0.1s;
+        }
+        
+        .knob-center {
+            fill: #2a2a2a;
+            stroke: #4b5563;
+            stroke-width: 3;
+        }
+        
+        .knob-indicator {
+            fill: #ffffff;
+        }
+        
+        .knob-value-display {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .knob-label {
+            font-size: 14px;
+            color: #9ca3af;
+        }
     </style>
 </head>
 <body>
@@ -340,15 +408,6 @@
                            oninput="document.getElementById('encoder-id-value').textContent = this.value">
                 </div>
                 
-                <div class="slider-container">
-                    <div class="slider-label">
-                        <span>LED Value:</span>
-                        <span id="led-value-display">50%</span>
-                    </div>
-                    <input type="range" min="0" max="100" value="50" id="led-value-slider" 
-                           oninput="document.getElementById('led-value-display').textContent = this.value + '%'">
-                </div>
-                
                 <div class="color-picker">
                     <span>Color:</span>
                     <input type="color" id="led-color" value="#ff6600">
@@ -357,6 +416,7 @@
                 
                 <div class="button-grid">
                     <button onclick="sendLEDUpdate()">Update LED</button>
+                    <button id="encoder-mode-btn" onclick="toggleEncoderMode()">Encoder Mode</button>
                     <button onclick="sendLEDPattern('ring_fill')">Ring Fill</button>
                     <button onclick="sendLEDPattern('solid')">Solid</button>
                     <button onclick="sendLEDPattern('pulse')">Pulse</button>
@@ -365,9 +425,32 @@
                 </div>
             </div>
             
+            <div class="panel full-width">
+                <h2>🎛️ Virtual Rotary Encoder</h2>
+                <div class="knob-container">
+                    <div class="knob-wrapper">
+                        <svg class="knob-svg" id="knob-svg" viewBox="0 0 200 200">
+                            <circle class="knob-track" cx="100" cy="100" r="70" 
+                                    stroke-dasharray="439.82" stroke-dashoffset="0"/>
+                            <circle class="knob-progress" id="knob-progress" cx="100" cy="100" r="70" 
+                                    stroke-dasharray="439.82" stroke-dashoffset="439.82"/>
+                            <g id="knob-body" transform="rotate(180 100 100)">
+                                <circle class="knob-center" cx="100" cy="100" r="45"/>
+                                <rect class="knob-indicator" x="97" y="60" width="6" height="25" rx="3"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="knob-value-display" id="knob-display">0 / 24</div>
+                        <div class="knob-label">LEDs Active</div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="panel">
                 <h2>⚙️ System Commands</h2>
                 <div class="button-grid">
+                    <button class="secondary" onclick="sendSystemCommand('test_led_sections', '')">Test LED Sections</button>
                     <button class="secondary" onclick="sendSystemCommand('test_pattern', '')">Test Pattern</button>
                     <button class="secondary" onclick="sendSystemCommand('clear_leds', '')">Clear LEDs</button>
                     <button class="secondary" onclick="sendSystemCommand('scan_i2c', '')">Scan I2C</button>
@@ -397,6 +480,117 @@
         let ws = null;
         let messagesSent = 0;
         let messagesReceived = 0;
+        
+        let knobValue = 0;
+        const maxLEDs = 24;
+        let isDragging = false;
+        let encoderMode = false;
+        let dragStartY = 0;
+        let dragStartValue = 0;
+        
+        const knobSvg = document.getElementById('knob-svg');
+        const knobProgress = document.getElementById('knob-progress');
+        const knobBody = document.getElementById('knob-body');
+        const knobDisplay = document.getElementById('knob-display');
+        
+        function toggleEncoderMode() {
+            encoderMode = !encoderMode;
+            const btn = document.getElementById('encoder-mode-btn');
+            
+            if (encoderMode) {
+                btn.classList.add('active');
+                btn.textContent = 'Encoder Mode: ON';
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = 'Encoder Mode';
+            }
+        }
+        
+        function updateKnobVisuals(value) {
+            const normalizedValue = value / maxLEDs;
+            
+            const circumference = 439.82;
+            const progress = normalizedValue * circumference;
+            const offset = circumference - progress;
+            knobProgress.style.strokeDashoffset = offset;
+            
+            const rotation = 180 + (normalizedValue * 360);
+            knobBody.setAttribute('transform', `rotate(${rotation} 100 100)`);
+            
+            knobDisplay.textContent = `${value} / ${maxLEDs}`;
+            
+            const color = hexToRgb(document.getElementById('led-color').value);
+            const colorStr = `rgb(${color.r}, ${color.g}, ${color.b})`;
+            knobProgress.style.stroke = colorStr;
+        }
+        
+        function setKnobValue(value) {
+            knobValue = Math.max(0, Math.min(maxLEDs, value));
+            updateKnobVisuals(knobValue);
+            
+            if (encoderMode) {
+                sendEncoderUpdate();
+            }
+        }
+        
+        function sendEncoderUpdate() {
+            const encoderId = parseInt(document.getElementById('encoder-id-slider').value);
+            const value = knobValue / maxLEDs;
+            const color = hexToRgb(document.getElementById('led-color').value);
+            
+            sendMessage({
+                type: 'led_update',
+                encoder_id: encoderId,
+                color: color,
+                pattern: 'ring_fill',
+                value: value
+            });
+        }
+        
+        knobSvg.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStartY = e.clientY;
+            dragStartValue = knobValue;
+            e.preventDefault();
+        });
+        
+        knobSvg.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            dragStartY = e.touches[0].clientY;
+            dragStartValue = knobValue;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const currentY = e.clientY;
+            const deltaY = dragStartY - currentY;
+            const sensitivity = 0.05;
+            const newValue = dragStartValue + Math.round(deltaY * sensitivity);
+            
+            setKnobValue(newValue);
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            
+            const currentY = e.touches[0].clientY;
+            const deltaY = dragStartY - currentY;
+            const sensitivity = 0.05;
+            const newValue = dragStartValue + Math.round(deltaY * sensitivity);
+            
+            setKnobValue(newValue);
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
         
         function connectWebSocket() {
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -460,7 +654,7 @@
         
         function sendLEDUpdate() {
             const encoderId = parseInt(document.getElementById('encoder-id-slider').value);
-            const value = parseInt(document.getElementById('led-value-slider').value) / 100;
+            const value = knobValue / maxLEDs;
             const color = hexToRgb(document.getElementById('led-color').value);
             
             sendMessage({
@@ -551,10 +745,11 @@
         
         document.getElementById('led-color').addEventListener('input', (e) => {
             document.getElementById('led-color-rgb').textContent = e.target.value;
+            updateKnobVisuals(knobValue);
         });
         
+        updateKnobVisuals(0);
         connectWebSocket();
     </script>
 </body>
 </html>
-

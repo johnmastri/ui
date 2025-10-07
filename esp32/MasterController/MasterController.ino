@@ -100,10 +100,13 @@ void loop() {
   // Update all modules
   uart.update();           // Process UART messages
   ledController.update();  // Update LED animations
-  i2cEncoders.update();    // Read I2C encoders
+  // i2cEncoders.update();    // Read I2C encoders - TEMPORARILY DISABLED FOR TESTING
   rotaryEncoder.update();  // Update rotary encoder
   
   // Handle rotary encoder LED count changes
+  // NOTE: Commented out to allow web interface to control LED colors
+  // Uncomment if you want the physical rotary to control the LEDs
+  /*
   int currentLEDCount = rotaryEncoder.getLEDCount();
   if (currentLEDCount != lastLEDCount) {
     Serial.printf("[ROTARY] LED Count: %d\n", currentLEDCount);
@@ -111,6 +114,7 @@ void loop() {
     ledController.updateEncoderRing(0, 0, 255, 0, PATTERN_RING_FILL, value);
     lastLEDCount = currentLEDCount;
   }
+  */
   
   // Handle rotary encoder button press
   if (rotaryEncoder.isButtonPressed()) {
@@ -224,6 +228,26 @@ void onLEDUpdateReceived(int encoderId, uint8_t r, uint8_t g, uint8_t b, LEDPatt
 // Called when system command received from Pi
 void onSystemCommandReceived(const String& command, const String& parameter) {
   Serial.printf("[CALLBACK] System command: %s = %s\n", command.c_str(), parameter.c_str());
+  
+  if (command == "test_led_sections") {
+    Serial.println("[MAIN] Testing LED sections with different colors:");
+    Serial.println("  LEDs 0-23: RED");
+    Serial.println("  LEDs 24-47: GREEN");
+    Serial.println("  LEDs 48-71: BLUE");
+    
+    ledController.clearAll();
+    for(int i = 0; i < 24 && i < 72; i++) {
+      ledController.setLED(i, 255, 0, 0);  // Red
+    }
+    for(int i = 24; i < 48 && i < 72; i++) {
+      ledController.setLED(i, 0, 255, 0);  // Green
+    }
+    for(int i = 48; i < 72; i++) {
+      ledController.setLED(i, 0, 0, 255);  // Blue
+    }
+    ledController.showLEDs();
+    return;
+  }
   
   if (command == "test_mode") {
     testMode = (parameter == "true");

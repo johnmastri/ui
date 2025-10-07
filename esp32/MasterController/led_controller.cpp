@@ -5,12 +5,13 @@ LEDController ledController;
 
 void LEDController::begin() {
     // Initialize FastLED for DotStar/APA102 with slower timing
-    FastLED.addLeds<LED_TYPE, LED_DATA_PIN, LED_CLOCK_PIN, COLOR_ORDER>(leds, TOTAL_LEDS).setCorrection(TypicalLEDStrip);
+    // NOTE: Using UncorrectedColor to get exact RGB values
+    FastLED.addLeds<LED_TYPE, LED_DATA_PIN, LED_CLOCK_PIN, COLOR_ORDER>(leds, TOTAL_LEDS).setCorrection(UncorrectedColor);
     
     // More conservative settings for troubleshooting
     FastLED.setBrightness(LED_BRIGHTNESS);
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 1000);  // Increased current limit
-    FastLED.setTemperature(Tungsten40W); // Warmer color temperature
+    // NOTE: Removed setTemperature() - it was shifting colors incorrectly
     
     // Longer stabilization time for better compatibility
     #ifdef SAFE_MODE
@@ -146,6 +147,14 @@ void LEDController::renderOff(int encoderId) {
 void LEDController::renderSolid(int encoderId) {
     EncoderRing& ring = encoderRings[encoderId];
     int start = getEncoderStartIndex(encoderId);
+    
+    static unsigned long lastDebug = 0;
+    if (millis() - lastDebug > 1000) {
+        Serial.printf("[LED RENDER] Solid pattern - Encoder %d, Color RGB(%d,%d,%d), LEDs %d-%d\n", 
+                      encoderId, ring.color.r, ring.color.g, ring.color.b, 
+                      start, start + ACTIVE_LEDS_PER_ENCODER - 1);
+        lastDebug = millis();
+    }
     
     for (int i = 0; i < LEDS_PER_ENCODER; i++) {
         int ledIndex = start + i;

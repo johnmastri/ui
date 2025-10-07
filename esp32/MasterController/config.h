@@ -43,7 +43,7 @@
 #define TOTAL_LEDS (NUM_ENCODERS * LEDS_PER_ENCODER)  // 72 LEDs total
 #define LED_BRIGHTNESS 50      // LOWER brightness for better 3.3V compatibility
 #define LED_TYPE APA102        // DotStar uses APA102
-#define COLOR_ORDER RGB        // Test RGB first
+#define COLOR_ORDER BGR        // Trying BGR - Red/Blue channels swapped
 
 // Debugging Options
 #define ENABLE_LED_DIAGNOSTICS true
