@@ -22,8 +22,13 @@
 #define ROTARY_ENCODER_B_PIN D3    // Channel B (DT)
 #define ROTARY_ENCODER_BTN_PIN D4  // Push button
 
-// UART Communication (Pi) - TX/RX (built-in USB-Serial)
-#define UART_BAUD 115200
+// USB Serial Communication (Desktop Computer)
+#define USB_SERIAL_BAUD 115200
+
+// Pi UART Communication (Raspberry Pi)
+#define PI_UART_BAUD 115200
+#define PI_UART_TX_PIN D8          // ESP32 TX -> Pi RX
+#define PI_UART_RX_PIN D9          // ESP32 RX <- Pi TX
 
 // Hardware Configuration
 // ============================================================================
@@ -67,8 +72,8 @@
 // System Configuration
 // ============================================================================
 
-#define FIRMWARE_VERSION "1.0.0"
-#define DEVICE_ID "esp32_master"
+#define FIRMWARE_VERSION "1.1.0-bridge"
+#define DEVICE_ID "mastr_r2a"
 #define DEBUG_SERIAL true
 
 // LED Patterns

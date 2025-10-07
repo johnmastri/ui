@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <HardwareSerial.h>
 #include "config.h"
 
 // ============================================================================
@@ -12,25 +13,30 @@
 
 class UARTComm {
 private:
-    String inputBuffer;
+    String usbInputBuffer;
+    String piInputBuffer;
     unsigned long lastHeartbeat;
     unsigned long lastStatusUpdate;
-    bool isConnected;
+    bool isUsbConnected;
+    bool isPiConnected;
     
-    // Statistics
+    HardwareSerial piSerial = HardwareSerial(1);
+    
     unsigned long messagesSent;
     unsigned long messagesReceived;
+    unsigned long usbMessagesReceived;
+    unsigned long piMessagesReceived;
     unsigned long errors;
 
 public:
-    // Initialization
     void begin();
     
-    // Main processing (call in main loop)
     void update();
     
-    // Message sending
-    void sendMessage(const String& message);
+    void sendMessageToUSB(const String& message);
+    void sendMessageToPi(const String& message);
+    void forwardMessageToPi(const String& message);
+    
     void sendJSON(DynamicJsonDocument& doc);
     void sendStartup();
     void sendHeartbeat();
@@ -39,28 +45,28 @@ public:
     void sendEncoderUpdate(int encoderId, float value, int direction);
     void sendI2CScanResult(int address, bool found);
     
-    // Connection status
-    bool getConnectionStatus() const { return isConnected; }
+    bool getConnectionStatus() const { return isUsbConnected || isPiConnected; }
     
-    // Statistics
     unsigned long getMessagesSent() const { return messagesSent; }
     unsigned long getMessagesReceived() const { return messagesReceived; }
     unsigned long getErrors() const { return errors; }
 
 private:
-    // Message processing
-    void processIncomingData();
-    void processMessage(const String& message);
+    void processUSBData();
+    void processPiData();
+    void processUSBMessage(const String& message);
+    void processPiMessage(const String& message);
+    
     void handleLEDUpdate(DynamicJsonDocument& doc);
     void handleSystemCommand(DynamicJsonDocument& doc);
     
-    // Timing checks
     bool shouldSendHeartbeat();
     bool shouldSendStatus();
     
-    // Utilities
     void debugPrint(const String& message);
     void incrementErrorCount();
+    
+    String getMacAddress();
 };
 
 // Global instance (defined in .cpp file)

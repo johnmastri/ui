@@ -43,7 +43,7 @@ int lastLEDCount = 0;
 void setup() {
   systemStartTime = millis();
   
-  Serial.begin(UART_BAUD);
+  Serial.begin(USB_SERIAL_BAUD);
   delay(100); // Allow serial to stabilize
   
   Serial.println("=====================================");
