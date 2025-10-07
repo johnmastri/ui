@@ -61,6 +61,14 @@ void LEDController::update() {
     // Update animation phases
     updateAnimationPhases();
     
+    // Explicitly clear inactive LEDs first
+    for (int i = 0; i < NUM_ENCODERS; i++) {
+        int start = getEncoderStartIndex(i);
+        for (int j = ACTIVE_LEDS_PER_ENCODER; j < LEDS_PER_ENCODER; j++) {
+            leds[start + j] = CRGB::Black;
+        }
+    }
+    
     // Render all encoder rings
     for (int i = 0; i < NUM_ENCODERS; i++) {
         renderEncoder(i);
@@ -102,6 +110,9 @@ void LEDController::renderEncoder(int encoderId) {
         case PATTERN_OFF:
             renderOff(encoderId);
             break;
+        case PATTERN_SCANNER:
+            renderScanner(encoderId);
+            break;
         case PATTERN_SOLID:
             renderSolid(encoderId);
             break;
@@ -135,24 +146,29 @@ void LEDController::renderOff(int encoderId) {
 void LEDController::renderSolid(int encoderId) {
     EncoderRing& ring = encoderRings[encoderId];
     int start = getEncoderStartIndex(encoderId);
-    int end = getEncoderEndIndex(encoderId);
     
-    for (int i = start; i < end; i++) {
-        leds[i] = ring.color;
+    for (int i = 0; i < LEDS_PER_ENCODER; i++) {
+        int ledIndex = start + i;
+        if (i < ACTIVE_LEDS_PER_ENCODER) {
+            leds[ledIndex] = ring.color;
+        } else {
+            leds[ledIndex] = CRGB::Black;
+        }
     }
 }
 
 void LEDController::renderRingFill(int encoderId) {
     EncoderRing& ring = encoderRings[encoderId];
     int start = getEncoderStartIndex(encoderId);
-    int activeLEDs = (int)(ring.value * LEDS_PER_ENCODER);
+    int litLEDs = (int)(ring.value * ACTIVE_LEDS_PER_ENCODER);
     
     for (int i = 0; i < LEDS_PER_ENCODER; i++) {
         int ledIndex = start + i;
-        if (i < activeLEDs) {
+        if (i >= ACTIVE_LEDS_PER_ENCODER) {
+            leds[ledIndex] = CRGB::Black;
+        } else if (i < litLEDs) {
             leds[ledIndex] = ring.color;
         } else {
-            // Dim background
             leds[ledIndex] = CRGB(ring.color.r / 8, ring.color.g / 8, ring.color.b / 8);
         }
     }
@@ -161,7 +177,6 @@ void LEDController::renderRingFill(int encoderId) {
 void LEDController::renderPulse(int encoderId) {
     EncoderRing& ring = encoderRings[encoderId];
     int start = getEncoderStartIndex(encoderId);
-    int end = getEncoderEndIndex(encoderId);
     
     float pulseValue = getPulseValue(ring.animationPhase);
     CRGB pulseColor = CRGB(
@@ -170,8 +185,13 @@ void LEDController::renderPulse(int encoderId) {
         scaleBrightness(ring.color.b, pulseValue)
     );
     
-    for (int i = start; i < end; i++) {
-        leds[i] = pulseColor;
+    for (int i = 0; i < LEDS_PER_ENCODER; i++) {
+        int ledIndex = start + i;
+        if (i < ACTIVE_LEDS_PER_ENCODER) {
+            leds[ledIndex] = pulseColor;
+        } else {
+            leds[ledIndex] = CRGB::Black;
+        }
     }
 }
 
@@ -180,9 +200,47 @@ void LEDController::renderRainbow(int encoderId) {
     
     for (int i = 0; i < LEDS_PER_ENCODER; i++) {
         int ledIndex = start + i;
-        float hueOffset = (float)i / LEDS_PER_ENCODER;
-        CRGB rainbowColor = getRainbowColor(encoderRings[encoderId].animationPhase + hueOffset);
-        leds[ledIndex] = rainbowColor;
+        if (i < ACTIVE_LEDS_PER_ENCODER) {
+            float hueOffset = (float)i / ACTIVE_LEDS_PER_ENCODER;
+            CRGB rainbowColor = getRainbowColor(encoderRings[encoderId].animationPhase + hueOffset);
+            leds[ledIndex] = rainbowColor;
+        } else {
+            leds[ledIndex] = CRGB::Black;
+        }
+    }
+}
+
+void LEDController::renderScanner(int encoderId) {
+    EncoderRing& ring = encoderRings[encoderId];
+    int start = getEncoderStartIndex(encoderId);
+    
+    int scannerWidth = 5;
+    int position = (int)(ring.animationPhase * (ACTIVE_LEDS_PER_ENCODER * 2));
+    
+    if (position >= ACTIVE_LEDS_PER_ENCODER) {
+        position = (ACTIVE_LEDS_PER_ENCODER * 2) - position - 1;
+    }
+    
+    for (int i = 0; i < LEDS_PER_ENCODER; i++) {
+        int ledIndex = start + i;
+        
+        if (i >= ACTIVE_LEDS_PER_ENCODER) {
+            leds[ledIndex] = CRGB::Black;
+        } else {
+            int distance = abs(i - position);
+            
+            if (distance < scannerWidth) {
+                float brightness = 1.0 - ((float)distance / scannerWidth);
+                brightness = brightness * brightness;
+                leds[ledIndex] = CRGB(
+                    scaleBrightness(ring.color.r, brightness),
+                    scaleBrightness(ring.color.g, brightness),
+                    scaleBrightness(ring.color.b, brightness)
+                );
+            } else {
+                leds[ledIndex] = CRGB::Black;
+            }
+        }
     }
 }
 
@@ -483,7 +541,7 @@ void LEDController::testSignalIntegrity() {
 
 // Utility functions
 void LEDController::updateAnimationPhases() {
-    float timeIncrement = 0.02; // Adjust for animation speed
+    float timeIncrement = 0.02; // Fast animation for scanner effect
     
     for (int i = 0; i < NUM_ENCODERS; i++) {
         encoderRings[i].animationPhase += timeIncrement;

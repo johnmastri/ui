@@ -119,8 +119,8 @@ void runTestMode() {
     
     switch(testStep) {
       case 0:
-        Serial.println("All LEDs OFF");
-        ledController.clearAll();
+        Serial.println("Knight Rider Scanner - RED");
+        ledController.updateEncoderRing(0, 255, 0, 0, PATTERN_SCANNER, 1.0);
         break;
         
       case 1:

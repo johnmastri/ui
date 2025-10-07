@@ -66,6 +66,7 @@ private:
     void renderSolid(int encoderId);
     void renderPulse(int encoderId);
     void renderRainbow(int encoderId);
+    void renderScanner(int encoderId);
     void renderOff(int encoderId);
     
     // Utilities

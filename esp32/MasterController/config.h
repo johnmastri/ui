@@ -28,16 +28,17 @@
 #define I2C_ENCODER_BASE_ADDR 0x20  // Addresses 0x20-0x27
 
 // LED Configuration  
-#define LEDS_PER_ENCODER 72    // 144 LEDs/meter × 0.5 meters = 72 LEDs
+#define LEDS_PER_ENCODER 72    // Total physical LEDs on strip
+#define ACTIVE_LEDS_PER_ENCODER 24  // Only use/animate this many LEDs per encoder
 #define TOTAL_LEDS (NUM_ENCODERS * LEDS_PER_ENCODER)  // 72 LEDs total
-#define LED_BRIGHTNESS 12      // LOWER brightness for better 3.3V compatibility
+#define LED_BRIGHTNESS 50      // LOWER brightness for better 3.3V compatibility
 #define LED_TYPE APA102        // DotStar uses APA102
 #define COLOR_ORDER RGB        // Test RGB first
 
 // Debugging Options
 #define ENABLE_LED_DIAGNOSTICS true
 #define SAFE_MODE true         // Slower timing, more conservative power
-#define LED_UPDATE_RATE_MS 50  // SLOWER updates for 3.3V compatibility (20 FPS)
+#define LED_UPDATE_RATE_MS 16  // 60 FPS with level shifter (1000ms / 60 = ~16ms)
 
 // I2C Configuration
 #define I2C_FREQUENCY 400000  // 400kHz standard speed
@@ -69,6 +70,7 @@
 // ============================================================================
 enum LEDPattern {
   PATTERN_OFF,
+  PATTERN_SCANNER,
   PATTERN_SOLID,
   PATTERN_RING_FILL,
   PATTERN_PULSE,
