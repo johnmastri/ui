@@ -46,7 +46,10 @@ public:
     void showTestPattern();
     void showErrorPattern();
     void showStartupSequence();
-    void simpleColorTest(int step);  // Add this for debugging
+    void simpleColorTest(int step);
+    void forceRender(int encoderId);
+    void setLED(int index, uint8_t r, uint8_t g, uint8_t b);
+    void showLEDs();  // Add this for debugging
     
     // NEW: Diagnostic functions for troubleshooting
     void runFullDiagnostics();

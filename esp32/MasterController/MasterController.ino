@@ -17,6 +17,7 @@
 #include "uart_comm.h"
 #include "led_controller.h"
 #include "i2c_encoder.h"
+#include "rotary_encoder.h"
 
 // ============================================================================
 // Global Variables
@@ -27,11 +28,13 @@ unsigned long systemStartTime;
 bool systemReady = false;
 
 // Test mode variables (for Phase 1 development)
-bool testMode = true;
+bool testMode = false;
 unsigned long lastTestUpdate = 0;
 int testEncoderIndex = 0;
 float testValue = 0.0;
 bool testDirection = true;
+
+int lastLEDCount = 0;
 
 // ============================================================================
 // Setup Function
@@ -64,6 +67,10 @@ void setup() {
   i2cEncoders.begin();
   Serial.println("[MAIN] I2C encoder manager initialized");
   
+  // 4. Initialize rotary encoder
+  rotaryEncoder.begin();
+  Serial.println("[MAIN] Rotary encoder initialized");
+  
   // System ready
   systemReady = true;
   Serial.println("[MAIN] System initialization complete!");
@@ -94,6 +101,45 @@ void loop() {
   uart.update();           // Process UART messages
   ledController.update();  // Update LED animations
   i2cEncoders.update();    // Read I2C encoders
+  rotaryEncoder.update();  // Update rotary encoder
+  
+  // Handle rotary encoder LED count changes
+  int currentLEDCount = rotaryEncoder.getLEDCount();
+  if (currentLEDCount != lastLEDCount) {
+    Serial.printf("[ROTARY] LED Count: %d\n", currentLEDCount);
+    float value = currentLEDCount / 24.0;
+    ledController.updateEncoderRing(0, 0, 255, 0, PATTERN_RING_FILL, value);
+    lastLEDCount = currentLEDCount;
+  }
+  
+  // Handle rotary encoder button press
+  if (rotaryEncoder.isButtonPressed()) {
+    Serial.println("[ROTARY] Button pressed - blinking white 5 times");
+    
+    // Save current state
+    int savedLEDCount = lastLEDCount;
+    
+    // Blink white 5 times - direct FastLED control
+    for (int i = 0; i < 5; i++) {
+      // White on - all 24 LEDs
+      for (int j = 0; j < 24; j++) {
+        ledController.setLED(j, 255, 255, 255);
+      }
+      ledController.showLEDs();
+      delay(150);
+      
+      // Off
+      for (int j = 0; j < 24; j++) {
+        ledController.setLED(j, 0, 0, 0);
+      }
+      ledController.showLEDs();
+      delay(150);
+    }
+    
+    // Restore previous state
+    float value = savedLEDCount / 24.0;
+    ledController.updateEncoderRing(0, 0, 255, 0, PATTERN_RING_FILL, value);
+  }
   
   // Run test mode if enabled (Phase 1 development)
   if (testMode) {

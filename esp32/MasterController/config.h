@@ -17,6 +17,11 @@
 #define I2C_SDA_PIN 6      // SDA on XIAO ESP32-S3
 #define I2C_SCL_PIN 7      // SCL on XIAO ESP32-S3
 
+// Rotary Encoder - D2/D3/D4
+#define ROTARY_ENCODER_A_PIN D2    // Channel A (CLK)
+#define ROTARY_ENCODER_B_PIN D3    // Channel B (DT)
+#define ROTARY_ENCODER_BTN_PIN D4  // Push button
+
 // UART Communication (Pi) - TX/RX (built-in USB-Serial)
 #define UART_BAUD 115200
 

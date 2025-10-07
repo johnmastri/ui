@@ -385,6 +385,21 @@ void LEDController::simpleColorTest(int step) {
 }
 
 // NEW: Comprehensive diagnostic functions
+void LEDController::forceRender(int encoderId) {
+    renderEncoder(encoderId);
+    FastLED.show();
+}
+
+void LEDController::setLED(int index, uint8_t r, uint8_t g, uint8_t b) {
+    if (index >= 0 && index < TOTAL_LEDS) {
+        leds[index] = CRGB(r, g, b);
+    }
+}
+
+void LEDController::showLEDs() {
+    FastLED.show();
+}
+
 void LEDController::runFullDiagnostics() {
     Serial.println("=== LED STRIP DIAGNOSTICS ===");
     Serial.printf("Configured LEDs: %d\n", TOTAL_LEDS);
