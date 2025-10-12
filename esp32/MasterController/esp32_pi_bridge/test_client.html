@@ -509,12 +509,30 @@
         
         .encoder-led {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            background: #667eea;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            box-shadow: 0 0 6px rgba(102, 126, 234, 0.6);
             transform: translate(-50%, -50%);
+            transition: all 0.15s ease;
+        }
+        
+        .encoder-led.lit {
+            background: var(--led-color);
+            box-shadow: 0 0 10px var(--led-color-alpha),
+                        0 0 15px var(--led-color-alpha);
+        }
+        
+        .encoder-led.dim {
+            background: var(--led-color-dim);
+            box-shadow: 0 0 4px var(--led-color-alpha);
+            opacity: 0.5;
+        }
+        
+        .encoder-led.off {
+            background: #2a2a2a;
+            box-shadow: none;
+            opacity: 0.3;
+            border: 1px solid #4b5563;
         }
         
         .encoder-led-number {
@@ -524,6 +542,49 @@
             color: #10b981;
             white-space: nowrap;
             transform: translate(-50%, -50%);
+        }
+        
+        .virtual-knob-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+        }
+        
+        .virtual-knob {
+            cursor: grab;
+        }
+        
+        .virtual-knob:active {
+            cursor: grabbing;
+        }
+        
+        .virtual-knob .knob-center {
+            transition: stroke 0.2s;
+        }
+        
+        .virtual-knob:hover .knob-center {
+            stroke: #667eea;
+        }
+        
+        .virtual-knob #knob-indicator {
+            transition: transform 0.05s ease-out;
+        }
+        
+        .knob-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #667eea;
+            background: rgba(26, 26, 26, 0.9);
+            padding: 3px 8px;
+            border-radius: 4px;
+            min-width: 40px;
+            text-align: center;
         }
         
         select {
@@ -1293,14 +1354,164 @@
             return switchElem;
         }
         
+        function createVirtualKnob(component, componentDef, encoderElement) {
+            const knobContainer = document.createElement('div');
+            knobContainer.className = 'virtual-knob-container';
+            
+            const knobId = 'knob-' + component.id;
+            const indicatorId = 'indicator-' + component.id;
+            
+            knobContainer.innerHTML = `
+                <svg viewBox="0 0 100 100" width="70" height="70" class="virtual-knob" id="${knobId}">
+                    <circle class="knob-center" cx="50" cy="50" r="30" 
+                            fill="#2a2a2a" stroke="#4b5563" stroke-width="2"/>
+                    <g id="${indicatorId}" transform="rotate(-135 50 50)">
+                        <rect x="47" y="25" width="6" height="15" rx="3" fill="#ffffff"/>
+                    </g>
+                </svg>
+                <div class="knob-value">0%</div>
+            `;
+            
+            let isDragging = false;
+            let startY = 0;
+            let startValue = 0;
+            let currentValue = 0;
+            
+            const svg = knobContainer.querySelector('.virtual-knob');
+            const indicator = knobContainer.querySelector(`#${indicatorId}`);
+            const valueDisplay = knobContainer.querySelector('.knob-value');
+            
+            function updateKnob(value) {
+                currentValue = Math.max(0, Math.min(1, value));
+                const rotation = -135 + (currentValue * 270);
+                indicator.setAttribute('transform', `rotate(${rotation} 50 50)`);
+                valueDisplay.textContent = Math.round(currentValue * 100) + '%';
+                
+                if (encoderElement && encoderElement.updateLEDStates) {
+                    encoderElement.updateLEDStates(currentValue);
+                }
+                
+                sendLEDUpdateToESP32(component, currentValue);
+            }
+            
+            svg.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startY = e.clientY;
+                startValue = currentValue;
+                e.preventDefault();
+            });
+            
+            svg.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                startY = e.touches[0].clientY;
+                startValue = currentValue;
+                e.preventDefault();
+            });
+            
+            const handleMouseMove = (e) => {
+                if (!isDragging) return;
+                const deltaY = startY - e.clientY;
+                const newValue = startValue + (deltaY / 200);
+                updateKnob(newValue);
+            };
+            
+            const handleTouchMove = (e) => {
+                if (!isDragging) return;
+                const currentY = e.touches[0].clientY;
+                const deltaY = startY - currentY;
+                const newValue = startValue + (deltaY / 200);
+                updateKnob(newValue);
+                e.preventDefault();
+            };
+            
+            const handleEnd = () => {
+                isDragging = false;
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('mouseup', handleEnd);
+            document.addEventListener('touchend', handleEnd);
+            
+            knobContainer.updateKnob = updateKnob;
+            
+            return knobContainer;
+        }
+        
+        let ledUpdateThrottle = {};
+        let lastLEDUpdateTime = {};
+        
+        function sendLEDUpdateToESP32(component, value) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (!component.hardware) return;
+            
+            const componentId = component.id;
+            const now = Date.now();
+            const minInterval = 16;
+            
+            if (ledUpdateThrottle[componentId]) {
+                clearTimeout(ledUpdateThrottle[componentId]);
+            }
+            
+            const timeSinceLastUpdate = now - (lastLEDUpdateTime[componentId] || 0);
+            
+            const sendUpdate = () => {
+                lastLEDUpdateTime[componentId] = Date.now();
+                
+                const ledStart = component.hardware.led_start;
+                const ledCount = component.hardware.led_count;
+                const litCount = Math.round(value * ledCount);
+                
+                const c = component.default_color;
+                const cDim = {
+                    r: Math.floor(c.r / 8),
+                    g: Math.floor(c.g / 8),
+                    b: Math.floor(c.b / 8)
+                };
+                
+                if (litCount > 0) {
+                    const litMessage = {
+                        type: 'led_update',
+                        led_start: ledStart,
+                        led_count: litCount,
+                        color: c,
+                        pattern: 'solid',
+                        value: 1.0
+                    };
+                    ws.send(JSON.stringify(litMessage));
+                }
+                
+                if (litCount < ledCount) {
+                    const dimMessage = {
+                        type: 'led_update',
+                        led_start: ledStart + litCount,
+                        led_count: ledCount - litCount,
+                        color: cDim,
+                        pattern: 'solid',
+                        value: 1.0
+                    };
+                    ws.send(JSON.stringify(dimMessage));
+                }
+            };
+            
+            if (timeSinceLastUpdate >= minInterval) {
+                sendUpdate();
+            } else {
+                ledUpdateThrottle[componentId] = setTimeout(sendUpdate, minInterval - timeSinceLastUpdate);
+            }
+        }
+        
         function createEncoderVisual(component, componentDef) {
             const encoder = document.createElement('div');
             encoder.className = 'encoder-component';
+            encoder.dataset.componentId = component.id;
             
             const ledCount = componentDef.ledCount;
             const radius = 60;
             const centerX = 80;
             const centerY = 80;
+            
+            const ledElements = [];
             
             for (let i = 0; i < ledCount; i++) {
                 const angle = (i / ledCount) * Math.PI * 2 - Math.PI / 2;
@@ -1308,14 +1519,16 @@
                 const ledY = centerY + radius * Math.sin(angle);
                 
                 const led = document.createElement('div');
-                led.className = 'encoder-led';
+                led.className = 'encoder-led dim';
                 led.style.left = `${ledX}px`;
                 led.style.top = `${ledY}px`;
+                led.dataset.ledIndex = i;
                 
                 if (component.default_color) {
                     const c = component.default_color;
-                    led.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
-                    led.style.boxShadow = `0 0 6px rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
+                    led.style.setProperty('--led-color', `rgb(${c.r}, ${c.g}, ${c.b})`);
+                    led.style.setProperty('--led-color-dim', `rgb(${Math.floor(c.r/8)}, ${Math.floor(c.g/8)}, ${Math.floor(c.b/8)})`);
+                    led.style.setProperty('--led-color-alpha', `rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`);
                 }
                 
                 const ledNum = document.createElement('div');
@@ -1330,7 +1543,26 @@
                 
                 encoder.appendChild(led);
                 encoder.appendChild(ledNum);
+                ledElements.push(led);
             }
+            
+            encoder.updateLEDStates = function(value) {
+                const litCount = Math.round(value * ledCount);
+                
+                ledElements.forEach((led, i) => {
+                    led.classList.remove('lit', 'dim', 'off');
+                    if (i < litCount) {
+                        led.classList.add('lit');
+                    } else {
+                        led.classList.add('dim');
+                    }
+                });
+            };
+            
+            const virtualKnob = createVirtualKnob(component, componentDef, encoder);
+            encoder.appendChild(virtualKnob);
+            
+            encoder.updateLEDStates(0);
             
             return encoder;
         }
