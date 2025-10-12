@@ -1319,39 +1319,97 @@
         function createSwitchVisual(component) {
             const switchElem = document.createElement('div');
             switchElem.className = 'switch-component';
+            switchElem.style.cursor = 'pointer';
+            
+            let currentState = 0;
             
             const led1 = document.createElement('div');
             led1.className = 'led-indicator';
+            led1.dataset.ledPosition = 0;
             
-            if (component.default_color) {
-                const c = component.default_color;
-                led1.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
-                led1.style.boxShadow = `0 0 8px rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
-            }
+            const led2 = document.createElement('div');
+            led2.className = 'led-indicator';
+            led2.dataset.ledPosition = 1;
             
             const ledNum1 = document.createElement('div');
             ledNum1.className = 'led-number';
             ledNum1.textContent = component.ledStart;
             led1.appendChild(ledNum1);
             
-            const led2 = document.createElement('div');
-            led2.className = 'led-indicator';
-            
-            if (component.default_color) {
-                const c = component.default_color;
-                led2.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
-                led2.style.boxShadow = `0 0 8px rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
-            }
-            
             const ledNum2 = document.createElement('div');
             ledNum2.className = 'led-number';
             ledNum2.textContent = component.ledEnd;
             led2.appendChild(ledNum2);
             
+            const updateSwitchState = (state) => {
+                currentState = state;
+                const c = component.default_color;
+                const cDim = {
+                    r: Math.floor(c.r / 8),
+                    g: Math.floor(c.g / 8),
+                    b: Math.floor(c.b / 8)
+                };
+                
+                if (state === 0) {
+                    led1.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                    led1.style.boxShadow = `0 0 10px rgba(${c.r}, ${c.g}, ${c.b}, 0.8)`;
+                    led2.style.background = `rgb(${cDim.r}, ${cDim.g}, ${cDim.b})`;
+                    led2.style.boxShadow = `0 0 4px rgba(${c.r}, ${c.g}, ${c.b}, 0.3)`;
+                    
+                    sendSwitchUpdate(component, 0);
+                } else {
+                    led1.style.background = `rgb(${cDim.r}, ${cDim.g}, ${cDim.b})`;
+                    led1.style.boxShadow = `0 0 4px rgba(${c.r}, ${c.g}, ${c.b}, 0.3)`;
+                    led2.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                    led2.style.boxShadow = `0 0 10px rgba(${c.r}, ${c.g}, ${c.b}, 0.8)`;
+                    
+                    sendSwitchUpdate(component, 1);
+                }
+            };
+            
+            switchElem.addEventListener('click', () => {
+                updateSwitchState(currentState === 0 ? 1 : 0);
+            });
+            
             switchElem.appendChild(led1);
             switchElem.appendChild(led2);
             
+            updateSwitchState(0);
+            
             return switchElem;
+        }
+        
+        function sendSwitchUpdate(component, state) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (!component.hardware) return;
+            
+            const c = component.default_color;
+            const cDim = {
+                r: Math.floor(c.r / 8),
+                g: Math.floor(c.g / 8),
+                b: Math.floor(c.b / 8)
+            };
+            
+            const led1Message = {
+                type: 'led_update',
+                led_start: component.ledStart,
+                led_count: 1,
+                color: state === 0 ? c : cDim,
+                pattern: 'solid',
+                value: 1.0
+            };
+            
+            const led2Message = {
+                type: 'led_update',
+                led_start: component.ledEnd,
+                led_count: 1,
+                color: state === 1 ? c : cDim,
+                pattern: 'solid',
+                value: 1.0
+            };
+            
+            ws.send(JSON.stringify(led1Message));
+            ws.send(JSON.stringify(led2Message));
         }
         
         function createVirtualKnob(component, componentDef, encoderElement) {
