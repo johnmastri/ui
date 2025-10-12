@@ -129,36 +129,19 @@ void loop() {
     }
     
     ledController.showLEDs();
+    
+    // Send encoder update to web interface via UART
+    uart.sendEncoderUpdate(0, value, (currentLEDCount > lastLEDCount) ? 1 : -1);
+    
     lastLEDCount = currentLEDCount;
   }
   
   // Handle rotary encoder button press
   if (rotaryEncoder.isButtonPressed()) {
-    Serial.println("[ROTARY] Button pressed - blinking white 5 times");
+    Serial.println("[ROTARY] Button pressed - sending to web interface");
     
-    // Save current state
-    int savedLEDCount = lastLEDCount;
-    
-    // Blink white 5 times - direct FastLED control
-    for (int i = 0; i < 5; i++) {
-      // White on - all 24 LEDs
-      for (int j = 0; j < 24; j++) {
-        ledController.setLED(j, 255, 255, 255);
-      }
-      ledController.showLEDs();
-      delay(150);
-      
-      // Off
-      for (int j = 0; j < 24; j++) {
-        ledController.setLED(j, 0, 0, 0);
-      }
-      ledController.showLEDs();
-      delay(150);
-    }
-    
-    // Restore previous state
-    float value = savedLEDCount / 24.0;
-    ledController.updateEncoderRing(0, 0, 255, 0, PATTERN_RING_FILL, value);
+    // Send button press message to web interface
+    uart.sendButtonPress(0);
   }
   
   // Run test mode if enabled (Phase 1 development)

@@ -43,6 +43,7 @@ public:
     void sendStatus();
     void sendError(const String& errorMsg);
     void sendEncoderUpdate(int encoderId, float value, int direction);
+    void sendButtonPress(int encoderId);
     void sendI2CScanResult(int address, bool found);
     
     bool getConnectionStatus() const { return isUsbConnected || isPiConnected; }

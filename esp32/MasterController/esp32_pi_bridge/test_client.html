@@ -920,6 +920,9 @@
                         document.getElementById('device-id').textContent = data.device_id || '-';
                         document.getElementById('mac-address').textContent = data.mac_address || '-';
                     }
+                    else if (data.type === 'encoder') {
+                        handleEncoderUpdate(data);
+                    }
                 } catch (e) {
                     addLog('Received: ' + event.data, 'received');
                 }
@@ -1439,7 +1442,7 @@
             const indicator = knobContainer.querySelector(`#${indicatorId}`);
             const valueDisplay = knobContainer.querySelector('.knob-value');
             
-            function updateKnob(value) {
+            function updateKnob(value, skipESP32 = false) {
                 currentValue = Math.max(0, Math.min(1, value));
                 const rotation = -135 + (currentValue * 270);
                 indicator.setAttribute('transform', `rotate(${rotation} 50 50)`);
@@ -1449,7 +1452,20 @@
                     encoderElement.updateLEDStates(currentValue);
                 }
                 
-                sendLEDUpdateToESP32(component, currentValue);
+                if (!skipESP32) {
+                    sendLEDUpdateToESP32(component, currentValue);
+                }
+            }
+            
+            function updateKnobVisualOnly(value) {
+                currentValue = Math.max(0, Math.min(1, value));
+                const rotation = -135 + (currentValue * 270);
+                indicator.setAttribute('transform', `rotate(${rotation} 50 50)`);
+                valueDisplay.textContent = Math.round(currentValue * 100) + '%';
+                
+                if (encoderElement && encoderElement.updateLEDStates) {
+                    encoderElement.updateLEDStates(currentValue);
+                }
             }
             
             svg.addEventListener('mousedown', (e) => {
@@ -1492,12 +1508,30 @@
             document.addEventListener('touchend', handleEnd);
             
             knobContainer.updateKnob = updateKnob;
+            knobContainer.updateKnobVisualOnly = updateKnobVisualOnly;
             
             return knobContainer;
         }
         
         let ledUpdateThrottle = {};
         let lastLEDUpdateTime = {};
+        let virtualKnobsByComponent = {};
+        
+        function handleEncoderUpdate(data) {
+            const encoderId = data.encoder_id;
+            const value = data.value;
+            
+            if (encoderId === 0 && currentLayout) {
+                const gainComponent = currentLayout.components.find(c => c.id === 'gain_encoder');
+                
+                if (gainComponent && virtualKnobsByComponent[gainComponent.id]) {
+                    const knobContainer = virtualKnobsByComponent[gainComponent.id];
+                    if (knobContainer.updateKnobVisualOnly) {
+                        knobContainer.updateKnobVisualOnly(value);
+                    }
+                }
+            }
+        }
         
         function sendLEDUpdateToESP32(component, value) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -1619,6 +1653,8 @@
             
             const virtualKnob = createVirtualKnob(component, componentDef, encoder);
             encoder.appendChild(virtualKnob);
+            
+            virtualKnobsByComponent[component.id] = virtualKnob;
             
             encoder.updateLEDStates(0);
             

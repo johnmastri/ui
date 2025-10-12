@@ -12,6 +12,7 @@ connected_clients = set()
 serial_connection = None
 running = False
 esp32_to_ws_queue = None
+main_loop = None
 
 stats = {
     'esp32_messages_received': 0,
@@ -107,7 +108,7 @@ def connect_to_esp32(port, baud=115200):
         return False
 
 def serial_reader_thread():
-    global serial_connection, running, stats, esp32_to_ws_queue
+    global serial_connection, running, stats, esp32_to_ws_queue, main_loop
     
     print("Starting ESP32 serial reader thread...")
     
@@ -140,14 +141,17 @@ def serial_reader_thread():
                         print(f"  Firmware: {message.get('firmware_version')}")
                         print()
                     
-                    if esp32_to_ws_queue:
+                    if message.get('type') == 'encoder':
+                        print(f"ENCODER MESSAGE: {message}")
+                    
+                    if esp32_to_ws_queue and main_loop:
                         try:
                             asyncio.run_coroutine_threadsafe(
                                 esp32_to_ws_queue.put(message),
-                                asyncio.get_event_loop()
+                                main_loop
                             )
-                        except:
-                            pass
+                        except Exception as e:
+                            print(f"Error putting message in queue: {e}")
                     
                 except json.JSONDecodeError:
                     debug_message = {
@@ -156,11 +160,11 @@ def serial_reader_thread():
                         'timestamp': int(time.time() * 1000)
                     }
                     
-                    if esp32_to_ws_queue:
+                    if esp32_to_ws_queue and main_loop:
                         try:
                             asyncio.run_coroutine_threadsafe(
                                 esp32_to_ws_queue.put(debug_message),
-                                asyncio.get_event_loop()
+                                main_loop
                             )
                         except:
                             pass
@@ -348,7 +352,9 @@ async def message_forwarder():
             print(f"Error in message forwarder: {e}")
 
 async def start_server(port, baud=115200, ws_port=8766):
-    global running, serial_connection, esp32_to_ws_queue
+    global running, serial_connection, esp32_to_ws_queue, main_loop
+    
+    main_loop = asyncio.get_running_loop()
     
     print("\n" + "="*60)
     print("ESP32-S3 WebSocket-to-Serial Bridge Server")
