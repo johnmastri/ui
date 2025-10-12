@@ -425,6 +425,28 @@
             margin-top: 5px;
         }
         
+        .component-hardware {
+            font-size: 12px;
+            color: #10b981;
+            font-weight: 600;
+            margin-top: 5px;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .component-vst {
+            font-size: 12px;
+            color: #f59e0b;
+            font-weight: 600;
+            margin-top: 5px;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
         .button-component {
             width: 60px;
             height: 80px;
@@ -604,7 +626,7 @@
                     </div>
                     <select id="layout-selector" onchange="loadLayout()">
                         <option value="">-- Select a layout --</option>
-                        <option value="la2a">LA-2A Compressor</option>
+                        <option value="la2a" selected>LA-2A Compressor</option>
                         <option value="1176">1176 Compressor</option>
                         <option value="pultec">Pultec EQP-1A Equalizer</option>
                     </select>
@@ -978,7 +1000,7 @@
                     layout.components.map(comp => loadComponentDefinition(comp.type))
                 );
                 
-                calculateLEDAddresses(layout);
+                processLayoutComponents(layout);
                 
                 document.getElementById('config-name').textContent = layout.name;
                 document.getElementById('total-components').textContent = layout.components.length;
@@ -994,23 +1016,32 @@
             }
         }
         
-        function calculateLEDAddresses(layout) {
-            let currentLED = 1;
-            
+        function processLayoutComponents(layout) {
             layout.components.sort((a, b) => a.order - b.order);
             
+            let totalLEDs = 0;
+            
             for (const component of layout.components) {
-                const componentDef = componentDefinitions[component.type];
-                if (!componentDef) continue;
+                if (component.hardware) {
+                    component.ledStart = component.hardware.led_start;
+                    component.ledCount = component.hardware.led_count;
+                    component.ledEnd = component.ledStart + component.ledCount - 1;
+                    
+                    totalLEDs = Math.max(totalLEDs, component.ledEnd + 1);
+                    
+                    component.pcfAddress = component.hardware.pcf_address;
+                    component.pcfPins = component.hardware.pcf_pins;
+                } else {
+                    const componentDef = componentDefinitions[component.type];
+                    component.ledCount = componentDef ? componentDef.ledCount : 0;
+                }
                 
-                component.ledStart = currentLED;
-                component.ledEnd = currentLED + componentDef.ledCount - 1;
-                component.ledCount = componentDef.ledCount;
-                
-                currentLED += componentDef.ledCount;
+                if (component.vst_mapping) {
+                    component.parameterIndex = component.vst_mapping.parameter_index;
+                    component.parameterName = component.vst_mapping.parameter_name;
+                }
             }
             
-            const totalLEDs = currentLED - 1;
             document.getElementById('total-leds').textContent = totalLEDs;
             
             return totalLEDs;
@@ -1069,11 +1100,30 @@
                 ledRange.textContent = 'No LEDs';
             }
             
+            const hardware = document.createElement('div');
+            hardware.className = 'component-hardware';
+            if (component.pcfAddress && component.pcfPins) {
+                const pinsStr = component.pcfPins.join(', ');
+                hardware.textContent = `PCF ${component.pcfAddress} / Pins: ${pinsStr}`;
+            } else {
+                hardware.textContent = 'No hardware config';
+            }
+            
+            const vstMapping = document.createElement('div');
+            vstMapping.className = 'component-vst';
+            if (component.parameterName) {
+                vstMapping.textContent = `VST Param ${component.parameterIndex}: ${component.parameterName}`;
+            } else {
+                vstMapping.textContent = 'No VST mapping';
+            }
+            
             wrapper.appendChild(order);
             wrapper.appendChild(body);
             wrapper.appendChild(label);
             wrapper.appendChild(type);
             wrapper.appendChild(ledRange);
+            wrapper.appendChild(hardware);
+            wrapper.appendChild(vstMapping);
             
             return wrapper;
         }
@@ -1084,6 +1134,12 @@
             
             const led = document.createElement('div');
             led.className = 'led-indicator';
+            
+            if (component.default_color) {
+                const c = component.default_color;
+                led.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                led.style.boxShadow = `0 0 8px rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
+            }
             
             const ledNum = document.createElement('div');
             ledNum.className = 'led-number';
@@ -1101,6 +1157,13 @@
             
             const led1 = document.createElement('div');
             led1.className = 'led-indicator';
+            
+            if (component.default_color) {
+                const c = component.default_color;
+                led1.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                led1.style.boxShadow = `0 0 8px rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
+            }
+            
             const ledNum1 = document.createElement('div');
             ledNum1.className = 'led-number';
             ledNum1.textContent = component.ledStart;
@@ -1108,6 +1171,13 @@
             
             const led2 = document.createElement('div');
             led2.className = 'led-indicator';
+            
+            if (component.default_color) {
+                const c = component.default_color;
+                led2.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                led2.style.boxShadow = `0 0 8px rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
+            }
+            
             const ledNum2 = document.createElement('div');
             ledNum2.className = 'led-number';
             ledNum2.textContent = component.ledEnd;
@@ -1137,6 +1207,12 @@
                 led.className = 'encoder-led';
                 led.style.left = `${ledX}px`;
                 led.style.top = `${ledY}px`;
+                
+                if (component.default_color) {
+                    const c = component.default_color;
+                    led.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                    led.style.boxShadow = `0 0 6px rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
+                }
                 
                 const ledNum = document.createElement('div');
                 ledNum.className = 'encoder-led-number';
@@ -1175,6 +1251,7 @@
         
         updateKnobVisuals(0);
         connectWebSocket();
+        loadLayout();
     </script>
 </body>
 </html>
