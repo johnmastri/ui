@@ -40,6 +40,7 @@ void LEDController::begin() {
     
     lastFrameUpdate = 0;
     initialized = true;
+    directControlMode = false;
     
     Serial.printf("[LED] FastLED initialized - DotStar/APA102 strips ready\n");
     Serial.printf("[LED] Type: %s, Pins: DATA=%d CLOCK=%d, LEDs: %d\n", 
@@ -51,6 +52,7 @@ void LEDController::begin() {
 
 void LEDController::update() {
     if (!initialized) return;
+    if (directControlMode) return;
     
     unsigned long currentTime = millis();
     
@@ -625,4 +627,9 @@ CRGB LEDController::getEncoderColor(int encoderId) const {
 float LEDController::getEncoderValue(int encoderId) const {
     if (!isValidEncoderId(encoderId)) return 0.0;
     return encoderRings[encoderId].value;
+}
+
+void LEDController::setDirectControlMode(bool enabled) {
+    directControlMode = enabled;
+    Serial.printf("[LED] Direct control mode: %s\n", enabled ? "ENABLED" : "DISABLED");
 } 

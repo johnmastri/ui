@@ -676,6 +676,20 @@
             </div>
             
             <div class="panel">
+                <h2>🎨 LED Strip Pagination Test</h2>
+                <div style="margin-bottom: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px; font-size: 12px; line-height: 1.6;">
+                    <div style="margin-bottom: 5px;"><strong>72 LED Strip Pagination:</strong></div>
+                    <div style="margin-bottom: 3px;">📍 <strong>Page 1:</strong> Meter (2) + Gain (20) + Peak Red (28) + Limit (22/28)</div>
+                    <div>📍 <strong>Page 2:</strong> Limit (6/28) + Output (28) + Mode (2)</div>
+                </div>
+                <div class="button-grid">
+                    <button class="success" onclick="sendPageTest(1)">Test Page 1</button>
+                    <button class="success" onclick="sendPageTest(2)">Test Page 2</button>
+                    <button class="danger" onclick="sendSystemCommand('clear_leds', '')">Clear All</button>
+                </div>
+            </div>
+            
+            <div class="panel">
                 <h2>⚙️ System Commands</h2>
                 <div class="button-grid">
                     <button class="secondary" onclick="sendSystemCommand('test_led_sections', '')">Test LED Sections</button>
@@ -914,6 +928,96 @@
                 command: command,
                 parameter: parameter
             });
+        }
+        
+        function sendPageTest(page) {
+            if (!currentLayout) {
+                addLog('Please load a layout first', 'error');
+                return;
+            }
+            
+            console.log('Current layout:', currentLayout);
+            console.log('Components:', currentLayout.components);
+            
+            const messages = [];
+            
+            if (page === 1) {
+                currentLayout.components.forEach(comp => {
+                    console.log('Processing component:', comp.id, comp);
+                    
+                    if (!comp.default_color) {
+                        console.log('No default_color for', comp.id);
+                        return;
+                    }
+                    
+                    if (!comp.hardware) {
+                        console.log('No hardware config for', comp.id);
+                        return;
+                    }
+                    
+                    const ledStart = comp.hardware.led_start;
+                    const ledCount = comp.hardware.led_count;
+                    const ledEnd = ledStart + ledCount - 1;
+                    
+                    console.log(`Component ${comp.id}: LEDs ${ledStart}-${ledEnd} (${ledCount} total)`);
+                    
+                    if (ledStart < 72) {
+                        const actualCount = Math.min(ledCount, 72 - ledStart);
+                        
+                        const msg = {
+                            type: 'led_update',
+                            encoder_id: 0,
+                            led_start: ledStart,
+                            led_count: actualCount,
+                            color: comp.default_color,
+                            pattern: 'solid',
+                            value: 1.0
+                        };
+                        
+                        console.log('Adding message:', msg);
+                        messages.push(msg);
+                    }
+                });
+            } else if (page === 2) {
+                const offset = 50;
+                
+                currentLayout.components.forEach(comp => {
+                    if (!comp.default_color || !comp.hardware) return;
+                    
+                    const ledStart = comp.hardware.led_start;
+                    const ledCount = comp.hardware.led_count;
+                    const ledEnd = ledStart + ledCount - 1;
+                    
+                    if (ledEnd >= offset && ledStart < 108) {
+                        const componentStartInPage = Math.max(0, ledStart - offset);
+                        const skipLedsAtStart = Math.max(0, offset - ledStart);
+                        const actualCount = Math.min(ledCount - skipLedsAtStart, 72 - componentStartInPage);
+                        
+                        if (actualCount > 0) {
+                            messages.push({
+                                type: 'led_update',
+                                encoder_id: 0,
+                                led_start: componentStartInPage,
+                                led_count: actualCount,
+                                color: comp.default_color,
+                                pattern: 'solid',
+                                value: 1.0
+                            });
+                        }
+                    }
+                });
+            }
+            
+            console.log('Total messages to send:', messages.length);
+            
+            messages.forEach((msg, i) => {
+                console.log(`Message ${i}:`, msg);
+                setTimeout(() => {
+                    sendMessage(msg);
+                }, i * 50);
+            });
+            
+            addLog(`Sending ${messages.length} LED updates for Page ${page}...`, 'sent');
         }
         
         function sendCustomMessage() {

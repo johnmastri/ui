@@ -26,6 +26,7 @@ private:
     EncoderRing encoderRings[NUM_ENCODERS];
     unsigned long lastFrameUpdate;
     bool initialized;
+    bool directControlMode;
 
 public:
     // Initialization
@@ -49,7 +50,8 @@ public:
     void simpleColorTest(int step);
     void forceRender(int encoderId);
     void setLED(int index, uint8_t r, uint8_t g, uint8_t b);
-    void showLEDs();  // Add this for debugging
+    void showLEDs();
+    void setDirectControlMode(bool enabled);
     
     // NEW: Diagnostic functions for troubleshooting
     void runFullDiagnostics();

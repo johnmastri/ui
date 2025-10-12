@@ -1,7 +1,9 @@
 #include "uart_comm.h"
+#include "led_controller.h"
 #include <WiFi.h>
 
 UARTComm uart;
+extern LEDController ledController;
 
 void UARTComm::begin() {
     Serial.begin(USB_SERIAL_BAUD);
@@ -207,39 +209,73 @@ void UARTComm::processPiMessage(const String& message) {
 }
 
 void UARTComm::handleLEDUpdate(DynamicJsonDocument& doc) {
-    if (!doc.containsKey("encoder_id") || !doc.containsKey("color") || !doc.containsKey("pattern")) {
+    if (!doc.containsKey("color") || !doc.containsKey("pattern")) {
         sendError("LED update missing required fields");
         return;
     }
     
-    int encoderId = doc["encoder_id"];
     uint8_t r = doc["color"]["r"].as<uint8_t>();
     uint8_t g = doc["color"]["g"].as<uint8_t>();  
     uint8_t b = doc["color"]["b"].as<uint8_t>();
     String patternStr = doc["pattern"];
     float value = doc["value"].as<float>();
     
-    Serial.print("│   Encoder: ");
-    Serial.println(encoderId);
-    Serial.print("│   Color: RGB(");
-    Serial.print(r);
-    Serial.print(",");
-    Serial.print(g);
-    Serial.print(",");
-    Serial.print(b);
-    Serial.println(")");
-    Serial.print("│   Pattern: ");
-    Serial.println(patternStr);
-    Serial.print("│   Value: ");
-    Serial.println(value);
-    
-    LEDPattern pattern = PATTERN_SOLID;
-    if (patternStr == "off") pattern = PATTERN_OFF;
-    else if (patternStr == "ring_fill") pattern = PATTERN_RING_FILL;
-    else if (patternStr == "pulse") pattern = PATTERN_PULSE;
-    else if (patternStr == "rainbow") pattern = PATTERN_RAINBOW;
-    
-    onLEDUpdateReceived(encoderId, r, g, b, pattern, value);
+    if (doc.containsKey("led_start") && doc.containsKey("led_count")) {
+        int ledStart = doc["led_start"];
+        int ledCount = doc["led_count"];
+        
+        Serial.print("│   Direct LED Control: ");
+        Serial.print(ledStart);
+        Serial.print("-");
+        Serial.print(ledStart + ledCount - 1);
+        Serial.print(" (");
+        Serial.print(ledCount);
+        Serial.println(" LEDs)");
+        Serial.print("│   Color: RGB(");
+        Serial.print(r);
+        Serial.print(",");
+        Serial.print(g);
+        Serial.print(",");
+        Serial.print(b);
+        Serial.println(")");
+        
+        ledController.setDirectControlMode(true);
+        
+        for (int i = 0; i < ledCount; i++) {
+            int ledIndex = ledStart + i;
+            if (ledIndex < TOTAL_LEDS) {
+                ledController.setLED(ledIndex, r, g, b);
+            }
+        }
+        ledController.showLEDs();
+        
+    } else if (doc.containsKey("encoder_id")) {
+        int encoderId = doc["encoder_id"];
+        
+        Serial.print("│   Encoder: ");
+        Serial.println(encoderId);
+        Serial.print("│   Color: RGB(");
+        Serial.print(r);
+        Serial.print(",");
+        Serial.print(g);
+        Serial.print(",");
+        Serial.print(b);
+        Serial.println(")");
+        Serial.print("│   Pattern: ");
+        Serial.println(patternStr);
+        Serial.print("│   Value: ");
+        Serial.println(value);
+        
+        LEDPattern pattern = PATTERN_SOLID;
+        if (patternStr == "off") pattern = PATTERN_OFF;
+        else if (patternStr == "ring_fill") pattern = PATTERN_RING_FILL;
+        else if (patternStr == "pulse") pattern = PATTERN_PULSE;
+        else if (patternStr == "rainbow") pattern = PATTERN_RAINBOW;
+        
+        onLEDUpdateReceived(encoderId, r, g, b, pattern, value);
+    } else {
+        sendError("LED update requires either led_start+led_count or encoder_id");
+    }
 }
 
 void UARTComm::handleSystemCommand(DynamicJsonDocument& doc) {

@@ -129,9 +129,9 @@
         "parameter_name": "Compress/Limit Mode"
       },
       "default_color": {
-        "r": 147,
-        "g": 51,
-        "b": 234
+        "r": 255,
+        "g": 255,
+        "b": 0
       }
     }
   ]
