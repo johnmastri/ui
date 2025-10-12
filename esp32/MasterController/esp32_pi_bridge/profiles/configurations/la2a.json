@@ -1,0 +1,48 @@
+{
+  "configId": "la2a",
+  "name": "LA-2A Compressor",
+  "description": "Vintage opto-compressor interface layout",
+  "components": [
+    {
+      "id": "meter_mode_switch",
+      "type": "switch",
+      "order": 1,
+      "label": "METER"
+    },
+    {
+      "id": "gain_encoder",
+      "type": "encoder-20",
+      "order": 2,
+      "label": "GAIN",
+      "hasButton": true
+    },
+    {
+      "id": "peak_reduction_encoder",
+      "type": "encoder-28",
+      "order": 3,
+      "label": "PEAK REDUCTION",
+      "hasButton": true
+    },
+    {
+      "id": "limit_encoder",
+      "type": "encoder-28",
+      "order": 4,
+      "label": "LIMIT",
+      "hasButton": true
+    },
+    {
+      "id": "output_encoder",
+      "type": "encoder-28",
+      "order": 5,
+      "label": "OUTPUT",
+      "hasButton": true
+    },
+    {
+      "id": "compress_limit_switch",
+      "type": "switch",
+      "order": 6,
+      "label": "MODE"
+    }
+  ]
+}
+

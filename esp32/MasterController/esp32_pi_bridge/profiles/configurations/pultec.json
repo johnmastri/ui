@@ -1,0 +1,60 @@
+{
+  "configId": "pultec",
+  "name": "Pultec EQP-1A",
+  "description": "Passive tube equalizer interface layout",
+  "components": [
+    {
+      "id": "low_freq_switch",
+      "type": "switch",
+      "order": 1,
+      "label": "LOW FREQ"
+    },
+    {
+      "id": "low_boost_encoder",
+      "type": "encoder-28",
+      "order": 2,
+      "label": "LOW BOOST",
+      "hasButton": true
+    },
+    {
+      "id": "low_atten_encoder",
+      "type": "encoder-20",
+      "order": 3,
+      "label": "LOW ATTEN",
+      "hasButton": false
+    },
+    {
+      "id": "high_freq_switch",
+      "type": "switch",
+      "order": 4,
+      "label": "HIGH FREQ"
+    },
+    {
+      "id": "high_boost_encoder",
+      "type": "encoder-28",
+      "order": 5,
+      "label": "HIGH BOOST",
+      "hasButton": true
+    },
+    {
+      "id": "high_atten_switch",
+      "type": "switch",
+      "order": 6,
+      "label": "ATTEN SEL"
+    },
+    {
+      "id": "high_atten_encoder",
+      "type": "encoder-20",
+      "order": 7,
+      "label": "HIGH ATTEN",
+      "hasButton": false
+    },
+    {
+      "id": "power_button",
+      "type": "button",
+      "order": 8,
+      "label": "POWER"
+    }
+  ]
+}
+

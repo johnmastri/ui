@@ -1,0 +1,18 @@
+{
+  "type": "rotary_encoder",
+  "id": "encoder-20",
+  "name": "20 LED Rotary Encoder",
+  "ledCount": 20,
+  "hasButton": true,
+  "states": {
+    "rotation": {
+      "type": "continuous",
+      "range": [0, 127]
+    },
+    "button": {
+      "stateCount": 2,
+      "states": ["state1", "state2"]
+    }
+  }
+}
+

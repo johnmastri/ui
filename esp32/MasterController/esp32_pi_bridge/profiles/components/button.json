@@ -1,0 +1,11 @@
+{
+  "type": "button",
+  "id": "button",
+  "name": "Push Button",
+  "ledCount": 1,
+  "states": {
+    "stateCount": 2,
+    "states": ["state1", "state2"]
+  }
+}
+

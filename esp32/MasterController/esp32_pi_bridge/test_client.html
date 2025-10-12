@@ -354,6 +354,176 @@
             font-size: 14px;
             color: #9ca3af;
         }
+        
+        .layout-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            overflow-x: auto;
+            min-height: 300px;
+        }
+        
+        .component-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .component-visual:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .component-visual.expanded {
+            border-color: #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .component-order {
+            font-size: 13px;
+            color: #9ca3af;
+            font-weight: 600;
+        }
+        
+        .component-body {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .component-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        .component-type {
+            font-size: 12px;
+            color: #9ca3af;
+            text-align: center;
+        }
+        
+        .component-led-range {
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .button-component {
+            width: 60px;
+            height: 80px;
+            background: #1a1a1a;
+            border: 3px solid #4b5563;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .switch-component {
+            width: 60px;
+            height: 100px;
+            background: #1a1a1a;
+            border: 3px solid #4b5563;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+        
+        .encoder-component {
+            position: relative;
+            width: 160px;
+            height: 160px;
+        }
+        
+        .led-indicator {
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.6);
+        }
+        
+        .led-number {
+            position: absolute;
+            top: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 13px;
+            font-weight: 700;
+            color: #10b981;
+            background: #1a1a1a;
+            padding: 3px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+        
+        .encoder-ring {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .encoder-led {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(102, 126, 234, 0.6);
+            transform: translate(-50%, -50%);
+        }
+        
+        .encoder-led-number {
+            position: absolute;
+            font-size: 11px;
+            font-weight: 700;
+            color: #10b981;
+            white-space: nowrap;
+            transform: translate(-50%, -50%);
+        }
+        
+        select {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #4b5563;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        select:hover {
+            border-color: #6b7280;
+        }
     </style>
 </head>
 <body>
@@ -422,6 +592,42 @@
                     <button onclick="sendLEDPattern('pulse')">Pulse</button>
                     <button onclick="sendLEDPattern('rainbow')">Rainbow</button>
                     <button class="danger" onclick="sendLEDPattern('off')">Off</button>
+                </div>
+            </div>
+            
+            <div class="panel full-width">
+                <h2>🎛️ Hardware Layout Configuration</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <div class="slider-label" style="margin-bottom: 10px;">
+                        <span>Select Layout Profile:</span>
+                    </div>
+                    <select id="layout-selector" onchange="loadLayout()">
+                        <option value="">-- Select a layout --</option>
+                        <option value="la2a">LA-2A Compressor</option>
+                        <option value="1176">1176 Compressor</option>
+                        <option value="pultec">Pultec EQP-1A Equalizer</option>
+                    </select>
+                </div>
+                
+                <div id="layout-info" style="background: #1a1a1a; border-radius: 5px; padding: 15px; display: none;">
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <span class="info-label">Configuration:</span>
+                            <span class="info-value" id="config-name">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total Components:</span>
+                            <span class="info-value" id="total-components">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total LEDs:</span>
+                            <span class="info-value" id="total-leds">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="layout-visualization" class="layout-container" style="display: none; margin-top: 20px;">
                 </div>
             </div>
             
@@ -732,6 +938,225 @@
         
         function clearLog() {
             document.getElementById('message-log').innerHTML = '';
+        }
+        
+        let currentLayout = null;
+        let componentDefinitions = {};
+        
+        async function loadComponentDefinition(type) {
+            if (componentDefinitions[type]) {
+                return componentDefinitions[type];
+            }
+            
+            try {
+                const response = await fetch(`profiles/components/${type}.json`);
+                const data = await response.json();
+                componentDefinitions[type] = data;
+                return data;
+            } catch (e) {
+                addLog(`Failed to load component definition: ${type}`, 'error', e);
+                return null;
+            }
+        }
+        
+        async function loadLayout() {
+            const selector = document.getElementById('layout-selector');
+            const layoutId = selector.value;
+            
+            if (!layoutId) {
+                document.getElementById('layout-info').style.display = 'none';
+                document.getElementById('layout-visualization').style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`profiles/configurations/${layoutId}.json`);
+                const layout = await response.json();
+                currentLayout = layout;
+                
+                await Promise.all(
+                    layout.components.map(comp => loadComponentDefinition(comp.type))
+                );
+                
+                calculateLEDAddresses(layout);
+                
+                document.getElementById('config-name').textContent = layout.name;
+                document.getElementById('total-components').textContent = layout.components.length;
+                
+                document.getElementById('layout-info').style.display = 'block';
+                document.getElementById('layout-visualization').style.display = 'flex';
+                
+                renderLayoutVisual(layout);
+                
+                addLog(`Loaded layout: ${layout.name}`, 'received', layout);
+            } catch (e) {
+                addLog(`Failed to load layout: ${layoutId}`, 'error', e.message);
+            }
+        }
+        
+        function calculateLEDAddresses(layout) {
+            let currentLED = 1;
+            
+            layout.components.sort((a, b) => a.order - b.order);
+            
+            for (const component of layout.components) {
+                const componentDef = componentDefinitions[component.type];
+                if (!componentDef) continue;
+                
+                component.ledStart = currentLED;
+                component.ledEnd = currentLED + componentDef.ledCount - 1;
+                component.ledCount = componentDef.ledCount;
+                
+                currentLED += componentDef.ledCount;
+            }
+            
+            const totalLEDs = currentLED - 1;
+            document.getElementById('total-leds').textContent = totalLEDs;
+            
+            return totalLEDs;
+        }
+        
+        function renderLayoutVisual(layout) {
+            const container = document.getElementById('layout-visualization');
+            container.innerHTML = '';
+            
+            for (const component of layout.components) {
+                const componentDef = componentDefinitions[component.type];
+                if (!componentDef) continue;
+                
+                const visual = createComponentVisual(component, componentDef);
+                container.appendChild(visual);
+            }
+        }
+        
+        function createComponentVisual(component, componentDef) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'component-visual';
+            wrapper.onclick = () => toggleComponentDetails(wrapper, component);
+            
+            const order = document.createElement('div');
+            order.className = 'component-order';
+            order.textContent = `Order: ${component.order}`;
+            
+            const body = document.createElement('div');
+            body.className = 'component-body';
+            
+            if (componentDef.type === 'button') {
+                body.appendChild(createButtonVisual(component));
+            } else if (componentDef.type === 'switch') {
+                body.appendChild(createSwitchVisual(component));
+            } else if (componentDef.type === 'rotary_encoder') {
+                body.appendChild(createEncoderVisual(component, componentDef));
+            }
+            
+            const label = document.createElement('div');
+            label.className = 'component-label';
+            label.textContent = component.label;
+            
+            const type = document.createElement('div');
+            type.className = 'component-type';
+            type.textContent = componentDef.name;
+            
+            const ledRange = document.createElement('div');
+            ledRange.className = 'component-led-range';
+            if (component.ledCount > 0) {
+                if (component.ledCount === 1) {
+                    ledRange.textContent = `LED: ${component.ledStart}`;
+                } else {
+                    ledRange.textContent = `LEDs: ${component.ledStart}-${component.ledEnd}`;
+                }
+            } else {
+                ledRange.textContent = 'No LEDs';
+            }
+            
+            wrapper.appendChild(order);
+            wrapper.appendChild(body);
+            wrapper.appendChild(label);
+            wrapper.appendChild(type);
+            wrapper.appendChild(ledRange);
+            
+            return wrapper;
+        }
+        
+        function createButtonVisual(component) {
+            const button = document.createElement('div');
+            button.className = 'button-component';
+            
+            const led = document.createElement('div');
+            led.className = 'led-indicator';
+            
+            const ledNum = document.createElement('div');
+            ledNum.className = 'led-number';
+            ledNum.textContent = component.ledStart;
+            
+            led.appendChild(ledNum);
+            button.appendChild(led);
+            
+            return button;
+        }
+        
+        function createSwitchVisual(component) {
+            const switchElem = document.createElement('div');
+            switchElem.className = 'switch-component';
+            
+            const led1 = document.createElement('div');
+            led1.className = 'led-indicator';
+            const ledNum1 = document.createElement('div');
+            ledNum1.className = 'led-number';
+            ledNum1.textContent = component.ledStart;
+            led1.appendChild(ledNum1);
+            
+            const led2 = document.createElement('div');
+            led2.className = 'led-indicator';
+            const ledNum2 = document.createElement('div');
+            ledNum2.className = 'led-number';
+            ledNum2.textContent = component.ledEnd;
+            led2.appendChild(ledNum2);
+            
+            switchElem.appendChild(led1);
+            switchElem.appendChild(led2);
+            
+            return switchElem;
+        }
+        
+        function createEncoderVisual(component, componentDef) {
+            const encoder = document.createElement('div');
+            encoder.className = 'encoder-component';
+            
+            const ledCount = componentDef.ledCount;
+            const radius = 60;
+            const centerX = 80;
+            const centerY = 80;
+            
+            for (let i = 0; i < ledCount; i++) {
+                const angle = (i / ledCount) * Math.PI * 2 - Math.PI / 2;
+                const ledX = centerX + radius * Math.cos(angle);
+                const ledY = centerY + radius * Math.sin(angle);
+                
+                const led = document.createElement('div');
+                led.className = 'encoder-led';
+                led.style.left = `${ledX}px`;
+                led.style.top = `${ledY}px`;
+                
+                const ledNum = document.createElement('div');
+                ledNum.className = 'encoder-led-number';
+                ledNum.textContent = component.ledStart + i;
+                
+                const numRadius = radius + 20;
+                const numX = centerX + numRadius * Math.cos(angle);
+                const numY = centerY + numRadius * Math.sin(angle);
+                ledNum.style.left = `${numX}px`;
+                ledNum.style.top = `${numY}px`;
+                
+                encoder.appendChild(led);
+                encoder.appendChild(ledNum);
+            }
+            
+            return encoder;
+        }
+        
+        function toggleComponentDetails(element, component) {
+            element.classList.toggle('expanded');
         }
         
         function hexToRgb(hex) {
