@@ -68,23 +68,9 @@ void UARTComm::processUSBData() {
             if (usbInputBuffer.length() > 0) {
                 usbMessagesReceived++;
                 
-                Serial.println();
-                Serial.println("┌─────────────────────────────────────");
-                Serial.print("│ [USB->ESP32] Message #");
-                Serial.println(usbMessagesReceived);
-                Serial.print("│ Timestamp: ");
-                Serial.print(millis());
-                Serial.println(" ms");
-                Serial.println("│ Raw JSON:");
-                Serial.print("│   ");
-                Serial.println(usbInputBuffer);
-                
                 processUSBMessage(usbInputBuffer);
                 
                 forwardMessageToPi(usbInputBuffer);
-                
-                Serial.println("└─────────────────────────────────────");
-                Serial.println();
                 
                 usbInputBuffer = "";
             }
@@ -108,22 +94,7 @@ void UARTComm::processPiData() {
             if (piInputBuffer.length() > 0) {
                 piMessagesReceived++;
                 
-                Serial.println();
-                Serial.println("┌─────────────────────────────────────");
-                Serial.print("│ [Pi->ESP32] Message #");
-                Serial.println(piMessagesReceived);
-                Serial.print("│ Timestamp: ");
-                Serial.print(millis());
-                Serial.println(" ms");
-                Serial.println("│ Raw JSON:");
-                Serial.print("│   ");
-                Serial.println(piInputBuffer);
-                
                 processPiMessage(piInputBuffer);
-                
-                Serial.println("│ Action: Forwarding to USB");
-                Serial.println("└─────────────────────────────────────");
-                Serial.println();
                 
                 Serial.println(piInputBuffer);
                 
@@ -148,31 +119,21 @@ void UARTComm::processUSBMessage(const String& message) {
     DeserializationError error = deserializeJson(doc, message);
     
     if (error) {
-        Serial.print("│ [ERROR] JSON parse failed: ");
-        Serial.println(error.c_str());
         incrementErrorCount();
         return;
     }
     
     if (!doc.containsKey("type")) {
-        Serial.println("│ [WARNING] Message missing 'type' field");
         incrementErrorCount();
         return;
     }
     
     String messageType = doc["type"];
-    Serial.print("│ Parsed Type: ");
-    Serial.println(messageType);
     
     if (messageType == MSG_TYPE_LED_UPDATE) {
-        Serial.println("│ Action: Updating LEDs");
         handleLEDUpdate(doc);
     } else if (messageType == "system_command") {
-        Serial.println("│ Action: Processing system command");
         handleSystemCommand(doc);
-    } else {
-        Serial.print("│ Info: Unknown message type - ");
-        Serial.println(messageType);
     }
 }
 
@@ -224,21 +185,6 @@ void UARTComm::handleLEDUpdate(DynamicJsonDocument& doc) {
         int ledStart = doc["led_start"];
         int ledCount = doc["led_count"];
         
-        Serial.print("│   Direct LED Control: ");
-        Serial.print(ledStart);
-        Serial.print("-");
-        Serial.print(ledStart + ledCount - 1);
-        Serial.print(" (");
-        Serial.print(ledCount);
-        Serial.println(" LEDs)");
-        Serial.print("│   Color: RGB(");
-        Serial.print(r);
-        Serial.print(",");
-        Serial.print(g);
-        Serial.print(",");
-        Serial.print(b);
-        Serial.println(")");
-        
         ledController.setDirectControlMode(true);
         
         for (int i = 0; i < ledCount; i++) {
@@ -251,20 +197,6 @@ void UARTComm::handleLEDUpdate(DynamicJsonDocument& doc) {
         
     } else if (doc.containsKey("encoder_id")) {
         int encoderId = doc["encoder_id"];
-        
-        Serial.print("│   Encoder: ");
-        Serial.println(encoderId);
-        Serial.print("│   Color: RGB(");
-        Serial.print(r);
-        Serial.print(",");
-        Serial.print(g);
-        Serial.print(",");
-        Serial.print(b);
-        Serial.println(")");
-        Serial.print("│   Pattern: ");
-        Serial.println(patternStr);
-        Serial.print("│   Value: ");
-        Serial.println(value);
         
         LEDPattern pattern = PATTERN_SOLID;
         if (patternStr == "off") pattern = PATTERN_OFF;
@@ -282,11 +214,6 @@ void UARTComm::handleSystemCommand(DynamicJsonDocument& doc) {
     String command = doc["command"] | "";
     String parameter = doc["parameter"] | "";
     
-    Serial.print("│   Command: ");
-    Serial.println(command);
-    Serial.print("│   Parameter: ");
-    Serial.println(parameter);
-    
     onSystemCommandReceived(command, parameter);
 }
 
@@ -298,25 +225,10 @@ void UARTComm::sendMessageToUSB(const String& message) {
 void UARTComm::sendMessageToPi(const String& message) {
     piSerial.println(message);
     messagesSent++;
-    
-    Serial.println();
-    Serial.println("┌─────────────────────────────────────");
-    Serial.print("│ [ESP32->Pi] Message #");
-    Serial.println(messagesSent);
-    Serial.print("│ Timestamp: ");
-    Serial.print(millis());
-    Serial.println(" ms");
-    Serial.println("│ Data:");
-    Serial.print("│   ");
-    Serial.println(message);
-    Serial.println("└─────────────────────────────────────");
-    Serial.println();
 }
 
 void UARTComm::forwardMessageToPi(const String& message) {
     piSerial.println(message);
-    
-    Serial.println("│ [ESP32->Pi] Forwarded to Raspberry Pi");
 }
 
 void UARTComm::sendJSON(DynamicJsonDocument& doc) {

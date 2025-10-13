@@ -667,6 +667,15 @@
                     <span id="led-color-rgb">#ff6600</span>
                 </div>
                 
+                <div style="margin-bottom: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                    <div style="font-size: 13px; margin-bottom: 8px; font-weight: 600;">Dim LED Brightness:</div>
+                    <div class="button-grid">
+                        <button onclick="setDimBrightness(0)">Off (0%)</button>
+                        <button onclick="setDimBrightness(0.15)">Dim (15%)</button>
+                    </div>
+                    <div style="font-size: 11px; margin-top: 5px; opacity: 0.7;">Current: <span id="dim-brightness-display">12.5%</span></div>
+                </div>
+                
                 <div class="button-grid">
                     <button onclick="sendLEDUpdate()">Update LED</button>
                     <button id="encoder-mode-btn" onclick="toggleEncoderMode()">Encoder Mode</button>
@@ -1521,6 +1530,7 @@
             
             knobContainer.updateKnob = updateKnob;
             knobContainer.updateKnobVisualOnly = updateKnobVisualOnly;
+            knobContainer.getCurrentValue = () => currentValue;
             
             return knobContainer;
         }
@@ -1530,10 +1540,19 @@
         let virtualKnobsByComponent = {};
         let currentEncoderIndex = 0;
         let encoderComponents = [];
+        let lastButtonPressTime = 0;
+        let dimBrightnessFactor = 0.125;
+        
+        let encoderUpdateCount = 0;
         
         function handleEncoderUpdate(data) {
             const encoderId = data.encoder_id;
             const value = data.value;
+            encoderUpdateCount++;
+            
+            if (encoderUpdateCount % 10 === 0) {
+                console.log(`Encoder updates received: ${encoderUpdateCount}`);
+            }
             
             if (encoderId === 0 && currentLayout && encoderComponents.length > 0) {
                 const activeComponent = encoderComponents[currentEncoderIndex];
@@ -1552,14 +1571,42 @@
         function handleButtonPress(data) {
             if (!currentLayout || encoderComponents.length === 0) return;
             
+            const now = Date.now();
+            if (now - lastButtonPressTime < 200) {
+                console.log('Button press ignored - too soon');
+                return;
+            }
+            lastButtonPressTime = now;
+            
+            let clearedCount = 0;
+            for (const componentId in ledUpdateThrottle) {
+                if (ledUpdateThrottle[componentId]) {
+                    clearTimeout(ledUpdateThrottle[componentId]);
+                    ledUpdateThrottle[componentId] = null;
+                    clearedCount++;
+                }
+            }
+            console.log(`Cleared ${clearedCount} pending LED updates`);
+            
             currentEncoderIndex = (currentEncoderIndex + 1) % encoderComponents.length;
             const activeComponent = encoderComponents[currentEncoderIndex];
             
+            console.log(`Switched to encoder ${currentEncoderIndex}: ${activeComponent.label}`);
             addLog(`Switched to: ${activeComponent.label}`, 'received');
         }
         
         function updatePhysicalLEDsForComponent(component, value) {
             if (!component.hardware) return;
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            const componentId = component.id;
+            const now = Date.now();
+            const minInterval = 16;
+            
+            if (ledUpdateThrottle[componentId]) {
+                clearTimeout(ledUpdateThrottle[componentId]);
+                ledUpdateThrottle[componentId] = null;
+            }
             
             const ledStart = component.hardware.led_start;
             const ledCount = component.hardware.led_count;
@@ -1567,33 +1614,49 @@
             
             const c = component.default_color;
             const cDim = {
-                r: Math.floor(c.r / 8),
-                g: Math.floor(c.g / 8),
-                b: Math.floor(c.b / 8)
+                r: Math.floor(c.r * dimBrightnessFactor),
+                g: Math.floor(c.g * dimBrightnessFactor),
+                b: Math.floor(c.b * dimBrightnessFactor)
             };
             
-            if (litCount > 0) {
-                const litMessage = {
-                    type: 'led_update',
-                    led_start: ledStart,
-                    led_count: litCount,
-                    color: c,
-                    pattern: 'solid',
-                    value: 1.0
-                };
-                ws.send(JSON.stringify(litMessage));
-            }
+            const sendUpdate = () => {
+                ledUpdateThrottle[componentId] = null;
+                
+                if (litCount > 0) {
+                    const litMessage = {
+                        type: 'led_update',
+                        led_start: ledStart,
+                        led_count: litCount,
+                        color: c,
+                        pattern: 'solid',
+                        value: 1.0
+                    };
+                    console.log(`Sending lit LEDs: ${ledStart}-${ledStart+litCount-1}, RGB(${c.r},${c.g},${c.b})`);
+                    ws.send(JSON.stringify(litMessage));
+                }
+                
+                if (litCount < ledCount) {
+                    const dimMessage = {
+                        type: 'led_update',
+                        led_start: ledStart + litCount,
+                        led_count: ledCount - litCount,
+                        color: cDim,
+                        pattern: 'solid',
+                        value: 1.0
+                    };
+                    console.log(`Sending dim LEDs: ${ledStart+litCount}-${ledStart+ledCount-1}, RGB(${cDim.r},${cDim.g},${cDim.b}) [factor: ${dimBrightnessFactor}]`);
+                    ws.send(JSON.stringify(dimMessage));
+                }
+                
+                lastLEDUpdateTime[componentId] = Date.now();
+            };
             
-            if (litCount < ledCount) {
-                const dimMessage = {
-                    type: 'led_update',
-                    led_start: ledStart + litCount,
-                    led_count: ledCount - litCount,
-                    color: cDim,
-                    pattern: 'solid',
-                    value: 1.0
-                };
-                ws.send(JSON.stringify(dimMessage));
+            const timeSinceLastUpdate = now - (lastLEDUpdateTime[componentId] || 0);
+            
+            if (timeSinceLastUpdate >= minInterval) {
+                sendUpdate();
+            } else {
+                ledUpdateThrottle[componentId] = setTimeout(sendUpdate, minInterval - timeSinceLastUpdate);
             }
         }
         
@@ -1727,6 +1790,29 @@
         
         function toggleComponentDetails(element, component) {
             element.classList.toggle('expanded');
+        }
+        
+        function setDimBrightness(factor) {
+            dimBrightnessFactor = factor;
+            const percentage = (factor * 100).toFixed(1);
+            document.getElementById('dim-brightness-display').textContent = percentage + '%';
+            console.log(`Dim brightness set to ${percentage}%`);
+            
+            if (currentLayout && encoderComponents.length > 0) {
+                encoderComponents.forEach((component, index) => {
+                    if (component && virtualKnobsByComponent[component.id]) {
+                        const knobContainer = virtualKnobsByComponent[component.id];
+                        if (knobContainer.getCurrentValue) {
+                            const currentValue = knobContainer.getCurrentValue();
+                            setTimeout(() => {
+                                updatePhysicalLEDsForComponent(component, currentValue);
+                            }, index * 50);
+                        }
+                    }
+                });
+                
+                console.log(`Updated ${encoderComponents.length} encoders with new dim brightness`);
+            }
         }
         
         function hexToRgb(hex) {

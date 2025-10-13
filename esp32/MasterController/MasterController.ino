@@ -90,12 +90,6 @@ void setup() {
 void loop() {
   if (!systemReady) return;
   
-  // Simple heartbeat for debugging
-  static unsigned long lastHeartbeat = 0;
-  if (millis() - lastHeartbeat > 1000) {
-    Serial.println("HEARTBEAT - ESP32 is running");
-    lastHeartbeat = millis();
-  }
   
   // Update all modules
   uart.update();           // Process UART messages
@@ -106,8 +100,6 @@ void loop() {
   // Handle rotary encoder LED count changes
   int currentLEDCount = rotaryEncoder.getLEDCount();
   if (currentLEDCount != lastLEDCount) {
-    Serial.printf("[ROTARY] LED Count: %d (%.2f%%)\n", currentLEDCount, (currentLEDCount / 24.0) * 100);
-    
     float value = currentLEDCount / 24.0;
     
     // Send encoder update to web interface via UART
@@ -118,8 +110,6 @@ void loop() {
   
   // Handle rotary encoder button press
   if (rotaryEncoder.isButtonPressed()) {
-    Serial.println("[ROTARY] Button pressed - sending to web interface");
-    
     // Send button press message to web interface
     uart.sendButtonPress(0);
   }

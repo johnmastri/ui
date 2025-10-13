@@ -69,18 +69,9 @@ void RotaryEncoder::update() {
     bool buttonState = digitalRead(pinButton);
     unsigned long currentTime = millis();
     
-    static unsigned long lastDebugPrint = 0;
-    if (currentTime - lastDebugPrint > 2000) {
-        Serial.printf("[ROTARY DEBUG] Button pin state: %d (HIGH=1, LOW=0)\n", buttonState);
-        lastDebugPrint = currentTime;
-    }
-    
     if (buttonState != lastButtonState) {
-        Serial.printf("[ROTARY DEBUG] Button state changed to: %d\n", buttonState);
-        
         if (buttonState == HIGH && (currentTime - lastButtonChangeTime) > buttonDebounceDelay) {
             buttonPressed = true;
-            Serial.println("[ROTARY] Button RELEASE detected - triggering action!");
         }
         
         lastButtonState = buttonState;
