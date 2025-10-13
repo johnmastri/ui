@@ -923,6 +923,9 @@
                     else if (data.type === 'encoder') {
                         handleEncoderUpdate(data);
                     }
+                    else if (data.type === 'button_press') {
+                        handleButtonPress(data);
+                    }
                 } catch (e) {
                     addLog('Received: ' + event.data, 'received');
                 }
@@ -1187,6 +1190,11 @@
         function processLayoutComponents(layout) {
             layout.components.sort((a, b) => a.order - b.order);
             
+            encoderComponents = layout.components.filter(c => 
+                c.type && (c.type.startsWith('encoder-') || c.type === 'rotary_encoder')
+            );
+            currentEncoderIndex = 0;
+            
             let totalLEDs = 0;
             
             for (const component of layout.components) {
@@ -1444,6 +1452,7 @@
             
             function updateKnob(value, skipESP32 = false) {
                 currentValue = Math.max(0, Math.min(1, value));
+                knobContainer.currentValue = currentValue;
                 const rotation = -135 + (currentValue * 270);
                 indicator.setAttribute('transform', `rotate(${rotation} 50 50)`);
                 valueDisplay.textContent = Math.round(currentValue * 100) + '%';
@@ -1459,6 +1468,7 @@
             
             function updateKnobVisualOnly(value) {
                 currentValue = Math.max(0, Math.min(1, value));
+                knobContainer.currentValue = currentValue;
                 const rotation = -135 + (currentValue * 270);
                 indicator.setAttribute('transform', `rotate(${rotation} 50 50)`);
                 valueDisplay.textContent = Math.round(currentValue * 100) + '%';
@@ -1467,6 +1477,8 @@
                     encoderElement.updateLEDStates(currentValue);
                 }
             }
+            
+            knobContainer.currentValue = 0;
             
             svg.addEventListener('mousedown', (e) => {
                 isDragging = true;
@@ -1516,20 +1528,72 @@
         let ledUpdateThrottle = {};
         let lastLEDUpdateTime = {};
         let virtualKnobsByComponent = {};
+        let currentEncoderIndex = 0;
+        let encoderComponents = [];
         
         function handleEncoderUpdate(data) {
             const encoderId = data.encoder_id;
             const value = data.value;
             
-            if (encoderId === 0 && currentLayout) {
-                const gainComponent = currentLayout.components.find(c => c.id === 'gain_encoder');
+            if (encoderId === 0 && currentLayout && encoderComponents.length > 0) {
+                const activeComponent = encoderComponents[currentEncoderIndex];
                 
-                if (gainComponent && virtualKnobsByComponent[gainComponent.id]) {
-                    const knobContainer = virtualKnobsByComponent[gainComponent.id];
+                if (activeComponent && virtualKnobsByComponent[activeComponent.id]) {
+                    const knobContainer = virtualKnobsByComponent[activeComponent.id];
                     if (knobContainer.updateKnobVisualOnly) {
                         knobContainer.updateKnobVisualOnly(value);
                     }
                 }
+                
+                updatePhysicalLEDsForComponent(activeComponent, value);
+            }
+        }
+        
+        function handleButtonPress(data) {
+            if (!currentLayout || encoderComponents.length === 0) return;
+            
+            currentEncoderIndex = (currentEncoderIndex + 1) % encoderComponents.length;
+            const activeComponent = encoderComponents[currentEncoderIndex];
+            
+            addLog(`Switched to: ${activeComponent.label}`, 'received');
+        }
+        
+        function updatePhysicalLEDsForComponent(component, value) {
+            if (!component.hardware) return;
+            
+            const ledStart = component.hardware.led_start;
+            const ledCount = component.hardware.led_count;
+            const litCount = Math.round(value * ledCount);
+            
+            const c = component.default_color;
+            const cDim = {
+                r: Math.floor(c.r / 8),
+                g: Math.floor(c.g / 8),
+                b: Math.floor(c.b / 8)
+            };
+            
+            if (litCount > 0) {
+                const litMessage = {
+                    type: 'led_update',
+                    led_start: ledStart,
+                    led_count: litCount,
+                    color: c,
+                    pattern: 'solid',
+                    value: 1.0
+                };
+                ws.send(JSON.stringify(litMessage));
+            }
+            
+            if (litCount < ledCount) {
+                const dimMessage = {
+                    type: 'led_update',
+                    led_start: ledStart + litCount,
+                    led_count: ledCount - litCount,
+                    color: cDim,
+                    pattern: 'solid',
+                    value: 1.0
+                };
+                ws.send(JSON.stringify(dimMessage));
             }
         }
         

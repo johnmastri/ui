@@ -108,27 +108,7 @@ void loop() {
   if (currentLEDCount != lastLEDCount) {
     Serial.printf("[ROTARY] LED Count: %d (%.2f%%)\n", currentLEDCount, (currentLEDCount / 24.0) * 100);
     
-    // Map to LA-2A GAIN encoder (LEDs 2-21, 20 LEDs total)
-    const int gainLedStart = 2;
-    const int gainLedCount = 20;
     float value = currentLEDCount / 24.0;
-    int litCount = (int)(value * gainLedCount);
-    
-    // Set lit LEDs (full brightness green)
-    if (litCount > 0) {
-      for (int i = 0; i < litCount; i++) {
-        ledController.setLED(gainLedStart + i, 76, 175, 80);
-      }
-    }
-    
-    // Set dim LEDs (1/8 brightness green)
-    if (litCount < gainLedCount) {
-      for (int i = litCount; i < gainLedCount; i++) {
-        ledController.setLED(gainLedStart + i, 9, 21, 10);
-      }
-    }
-    
-    ledController.showLEDs();
     
     // Send encoder update to web interface via UART
     uart.sendEncoderUpdate(0, value, (currentLEDCount > lastLEDCount) ? 1 : -1);

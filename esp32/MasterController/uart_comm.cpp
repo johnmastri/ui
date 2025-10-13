@@ -410,6 +410,20 @@ void UARTComm::sendEncoderUpdate(int encoderId, float value, int direction) {
     sendMessageToUSB(message);
 }
 
+void UARTComm::sendButtonPress(int encoderId) {
+    DynamicJsonDocument doc(256);
+    doc["type"] = "button_press";
+    doc["device_id"] = DEVICE_ID;
+    doc["mac_address"] = getMacAddress();
+    doc["encoder_id"] = encoderId;
+    doc["timestamp"] = millis();
+    
+    String message;
+    serializeJson(doc, message);
+    
+    sendMessageToUSB(message);
+}
+
 void UARTComm::sendI2CScanResult(int address, bool found) {
     DynamicJsonDocument doc(256);
     doc["type"] = MSG_TYPE_I2C_SCAN;
