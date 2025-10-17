@@ -98,8 +98,8 @@ Write-Host "Step 2: Checking Git Status" -ForegroundColor Cyan
 Write-Host "=" * 70 -ForegroundColor Cyan
 Write-Host ""
 
-# Navigate to the git repository (original UI directory)
-$gitRoot = "$PSScriptRoot/../../VSTMastrCtrl/mastrctrl/plugin/ui"
+# Navigate to the git repository (package directory)
+$gitRoot = "$PSScriptRoot/.."
 Push-Location $gitRoot
 
 Write-Host "Git repository: $gitRoot" -ForegroundColor Cyan
