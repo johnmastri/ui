@@ -1,0 +1,20 @@
+[Unit]
+Description=MastrCtrl WebSocket Server
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mastrctrl/python
+ExecStart=/usr/bin/python3 ws_serial_bridge_with_updates.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+

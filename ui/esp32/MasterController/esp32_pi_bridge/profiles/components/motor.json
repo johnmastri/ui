@@ -1,0 +1,13 @@
+{
+  "type": "motor",
+  "id": "motor",
+  "name": "Motor Fader",
+  "ledCount": 0,
+  "states": {
+    "position": {
+      "type": "continuous",
+      "range": [0, 127]
+    }
+  }
+}
+

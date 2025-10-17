@@ -1,0 +1,48 @@
+{
+  "configId": "1176",
+  "name": "1176 Compressor",
+  "description": "FET compressor interface layout",
+  "components": [
+    {
+      "id": "input_encoder",
+      "type": "encoder-20",
+      "order": 1,
+      "label": "INPUT",
+      "hasButton": true
+    },
+    {
+      "id": "output_encoder",
+      "type": "encoder-20",
+      "order": 2,
+      "label": "OUTPUT",
+      "hasButton": true
+    },
+    {
+      "id": "attack_encoder",
+      "type": "encoder-20",
+      "order": 3,
+      "label": "ATTACK",
+      "hasButton": false
+    },
+    {
+      "id": "release_encoder",
+      "type": "encoder-20",
+      "order": 4,
+      "label": "RELEASE",
+      "hasButton": false
+    },
+    {
+      "id": "ratio_switch",
+      "type": "switch",
+      "order": 5,
+      "label": "RATIO"
+    },
+    {
+      "id": "power_button",
+      "type": "button",
+      "order": 6,
+      "label": "POWER"
+    }
+  ]
+}
+

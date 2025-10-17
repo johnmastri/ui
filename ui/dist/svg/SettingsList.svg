@@ -1,0 +1,267 @@
+<svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Menu Layout">
+<g id="Hardware GUI Settings" clip-path="url(#clip0_37_226)">
+<rect width="800" height="480" fill="white"/>
+<g id="Hardware GUI VU Meter" clip-path="url(#clip1_37_226)">
+<rect width="800" height="480" fill="url(#paint0_linear_37_226)"/>
+<text id="VU LEVEL INDICATOR" fill="#504523" xml:space="preserve" style="white-space: pre" font-family="NORD" font-size="24.18" font-weight="500" letter-spacing="0em"><tspan x="256.32" y="92.6404">VU LEVEL INDICATOR</tspan></text>
+<g id="MASTR" opacity="0.66">
+<text id="DESIGN ENGINEERING" fill="#16150D" xml:space="preserve" style="white-space: pre" font-family="NORD" font-size="11.9" font-weight="500" letter-spacing="0.19em"><tspan x="305.845" y="372.455">DESIGN ENGINEERING</tspan></text>
+<path id="Vector" d="M378.859 318.463H404.469L406.192 307.833H377.527C367.796 307.833 361.11 313.283 359.63 322.407C358.946 326.656 359.679 330.208 361.77 332.694C364.019 335.376 367.735 336.797 372.502 336.797H384.788C386.585 336.797 387.819 337.213 388.528 338.058C389.127 338.768 389.335 339.736 389.139 340.948C388.883 342.565 387.77 344.488 383.956 344.488H357.1L355.376 355.118H385.509C394.799 355.118 402.011 349.117 403.466 340.201C404.151 335.976 403.466 332.596 401.437 330.183C399.224 327.563 395.459 326.179 390.533 326.179H377.954C376.329 326.179 375.094 325.726 374.373 324.856C373.957 324.366 373.517 323.509 373.737 322.162C374.116 319.823 375.986 318.488 378.871 318.488L378.859 318.463Z" fill="#16150D"/>
+<path id="Vector_2" d="M272.338 325.174L287.85 307.196H299.255L291.53 356.122H278.291L282.337 330.404L275.797 337.997H264.478L260.212 330.404L256.165 356.122H243L250.726 307.196H262.045L272.338 325.174Z" fill="#16150D"/>
+<path id="Vector_3" d="M296.26 356.122L323.618 307.196H339.95L351.795 356.122H337.676L334.95 344.549H316.565L310.245 356.122H296.273H296.26ZM322.958 332.767H332.297L329.351 321.427L322.958 332.767Z" fill="#16150D"/>
+<path id="Vector_4" d="M426.399 319.063H408.747L410.581 307.196H459.123L457.289 319.063H439.564L433.684 356.122H420.519L426.399 319.063Z" fill="#16150D"/>
+<path id="Vector_5" d="M456.641 356.122L464.367 307.196H498.338C502.799 307.196 506.112 308.396 508.264 310.809C510.415 313.221 511.503 316.21 511.503 319.798C511.503 320.68 511.43 321.611 511.283 322.603C510.794 325.75 509.486 328.653 507.347 331.335C505.22 334.017 502.335 335.841 498.704 336.821L498.778 336.968L507.383 356.122H492.531L484.292 337.556H472.74L469.794 356.122H456.629H456.641ZM474.586 325.689H495.404C496.088 325.689 496.675 325.444 497.164 324.954C497.653 324.464 497.946 323.827 498.044 323.043L498.264 321.721C498.362 320.888 498.264 320.239 497.971 319.773C497.678 319.308 497.189 319.075 496.504 319.075H475.686L474.586 325.701V325.689Z" fill="#16150D"/>
+<path id="Vector_6" d="M543.249 307L511.503 356.122H525.084L556.891 307H543.249Z" fill="#16150D"/>
+</g>
+<path id="Needle" d="M408.86 226.958C408.86 226.657 408.837 226.311 408.814 225.929C408.618 223.571 407.833 221.317 406.679 219.236C403.021 212.635 399.617 202.092 397.367 189.26C396.986 187.11 396.675 184.983 396.386 182.855C396.144 182.312 395.971 182 395.89 182C395.81 182 395.636 182.312 395.394 182.855C395.106 184.971 394.794 187.11 394.413 189.26C392.163 202.092 388.759 212.635 385.102 219.236C383.959 221.305 383.175 223.559 382.967 225.929C382.932 226.311 382.921 226.646 382.921 226.958C382.921 232.831 386.74 237.744 391.979 239.432L388.505 431.668H403.264L399.79 239.432C405.029 237.744 408.848 232.831 408.848 226.958H408.86Z" fill="black"/>
+<g id="Bezel Frame" filter="url(#filter0_d_37_226)">
+<rect id="Rectangle 1" width="50" height="480" fill="#5B5C59"/>
+<rect id="Rectangle 2" x="750" width="50" height="480" fill="#495146"/>
+<path id="Rectangle 3" d="M800 0L750 50L50 50L0 -3.49691e-05L800 0Z" fill="#62665A"/>
+<path id="Rectangle 4" d="M750 425L800 480L-2.40413e-06 480L50 425L750 425Z" fill="#283026"/>
+</g>
+</g>
+<rect id="Rectangle 5" width="800" height="480" fill="#060606" fill-opacity="0.95"/>
+<g id="BgLines">
+<g id="LinesHolder" clip-path="url(#clip2_37_226)">
+<rect id="Rectangle 7" width="800" height="480" fill="#AC3636" fill-opacity="0.42"/>
+<g id="Lines Group">
+<line id="Line" x1="-431.354" y1="67.469" x2="247.469" y2="-611.354" stroke="black"/>
+<line id="Line_2" x1="-424.283" y1="74.5401" x2="254.54" y2="-604.282" stroke="black"/>
+<line id="Line_3" x1="-417.211" y1="81.6111" x2="261.611" y2="-597.211" stroke="black"/>
+<line id="Line_4" x1="-410.14" y1="88.6823" x2="268.682" y2="-590.14" stroke="black"/>
+<line id="Line_5" x1="-403.069" y1="95.7533" x2="275.753" y2="-583.069" stroke="black"/>
+<line id="Line_6" x1="-395.998" y1="102.824" x2="282.824" y2="-575.998" stroke="black"/>
+<line id="Line_7" x1="-388.927" y1="109.895" x2="289.895" y2="-568.927" stroke="black"/>
+<line id="Line_8" x1="-381.856" y1="116.966" x2="296.966" y2="-561.856" stroke="black"/>
+<line id="Line_9" x1="-374.785" y1="124.038" x2="304.038" y2="-554.785" stroke="black"/>
+<line id="Line_10" x1="-367.714" y1="131.109" x2="311.109" y2="-547.714" stroke="black"/>
+<line id="Line_11" x1="-360.643" y1="138.18" x2="318.18" y2="-540.643" stroke="black"/>
+<line id="Line_12" x1="-353.572" y1="145.251" x2="325.251" y2="-533.572" stroke="black"/>
+<line id="Line_13" x1="-346.501" y1="152.322" x2="332.322" y2="-526.501" stroke="black"/>
+<line id="Line_14" x1="-339.43" y1="159.393" x2="339.393" y2="-519.43" stroke="black"/>
+<line id="Line_15" x1="-332.359" y1="166.464" x2="346.464" y2="-512.359" stroke="black"/>
+<line id="Line_16" x1="-325.288" y1="173.535" x2="353.535" y2="-505.288" stroke="black"/>
+<line id="Line_17" x1="-318.216" y1="180.606" x2="360.606" y2="-498.216" stroke="black"/>
+<line id="Line_18" x1="-311.145" y1="187.677" x2="367.677" y2="-491.145" stroke="black"/>
+<line id="Line_19" x1="-304.074" y1="194.748" x2="374.748" y2="-484.074" stroke="black"/>
+<line id="Line_20" x1="-297.003" y1="201.819" x2="381.819" y2="-477.003" stroke="black"/>
+<line id="Line_21" x1="-289.932" y1="208.89" x2="388.89" y2="-469.932" stroke="black"/>
+<line id="Line_22" x1="-282.861" y1="215.961" x2="395.961" y2="-462.861" stroke="black"/>
+<line id="Line_23" x1="-275.79" y1="223.032" x2="403.032" y2="-455.79" stroke="black"/>
+<line id="Line_24" x1="-268.719" y1="230.104" x2="410.104" y2="-448.719" stroke="black"/>
+<line id="Line_25" x1="-261.648" y1="237.175" x2="417.175" y2="-441.648" stroke="black"/>
+<line id="Line_26" x1="-254.577" y1="244.246" x2="424.246" y2="-434.577" stroke="black"/>
+<line id="Line_27" x1="-247.506" y1="251.317" x2="431.317" y2="-427.506" stroke="black"/>
+<line id="Line_28" x1="-240.435" y1="258.388" x2="438.388" y2="-420.435" stroke="black"/>
+<line id="Line_29" x1="-233.364" y1="265.459" x2="445.459" y2="-413.364" stroke="black"/>
+<line id="Line_30" x1="-226.293" y1="272.53" x2="452.53" y2="-406.293" stroke="black"/>
+<line id="Line_31" x1="-219.221" y1="279.601" x2="459.601" y2="-399.221" stroke="black"/>
+<line id="Line_32" x1="-212.15" y1="286.672" x2="466.672" y2="-392.15" stroke="black"/>
+<line id="Line_33" x1="-205.079" y1="293.743" x2="473.743" y2="-385.079" stroke="black"/>
+<line id="Line_34" x1="-198.008" y1="300.814" x2="480.814" y2="-378.008" stroke="black"/>
+<line id="Line_35" x1="-190.937" y1="307.885" x2="487.885" y2="-370.937" stroke="black"/>
+<line id="Line_36" x1="-183.866" y1="314.957" x2="494.956" y2="-363.866" stroke="black"/>
+<line id="Line_37" x1="-176.795" y1="322.028" x2="502.028" y2="-356.795" stroke="black"/>
+<line id="Line_38" x1="-169.724" y1="329.099" x2="509.098" y2="-349.724" stroke="black"/>
+<line id="Line_39" x1="-162.653" y1="336.17" x2="516.17" y2="-342.653" stroke="black"/>
+<line id="Line_40" x1="-155.582" y1="343.241" x2="523.241" y2="-335.582" stroke="black"/>
+<line id="Line_41" x1="-148.511" y1="350.312" x2="530.312" y2="-328.511" stroke="black"/>
+<line id="Line_42" x1="-141.44" y1="357.383" x2="537.383" y2="-321.44" stroke="black"/>
+<line id="Line_43" x1="-134.369" y1="364.454" x2="544.454" y2="-314.369" stroke="black"/>
+<line id="Line_44" x1="-127.298" y1="371.525" x2="551.525" y2="-307.298" stroke="black"/>
+<line id="Line_45" x1="-120.227" y1="378.596" x2="558.596" y2="-300.227" stroke="black"/>
+<line id="Line_46" x1="-113.156" y1="385.667" x2="565.667" y2="-293.156" stroke="black"/>
+<line id="Line_47" x1="-106.085" y1="392.738" x2="572.738" y2="-286.084" stroke="black"/>
+<line id="Line_48" x1="-99.0132" y1="399.809" x2="579.809" y2="-279.013" stroke="black"/>
+<line id="Line_49" x1="-91.9424" y1="406.88" x2="586.88" y2="-271.942" stroke="black"/>
+<line id="Line_50" x1="-84.8711" y1="413.951" x2="593.951" y2="-264.871" stroke="black"/>
+<line id="Line_51" x1="-77.8001" y1="421.022" x2="601.022" y2="-257.8" stroke="black"/>
+<line id="Line_52" x1="-70.729" y1="428.093" x2="608.094" y2="-250.729" stroke="black"/>
+<line id="Line_53" x1="-63.658" y1="435.165" x2="615.165" y2="-243.658" stroke="black"/>
+<line id="Line_54" x1="-56.587" y1="442.236" x2="622.236" y2="-236.587" stroke="black"/>
+<line id="Line_55" x1="-49.5159" y1="449.307" x2="629.307" y2="-229.516" stroke="black"/>
+<line id="Line_56" x1="-42.4449" y1="456.378" x2="636.378" y2="-222.445" stroke="black"/>
+<line id="Line_57" x1="-35.3738" y1="463.449" x2="643.449" y2="-215.374" stroke="black"/>
+<line id="Line_58" x1="-28.3028" y1="470.52" x2="650.52" y2="-208.303" stroke="black"/>
+<line id="Line_59" x1="-21.2315" y1="477.591" x2="657.591" y2="-201.232" stroke="black"/>
+<line id="Line_60" x1="-14.1607" y1="484.662" x2="664.662" y2="-194.161" stroke="black"/>
+<line id="Line_61" x1="-7.08939" y1="491.733" x2="671.733" y2="-187.09" stroke="black"/>
+<line id="Line_62" x1="-0.0183483" y1="498.804" x2="678.804" y2="-180.018" stroke="black"/>
+<line id="Line_63" x1="7.0527" y1="505.875" x2="685.875" y2="-172.947" stroke="black"/>
+<line id="Line_64" x1="14.1237" y1="512.946" x2="692.946" y2="-165.876" stroke="black"/>
+<line id="Line_65" x1="21.1948" y1="520.017" x2="700.017" y2="-158.805" stroke="black"/>
+<line id="Line_66" x1="28.2658" y1="527.088" x2="707.088" y2="-151.734" stroke="black"/>
+<line id="Line_67" x1="35.3369" y1="534.159" x2="714.159" y2="-144.663" stroke="black"/>
+<line id="Line_68" x1="42.4079" y1="541.23" x2="721.23" y2="-137.592" stroke="black"/>
+<line id="Line_69" x1="49.479" y1="548.302" x2="728.302" y2="-130.521" stroke="black"/>
+<line id="Line_70" x1="56.5503" y1="555.373" x2="735.373" y2="-123.45" stroke="black"/>
+<line id="Line_71" x1="63.6211" y1="562.444" x2="742.444" y2="-116.379" stroke="black"/>
+<line id="Line_72" x1="70.6923" y1="569.515" x2="749.515" y2="-109.308" stroke="black"/>
+<line id="Line_73" x1="77.7634" y1="576.586" x2="756.586" y2="-102.237" stroke="black"/>
+<line id="Line_74" x1="84.8344" y1="583.657" x2="763.657" y2="-95.1656" stroke="black"/>
+<line id="Line_75" x1="91.9055" y1="590.728" x2="770.728" y2="-88.0946" stroke="black"/>
+<line id="Line_76" x1="98.9765" y1="597.799" x2="777.799" y2="-81.0235" stroke="black"/>
+<line id="Line_77" x1="106.048" y1="604.87" x2="784.87" y2="-73.9525" stroke="black"/>
+<line id="Line_78" x1="113.119" y1="611.941" x2="791.941" y2="-66.8814" stroke="black"/>
+<line id="Line_79" x1="120.19" y1="619.012" x2="799.012" y2="-59.8104" stroke="black"/>
+<line id="Line_80" x1="127.261" y1="626.083" x2="806.083" y2="-52.7392" stroke="black"/>
+<line id="Line_81" x1="134.332" y1="633.154" x2="813.155" y2="-45.6682" stroke="black"/>
+<line id="Line_82" x1="141.403" y1="640.225" x2="820.225" y2="-38.5971" stroke="black"/>
+<line id="Line_83" x1="148.474" y1="647.297" x2="827.297" y2="-31.526" stroke="black"/>
+<line id="Line_84" x1="155.545" y1="654.368" x2="834.368" y2="-24.4549" stroke="black"/>
+<line id="Line_85" x1="162.616" y1="661.439" x2="841.439" y2="-17.3839" stroke="black"/>
+<line id="Line_86" x1="169.687" y1="668.51" x2="848.51" y2="-10.3128" stroke="black"/>
+<line id="Line_87" x1="176.758" y1="675.581" x2="855.581" y2="-3.24178" stroke="black"/>
+<line id="Line_88" x1="183.829" y1="682.652" x2="862.652" y2="3.82926" stroke="black"/>
+</g>
+<g id="Lines Group_2">
+<line id="Line_89" x1="254.058" y1="626.292" x2="932.88" y2="-52.531" stroke="black"/>
+<line id="Line_90" x1="261.129" y1="633.363" x2="939.951" y2="-45.4599" stroke="black"/>
+<line id="Line_91" x1="268.2" y1="640.434" x2="947.022" y2="-38.3889" stroke="black"/>
+<line id="Line_92" x1="275.271" y1="647.505" x2="954.093" y2="-31.3177" stroke="black"/>
+<line id="Line_93" x1="282.342" y1="654.576" x2="961.164" y2="-24.2467" stroke="black"/>
+<line id="Line_94" x1="289.413" y1="661.647" x2="968.236" y2="-17.1756" stroke="black"/>
+<line id="Line_95" x1="296.484" y1="668.718" x2="975.306" y2="-10.1046" stroke="black"/>
+<line id="Line_96" x1="303.555" y1="675.789" x2="982.378" y2="-3.03353" stroke="black"/>
+<line id="Line_97" x1="310.626" y1="682.86" x2="989.449" y2="4.03764" stroke="black"/>
+<line id="Line_98" x1="317.697" y1="689.931" x2="996.52" y2="11.1087" stroke="black"/>
+<line id="Line_99" x1="324.768" y1="697.002" x2="1003.59" y2="18.1797" stroke="black"/>
+<line id="Line_100" x1="331.839" y1="704.073" x2="1010.66" y2="25.2508" stroke="black"/>
+<line id="Line_101" x1="338.91" y1="711.144" x2="1017.73" y2="32.3218" stroke="black"/>
+<line id="Line_102" x1="345.981" y1="718.215" x2="1024.8" y2="39.3929" stroke="black"/>
+<line id="Line_103" x1="353.052" y1="725.287" x2="1031.88" y2="46.464" stroke="black"/>
+<line id="Line_104" x1="360.123" y1="732.358" x2="1038.95" y2="53.5351" stroke="black"/>
+<line id="Line_105" x1="367.195" y1="739.429" x2="1046.02" y2="60.6061" stroke="black"/>
+<line id="Line_106" x1="374.266" y1="746.5" x2="1053.09" y2="67.6772" stroke="black"/>
+<line id="Line_107" x1="381.337" y1="753.571" x2="1060.16" y2="74.7482" stroke="black"/>
+<line id="Line_108" x1="388.408" y1="760.642" x2="1067.23" y2="81.8194" stroke="black"/>
+<line id="Line_109" x1="395.479" y1="767.713" x2="1074.3" y2="88.8904" stroke="black"/>
+<line id="Line_110" x1="402.55" y1="774.784" x2="1081.37" y2="95.9615" stroke="black"/>
+<line id="Line_111" x1="409.621" y1="781.855" x2="1088.44" y2="103.033" stroke="black"/>
+<line id="Line_112" x1="416.692" y1="788.926" x2="1095.51" y2="110.104" stroke="black"/>
+<line id="Line_113" x1="423.763" y1="795.997" x2="1102.59" y2="117.175" stroke="black"/>
+<line id="Line_114" x1="430.834" y1="803.068" x2="1109.66" y2="124.246" stroke="black"/>
+<line id="Line_115" x1="437.905" y1="810.139" x2="1116.73" y2="131.317" stroke="black"/>
+<line id="Line_116" x1="444.977" y1="817.21" x2="1123.8" y2="138.388" stroke="black"/>
+<line id="Line_117" x1="452.047" y1="824.281" x2="1130.87" y2="145.459" stroke="black"/>
+<line id="Line_118" x1="459.119" y1="831.353" x2="1137.94" y2="152.53" stroke="black"/>
+<line id="Line_119" x1="466.19" y1="838.424" x2="1145.01" y2="159.601" stroke="black"/>
+<line id="Line_120" x1="473.261" y1="845.495" x2="1152.08" y2="166.672" stroke="black"/>
+<line id="Line_121" x1="480.332" y1="852.566" x2="1159.15" y2="173.743" stroke="black"/>
+<line id="Line_122" x1="487.403" y1="859.637" x2="1166.23" y2="180.814" stroke="black"/>
+<line id="Line_123" x1="494.474" y1="866.708" x2="1173.3" y2="187.885" stroke="black"/>
+<line id="Line_124" x1="501.545" y1="873.779" x2="1180.37" y2="194.956" stroke="black"/>
+<line id="Line_125" x1="508.616" y1="880.85" x2="1187.44" y2="202.028" stroke="black"/>
+<line id="Line_126" x1="515.687" y1="887.921" x2="1194.51" y2="209.099" stroke="black"/>
+<line id="Line_127" x1="522.758" y1="894.992" x2="1201.58" y2="216.17" stroke="black"/>
+<line id="Line_128" x1="529.829" y1="902.063" x2="1208.65" y2="223.241" stroke="black"/>
+<line id="Line_129" x1="536.9" y1="909.134" x2="1215.72" y2="230.312" stroke="black"/>
+<line id="Line_130" x1="543.971" y1="916.205" x2="1222.79" y2="237.383" stroke="black"/>
+<line id="Line_131" x1="551.042" y1="923.276" x2="1229.86" y2="244.454" stroke="black"/>
+<line id="Line_132" x1="558.113" y1="930.347" x2="1236.94" y2="251.525" stroke="black"/>
+<line id="Line_133" x1="565.185" y1="937.419" x2="1244.01" y2="258.596" stroke="black"/>
+<line id="Line_134" x1="572.256" y1="944.49" x2="1251.08" y2="265.667" stroke="black"/>
+<line id="Line_135" x1="579.327" y1="951.561" x2="1258.15" y2="272.738" stroke="black"/>
+<line id="Line_136" x1="586.398" y1="958.632" x2="1265.22" y2="279.809" stroke="black"/>
+<line id="Line_137" x1="593.469" y1="965.703" x2="1272.29" y2="286.88" stroke="black"/>
+<line id="Line_138" x1="600.54" y1="972.774" x2="1279.36" y2="293.951" stroke="black"/>
+<line id="Line_139" x1="607.611" y1="979.845" x2="1286.43" y2="301.022" stroke="black"/>
+<line id="Line_140" x1="614.682" y1="986.916" x2="1293.5" y2="308.093" stroke="black"/>
+<line id="Line_141" x1="621.753" y1="993.987" x2="1300.58" y2="315.164" stroke="black"/>
+<line id="Line_142" x1="628.824" y1="1001.06" x2="1307.65" y2="322.236" stroke="black"/>
+<line id="Line_143" x1="635.895" y1="1008.13" x2="1314.72" y2="329.307" stroke="black"/>
+<line id="Line_144" x1="642.966" y1="1015.2" x2="1321.79" y2="336.378" stroke="black"/>
+<line id="Line_145" x1="650.037" y1="1022.27" x2="1328.86" y2="343.449" stroke="black"/>
+<line id="Line_146" x1="657.108" y1="1029.34" x2="1335.93" y2="350.52" stroke="black"/>
+<line id="Line_147" x1="664.18" y1="1036.41" x2="1343" y2="357.591" stroke="black"/>
+<line id="Line_148" x1="671.25" y1="1043.48" x2="1350.07" y2="364.662" stroke="black"/>
+<line id="Line_149" x1="678.322" y1="1050.56" x2="1357.14" y2="371.733" stroke="black"/>
+<line id="Line_150" x1="685.393" y1="1057.63" x2="1364.22" y2="378.804" stroke="black"/>
+<line id="Line_151" x1="692.464" y1="1064.7" x2="1371.29" y2="385.875" stroke="black"/>
+<line id="Line_152" x1="699.535" y1="1071.77" x2="1378.36" y2="392.946" stroke="black"/>
+<line id="Line_153" x1="706.606" y1="1078.84" x2="1385.43" y2="400.017" stroke="black"/>
+<line id="Line_154" x1="713.677" y1="1085.91" x2="1392.5" y2="407.088" stroke="black"/>
+<line id="Line_155" x1="720.748" y1="1092.98" x2="1399.57" y2="414.159" stroke="black"/>
+<line id="Line_156" x1="727.819" y1="1100.05" x2="1406.64" y2="421.23" stroke="black"/>
+<line id="Line_157" x1="734.89" y1="1107.12" x2="1413.71" y2="428.302" stroke="black"/>
+<line id="Line_158" x1="741.961" y1="1114.2" x2="1420.78" y2="435.373" stroke="black"/>
+<line id="Line_159" x1="749.032" y1="1121.27" x2="1427.85" y2="442.444" stroke="black"/>
+<line id="Line_160" x1="756.103" y1="1128.34" x2="1434.93" y2="449.515" stroke="black"/>
+<line id="Line_161" x1="763.175" y1="1135.41" x2="1442" y2="456.586" stroke="black"/>
+<line id="Line_162" x1="770.246" y1="1142.48" x2="1449.07" y2="463.657" stroke="black"/>
+<line id="Line_163" x1="777.317" y1="1149.55" x2="1456.14" y2="470.728" stroke="black"/>
+<line id="Line_164" x1="784.388" y1="1156.62" x2="1463.21" y2="477.799" stroke="black"/>
+</g>
+</g>
+</g>
+<rect id="SettingsBackgroundBlack" x="50" y="40" width="706" height="389" fill="#060606" fill-opacity="0.91"/>
+<g id="SettingsHolder">
+<g id="SettingsParameterTemplate">
+<g id="ParameterLabelAndValue">
+<text id="SettingsLabel" fill="#3ED72A" xml:space="preserve" style="white-space: pre" font-family="Barlow" font-size="32" font-weight="600" letter-spacing="0.04em"><tspan x="148" y="182.8">Large Parameter Display</tspan></text>
+<g id="ToggleButton">
+<rect x="540.5" y="158" width="66" height="24" rx="12" stroke="#DCDCDC"/>
+<circle id="Ellipse 4" cx="553.5" cy="170" r="9" fill="#EBEBEB" stroke="#D0D0D0"/>
+</g>
+<g id="SettingsParameterValue">
+<text id="SettingsParameterValue_2" fill="#3ED72A" xml:space="preserve" style="white-space: pre" font-family="Barlow" font-size="24" font-weight="bold" letter-spacing="0.04em"><tspan x="672.49" y="179.6">1 SEC</tspan></text>
+</g>
+</g>
+<path id="Vector 3" d="M148 204H736" stroke="#792929"/>
+</g>
+<g id="SettingsParameterTemplate_2">
+<g id="ParameterLabelAndValue_2">
+<text id="SettingsLabel_2" fill="#3ED72A" xml:space="preserve" style="white-space: pre" font-family="Barlow" font-size="32" font-weight="600" letter-spacing="0.04em"><tspan x="148" y="249.8">Large Parameter Display</tspan></text>
+<g id="ToggleButton_2">
+<rect x="540.5" y="225" width="66" height="24" rx="12" stroke="#DCDCDC"/>
+<circle id="Ellipse 4_2" cx="553.5" cy="237" r="9" fill="#EBEBEB" stroke="#D0D0D0"/>
+</g>
+<g id="SettingsParameterValue_3">
+<text id="SettingsParameterValue_4" fill="#3ED72A" xml:space="preserve" style="white-space: pre" font-family="Barlow" font-size="24" font-weight="bold" letter-spacing="0.04em"><tspan x="672.49" y="246.6">1 SEC</tspan></text>
+</g>
+</g>
+<path id="Vector 3_2" d="M148 271H736" stroke="#792929"/>
+</g>
+</g>
+<rect id="marker" x="128" y="147" width="9" height="50" fill="#3ED72A"/>
+<g id="BackButton">
+<rect id="TransparentBack" y="40" width="128" height="389" fill="#792929" fill-opacity="0.64"/>
+<g id="arrow_design_elements">
+<path id="Vector 7" d="M54.3137 106L43 117.314L54.3137 128.627V106Z" fill="black"/>
+<path id="Vector 8" d="M54.3137 339.686L43 351L54.3137 362.314V339.686Z" fill="black"/>
+<path id="Vector 9" d="M54.3137 222.686L43 234L54.3137 245.314V222.686Z" fill="black"/>
+</g>
+<text id="BACK" transform="translate(64 47)" fill="white" xml:space="preserve" style="white-space: pre" font-family="Barlow" font-size="20" font-weight="600" letter-spacing="0.04em"><tspan x="0.317577" y="20">BACK</tspan></text>
+<path id="corner_triangle" d="M28 40H0V68L28 40Z" fill="black"/>
+</g>
+<text id="SettingsHeader" fill="white" xml:space="preserve" style="white-space: pre" font-family="IBM Plex Sans Condensed" font-size="48" font-style="italic" letter-spacing="0em"><tspan x="149" y="112">display</tspan></text>
+</g>
+</g>
+<defs>
+<filter id="filter0_d_37_226" x="-6.8" y="-9.80006" width="839.6" height="519.6" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dx="13" dy="10"/>
+<feGaussianBlur stdDeviation="9.9"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.33 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_37_226"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_37_226" result="shape"/>
+</filter>
+<linearGradient id="paint0_linear_37_226" x1="400" y1="0" x2="400" y2="480" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D5D28F"/>
+<stop offset="1" stop-color="#FEF888"/>
+</linearGradient>
+<clipPath id="clip0_37_226">
+<rect width="800" height="480" fill="white"/>
+</clipPath>
+<clipPath id="clip1_37_226">
+<rect width="800" height="480" fill="white"/>
+</clipPath>
+<clipPath id="clip2_37_226">
+<rect width="800" height="480" fill="white"/>
+</clipPath>
+</defs>
+</svg>

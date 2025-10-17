@@ -1,0 +1,15 @@
+{
+  "type": "display",
+  "id": "display",
+  "name": "LED Display",
+  "ledCount": 0,
+  "hasButton": false,
+  "orientation": "horizontal",
+  "states": {
+    "button": {
+      "stateCount": 2,
+      "states": ["state1", "state2"]
+    }
+  }
+}
+

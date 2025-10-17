@@ -1,0 +1,11 @@
+{
+  "type": "switch",
+  "id": "switch",
+  "name": "3-Position Switch",
+  "ledCount": 2,
+  "states": {
+    "stateCount": 3,
+    "states": ["state1", "state2", "state3"]
+  }
+}
+

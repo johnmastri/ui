@@ -1,0 +1,20 @@
+[Unit]
+Description=MastrCtrl Update Manager
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mastrctrl/python
+ExecStart=/usr/bin/python3 -c "from update_manager import UpdateManager; import time; um = UpdateManager(); print('Update manager running'); time.sleep(31536000)"
+Restart=always
+RestartSec=60
+StandardOutput=journal
+StandardError=journal
+
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+

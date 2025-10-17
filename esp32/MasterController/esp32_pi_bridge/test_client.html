@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Bridge Test Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            user-select: none;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .panel h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+        
+        .status-dot.connected {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+        
+        .info-grid {
+            display: grid;
+            gap: 10px;
+            font-size: 13px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+        
+        .info-label {
+            color: #9ca3af;
+        }
+        
+        .info-value {
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #667eea;
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.secondary {
+            background: #4b5563;
+        }
+        
+        button.secondary:hover {
+            background: #6b7280;
+            box-shadow: 0 5px 15px rgba(75, 85, 99, 0.4);
+        }
+        
+        button.success {
+            background: #10b981;
+        }
+        
+        button.success:hover {
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        button.danger {
+            background: #ef4444;
+        }
+        
+        button.danger:hover {
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+        
+        button.active {
+            background: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+        }
+        
+        .custom-message {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        textarea {
+            flex: 1;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #4b5563;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .log {
+            background: #1a1a1a;
+            border-radius: 5px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 3px;
+            background: #2a2a2a;
+        }
+        
+        .log-entry.sent {
+            border-left: 3px solid #667eea;
+        }
+        
+        .log-entry.received {
+            border-left: 3px solid #10b981;
+        }
+        
+        .log-entry.error {
+            border-left: 3px solid #ef4444;
+        }
+        
+        .log-timestamp {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+        
+        .log-type {
+            color: #667eea;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .log-data {
+            margin-top: 5px;
+            color: #e0e0e0;
+            word-break: break-all;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .slider-container {
+            margin: 15px 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #4b5563;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 10px 0;
+        }
+        
+        input[type="color"] {
+            width: 50px;
+            height: 35px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        .knob-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+        }
+        
+        .knob-svg {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        
+        .knob-svg:active {
+            cursor: grabbing;
+        }
+        
+        .knob-track {
+            fill: none;
+            stroke: #4b5563;
+            stroke-width: 12;
+        }
+        
+        .knob-progress {
+            fill: none;
+            stroke: #667eea;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.05s, stroke 0.1s;
+        }
+        
+        .knob-center {
+            fill: #2a2a2a;
+            stroke: #4b5563;
+            stroke-width: 3;
+        }
+        
+        .knob-indicator {
+            fill: #ffffff;
+        }
+        
+        .knob-value-display {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .knob-label {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        
+        .layout-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            overflow-x: auto;
+            min-height: 300px;
+        }
+        
+        .component-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .component-visual:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .component-visual.expanded {
+            border-color: #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .component-order {
+            font-size: 13px;
+            color: #9ca3af;
+            font-weight: 600;
+        }
+        
+        .component-body {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .component-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        .component-type {
+            font-size: 12px;
+            color: #9ca3af;
+            text-align: center;
+        }
+        
+        .component-led-range {
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .component-hardware {
+            font-size: 12px;
+            color: #10b981;
+            font-weight: 600;
+            margin-top: 5px;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .component-vst {
+            font-size: 12px;
+            color: #f59e0b;
+            font-weight: 600;
+            margin-top: 5px;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .button-component {
+            width: 60px;
+            height: 80px;
+            background: #1a1a1a;
+            border: 3px solid #4b5563;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .switch-component {
+            width: 60px;
+            height: 100px;
+            background: #1a1a1a;
+            border: 3px solid #4b5563;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+        
+        .encoder-component {
+            position: relative;
+            width: 160px;
+            height: 160px;
+        }
+        
+        .led-indicator {
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.6);
+        }
+        
+        .led-number {
+            position: absolute;
+            top: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 13px;
+            font-weight: 700;
+            color: #10b981;
+            background: #1a1a1a;
+            padding: 3px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+        
+        .encoder-ring {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .encoder-led {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.15s ease;
+        }
+        
+        .encoder-led.lit {
+            background: var(--led-color);
+            box-shadow: 0 0 10px var(--led-color-alpha),
+                        0 0 15px var(--led-color-alpha);
+        }
+        
+        .encoder-led.dim {
+            background: var(--led-color-dim);
+            box-shadow: 0 0 4px var(--led-color-alpha);
+            opacity: 0.5;
+        }
+        
+        .encoder-led.off {
+            background: #2a2a2a;
+            box-shadow: none;
+            opacity: 0.3;
+            border: 1px solid #4b5563;
+        }
+        
+        .encoder-led-number {
+            position: absolute;
+            font-size: 11px;
+            font-weight: 700;
+            color: #10b981;
+            white-space: nowrap;
+            transform: translate(-50%, -50%);
+        }
+        
+        .virtual-knob-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+        }
+        
+        .virtual-knob {
+            cursor: grab;
+        }
+        
+        .virtual-knob:active {
+            cursor: grabbing;
+        }
+        
+        .virtual-knob .knob-center {
+            transition: stroke 0.2s;
+        }
+        
+        .virtual-knob:hover .knob-center {
+            stroke: #667eea;
+        }
+        
+        .virtual-knob #knob-indicator {
+            transition: transform 0.05s ease-out;
+        }
+        
+        .knob-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #667eea;
+            background: rgba(26, 26, 26, 0.9);
+            padding: 3px 8px;
+            border-radius: 4px;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        select {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #4b5563;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        select:hover {
+            border-color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎛️ ESP32-S3 Bridge Test Client</h1>
+            <div class="subtitle">WebSocket Bridge for ESP32 → Raspberry Pi Communication</div>
+        </header>
+        
+        <div class="grid">
+            <div class="panel">
+                <h2>🔌 Connection Status</h2>
+                <div class="status">
+                    <div class="status-dot" id="ws-status-dot"></div>
+                    <span id="ws-status-text">Disconnected</span>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-row">
+                        <span class="info-label">Device ID:</span>
+                        <span class="info-value" id="device-id">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">MAC Address:</span>
+                        <span class="info-value" id="mac-address">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Messages Sent:</span>
+                        <span class="info-value" id="msg-sent">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Messages Received:</span>
+                        <span class="info-value" id="msg-received">0</span>
+                    </div>
+                </div>
+                
+                <div class="button-grid" style="margin-top: 15px;">
+                    <button class="success" onclick="connectWebSocket()">Connect</button>
+                    <button class="danger" onclick="disconnectWebSocket()">Disconnect</button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>🎨 LED Test Controls</h2>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Encoder ID:</span>
+                        <span id="encoder-id-value">0</span>
+                    </div>
+                    <input type="range" min="0" max="3" value="0" id="encoder-id-slider" 
+                           oninput="document.getElementById('encoder-id-value').textContent = this.value">
+                </div>
+                
+                <div class="color-picker">
+                    <span>Color:</span>
+                    <input type="color" id="led-color" value="#ff6600">
+                    <span id="led-color-rgb">#ff6600</span>
+                </div>
+                
+                <div style="margin-bottom: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                    <div style="font-size: 13px; margin-bottom: 8px; font-weight: 600;">Dim LED Brightness:</div>
+                    <div class="button-grid">
+                        <button onclick="setDimBrightness(0)">Off (0%)</button>
+                        <button onclick="setDimBrightness(0.15)">Dim (15%)</button>
+                    </div>
+                    <div style="font-size: 11px; margin-top: 5px; opacity: 0.7;">Current: <span id="dim-brightness-display">12.5%</span></div>
+                </div>
+                
+                <div class="button-grid">
+                    <button onclick="sendLEDUpdate()">Update LED</button>
+                    <button id="encoder-mode-btn" onclick="toggleEncoderMode()">Encoder Mode</button>
+                    <button onclick="sendLEDPattern('ring_fill')">Ring Fill</button>
+                    <button onclick="sendLEDPattern('solid')">Solid</button>
+                    <button onclick="sendLEDPattern('pulse')">Pulse</button>
+                    <button onclick="sendLEDPattern('rainbow')">Rainbow</button>
+                    <button class="danger" onclick="sendLEDPattern('off')">Off</button>
+                </div>
+            </div>
+            
+            <div class="panel full-width">
+                <h2>🎛️ Hardware Layout Configuration</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <div class="slider-label" style="margin-bottom: 10px;">
+                        <span>Select Layout Profile:</span>
+                    </div>
+                    <select id="layout-selector" onchange="loadLayout()">
+                        <option value="">-- Select a layout --</option>
+                        <option value="la2a" selected>LA-2A Compressor</option>
+                        <option value="1176">1176 Compressor</option>
+                        <option value="pultec">Pultec EQP-1A Equalizer</option>
+                    </select>
+                </div>
+                
+                <div id="layout-info" style="background: #1a1a1a; border-radius: 5px; padding: 15px; display: none;">
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <span class="info-label">Configuration:</span>
+                            <span class="info-value" id="config-name">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total Components:</span>
+                            <span class="info-value" id="total-components">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total LEDs:</span>
+                            <span class="info-value" id="total-leds">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="layout-visualization" class="layout-container" style="display: none; margin-top: 20px;">
+                </div>
+            </div>
+            
+            <div class="panel full-width">
+                <h2>🎛️ Virtual Rotary Encoder</h2>
+                <div class="knob-container">
+                    <div class="knob-wrapper">
+                        <svg class="knob-svg" id="knob-svg" viewBox="0 0 200 200">
+                            <circle class="knob-track" cx="100" cy="100" r="70" 
+                                    stroke-dasharray="439.82" stroke-dashoffset="0"/>
+                            <circle class="knob-progress" id="knob-progress" cx="100" cy="100" r="70" 
+                                    stroke-dasharray="439.82" stroke-dashoffset="439.82"/>
+                            <g id="knob-body" transform="rotate(180 100 100)">
+                                <circle class="knob-center" cx="100" cy="100" r="45"/>
+                                <rect class="knob-indicator" x="97" y="60" width="6" height="25" rx="3"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="knob-value-display" id="knob-display">0 / 24</div>
+                        <div class="knob-label">LEDs Active</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>🎨 LED Strip Pagination Test</h2>
+                <div style="margin-bottom: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px; font-size: 12px; line-height: 1.6;">
+                    <div style="margin-bottom: 5px;"><strong>72 LED Strip Pagination:</strong></div>
+                    <div style="margin-bottom: 3px;">📍 <strong>Page 1:</strong> Meter (2) + Gain (20) + Peak Red (28) + Limit (22/28)</div>
+                    <div>📍 <strong>Page 2:</strong> Limit (6/28) + Output (28) + Mode (2)</div>
+                </div>
+                <div class="button-grid">
+                    <button class="success" onclick="sendPageTest(1)">Test Page 1</button>
+                    <button class="success" onclick="sendPageTest(2)">Test Page 2</button>
+                    <button class="danger" onclick="sendSystemCommand('clear_leds', '')">Clear All</button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>⚙️ System Commands</h2>
+                <div class="button-grid">
+                    <button class="secondary" onclick="sendSystemCommand('test_led_sections', '')">Test LED Sections</button>
+                    <button class="secondary" onclick="sendSystemCommand('test_pattern', '')">Test Pattern</button>
+                    <button class="secondary" onclick="sendSystemCommand('clear_leds', '')">Clear LEDs</button>
+                    <button class="secondary" onclick="sendSystemCommand('scan_i2c', '')">Scan I2C</button>
+                    <button class="secondary" onclick="sendSystemCommand('brightness', '100')">Brightness 100</button>
+                    <button class="secondary" onclick="sendSystemCommand('brightness', '50')">Brightness 50</button>
+                    <button class="secondary" onclick="sendSystemCommand('brightness', '10')">Brightness 10</button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>📝 Custom JSON Message</h2>
+                <div class="custom-message">
+                    <textarea id="custom-json" placeholder='{"type": "led_update", "encoder_id": 0, "color": {"r": 255, "g": 0, "b": 0}, "pattern": "solid", "value": 1.0}'></textarea>
+                </div>
+                <button onclick="sendCustomMessage()" style="width: 100%; margin-top: 10px;">Send Custom Message</button>
+            </div>
+            
+            <div class="panel full-width">
+                <h2>📊 Message Log</h2>
+                <div class="log" id="message-log"></div>
+                <button class="secondary" onclick="clearLog()" style="width: 100%; margin-top: 10px;">Clear Log</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let ws = null;
+        let messagesSent = 0;
+        let messagesReceived = 0;
+        
+        let knobValue = 0;
+        const maxLEDs = 24;
+        let isDragging = false;
+        let encoderMode = false;
+        let dragStartY = 0;
+        let dragStartValue = 0;
+        
+        const knobSvg = document.getElementById('knob-svg');
+        const knobProgress = document.getElementById('knob-progress');
+        const knobBody = document.getElementById('knob-body');
+        const knobDisplay = document.getElementById('knob-display');
+        
+        function toggleEncoderMode() {
+            encoderMode = !encoderMode;
+            const btn = document.getElementById('encoder-mode-btn');
+            
+            if (encoderMode) {
+                btn.classList.add('active');
+                btn.textContent = 'Encoder Mode: ON';
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = 'Encoder Mode';
+            }
+        }
+        
+        function updateKnobVisuals(value) {
+            const normalizedValue = value / maxLEDs;
+            
+            const circumference = 439.82;
+            const progress = normalizedValue * circumference;
+            const offset = circumference - progress;
+            knobProgress.style.strokeDashoffset = offset;
+            
+            const rotation = 180 + (normalizedValue * 360);
+            knobBody.setAttribute('transform', `rotate(${rotation} 100 100)`);
+            
+            knobDisplay.textContent = `${value} / ${maxLEDs}`;
+            
+            const color = hexToRgb(document.getElementById('led-color').value);
+            const colorStr = `rgb(${color.r}, ${color.g}, ${color.b})`;
+            knobProgress.style.stroke = colorStr;
+        }
+        
+        function setKnobValue(value) {
+            knobValue = Math.max(0, Math.min(maxLEDs, value));
+            updateKnobVisuals(knobValue);
+            
+            if (encoderMode) {
+                sendEncoderUpdate();
+            }
+        }
+        
+        function sendEncoderUpdate() {
+            const encoderId = parseInt(document.getElementById('encoder-id-slider').value);
+            const value = knobValue / maxLEDs;
+            const color = hexToRgb(document.getElementById('led-color').value);
+            
+            sendMessage({
+                type: 'led_update',
+                encoder_id: encoderId,
+                color: color,
+                pattern: 'ring_fill',
+                value: value
+            });
+        }
+        
+        knobSvg.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStartY = e.clientY;
+            dragStartValue = knobValue;
+            e.preventDefault();
+        });
+        
+        knobSvg.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            dragStartY = e.touches[0].clientY;
+            dragStartValue = knobValue;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const currentY = e.clientY;
+            const deltaY = dragStartY - currentY;
+            const sensitivity = 0.05;
+            const newValue = dragStartValue + Math.round(deltaY * sensitivity);
+            
+            setKnobValue(newValue);
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            
+            const currentY = e.touches[0].clientY;
+            const deltaY = dragStartY - currentY;
+            const sensitivity = 0.05;
+            const newValue = dragStartValue + Math.round(deltaY * sensitivity);
+            
+            setKnobValue(newValue);
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+        
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                addLog('Already connected', 'error');
+                return;
+            }
+            
+            ws = new WebSocket('ws://localhost:8766');
+            
+            ws.onopen = () => {
+                updateConnectionStatus(true);
+                addLog('WebSocket connected', 'received');
+            };
+            
+            ws.onmessage = (event) => {
+                messagesReceived++;
+                document.getElementById('msg-received').textContent = messagesReceived;
+                
+                try {
+                    const data = JSON.parse(event.data);
+                    addLog('Received: ' + data.type, 'received', data);
+                    
+                    if (data.type === 'bridge_status') {
+                        document.getElementById('device-id').textContent = data.device_id || '-';
+                        document.getElementById('mac-address').textContent = data.mac_address || '-';
+                    }
+                    else if (data.type === 'encoder') {
+                        handleEncoderUpdate(data);
+                    }
+                    else if (data.type === 'button_press') {
+                        handleButtonPress(data);
+                    }
+                } catch (e) {
+                    addLog('Received: ' + event.data, 'received');
+                }
+            };
+            
+            ws.onerror = (error) => {
+                addLog('WebSocket error', 'error', error);
+            };
+            
+            ws.onclose = () => {
+                updateConnectionStatus(false);
+                addLog('WebSocket disconnected', 'error');
+            };
+        }
+        
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function sendMessage(message) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addLog('Not connected', 'error');
+                return;
+            }
+            
+            const messageStr = JSON.stringify(message);
+            ws.send(messageStr);
+            messagesSent++;
+            document.getElementById('msg-sent').textContent = messagesSent;
+            addLog('Sent: ' + message.type, 'sent', message);
+        }
+        
+        function sendLEDUpdate() {
+            const encoderId = parseInt(document.getElementById('encoder-id-slider').value);
+            const value = knobValue / maxLEDs;
+            const color = hexToRgb(document.getElementById('led-color').value);
+            
+            sendMessage({
+                type: 'led_update',
+                encoder_id: encoderId,
+                color: color,
+                pattern: 'ring_fill',
+                value: value
+            });
+        }
+        
+        function sendLEDPattern(pattern) {
+            const encoderId = parseInt(document.getElementById('encoder-id-slider').value);
+            const value = pattern === 'off' ? 0 : 1.0;
+            const color = hexToRgb(document.getElementById('led-color').value);
+            
+            sendMessage({
+                type: 'led_update',
+                encoder_id: encoderId,
+                color: color,
+                pattern: pattern,
+                value: value
+            });
+        }
+        
+        function sendSystemCommand(command, parameter) {
+            sendMessage({
+                type: 'system_command',
+                command: command,
+                parameter: parameter
+            });
+        }
+        
+        function sendPageTest(page) {
+            if (!currentLayout) {
+                addLog('Please load a layout first', 'error');
+                return;
+            }
+            
+            console.log('Current layout:', currentLayout);
+            console.log('Components:', currentLayout.components);
+            
+            const messages = [];
+            
+            if (page === 1) {
+                currentLayout.components.forEach(comp => {
+                    console.log('Processing component:', comp.id, comp);
+                    
+                    if (!comp.default_color) {
+                        console.log('No default_color for', comp.id);
+                        return;
+                    }
+                    
+                    if (!comp.hardware) {
+                        console.log('No hardware config for', comp.id);
+                        return;
+                    }
+                    
+                    const ledStart = comp.hardware.led_start;
+                    const ledCount = comp.hardware.led_count;
+                    const ledEnd = ledStart + ledCount - 1;
+                    
+                    console.log(`Component ${comp.id}: LEDs ${ledStart}-${ledEnd} (${ledCount} total)`);
+                    
+                    if (ledStart < 72) {
+                        const actualCount = Math.min(ledCount, 72 - ledStart);
+                        
+                        const msg = {
+                            type: 'led_update',
+                            encoder_id: 0,
+                            led_start: ledStart,
+                            led_count: actualCount,
+                            color: comp.default_color,
+                            pattern: 'solid',
+                            value: 1.0
+                        };
+                        
+                        console.log('Adding message:', msg);
+                        messages.push(msg);
+                    }
+                });
+            } else if (page === 2) {
+                const offset = 50;
+                
+                currentLayout.components.forEach(comp => {
+                    if (!comp.default_color || !comp.hardware) return;
+                    
+                    const ledStart = comp.hardware.led_start;
+                    const ledCount = comp.hardware.led_count;
+                    const ledEnd = ledStart + ledCount - 1;
+                    
+                    if (ledEnd >= offset && ledStart < 108) {
+                        const componentStartInPage = Math.max(0, ledStart - offset);
+                        const skipLedsAtStart = Math.max(0, offset - ledStart);
+                        const actualCount = Math.min(ledCount - skipLedsAtStart, 72 - componentStartInPage);
+                        
+                        if (actualCount > 0) {
+                            messages.push({
+                                type: 'led_update',
+                                encoder_id: 0,
+                                led_start: componentStartInPage,
+                                led_count: actualCount,
+                                color: comp.default_color,
+                                pattern: 'solid',
+                                value: 1.0
+                            });
+                        }
+                    }
+                });
+            }
+            
+            console.log('Total messages to send:', messages.length);
+            
+            messages.forEach((msg, i) => {
+                console.log(`Message ${i}:`, msg);
+                setTimeout(() => {
+                    sendMessage(msg);
+                }, i * 50);
+            });
+            
+            addLog(`Sending ${messages.length} LED updates for Page ${page}...`, 'sent');
+        }
+        
+        function sendCustomMessage() {
+            const jsonText = document.getElementById('custom-json').value;
+            try {
+                const message = JSON.parse(jsonText);
+                sendMessage(message);
+            } catch (e) {
+                addLog('Invalid JSON: ' + e.message, 'error');
+            }
+        }
+        
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('ws-status-dot');
+            const text = document.getElementById('ws-status-text');
+            
+            if (connected) {
+                dot.classList.add('connected');
+                text.textContent = 'Connected to Bridge';
+            } else {
+                dot.classList.remove('connected');
+                text.textContent = 'Disconnected';
+            }
+        }
+        
+        function addLog(message, type, data = null) {
+            const log = document.getElementById('message-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString() + '.' + new Date().getMilliseconds();
+            
+            let html = `<div class="log-timestamp">[${timestamp}]</div>`;
+            html += `<div class="log-type">${message}</div>`;
+            
+            if (data) {
+                html += `<div class="log-data">${JSON.stringify(data, null, 2)}</div>`;
+            }
+            
+            entry.innerHTML = html;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('message-log').innerHTML = '';
+        }
+        
+        let currentLayout = null;
+        let componentDefinitions = {};
+        
+        async function loadComponentDefinition(type) {
+            if (componentDefinitions[type]) {
+                return componentDefinitions[type];
+            }
+            
+            try {
+                const response = await fetch(`profiles/components/${type}.json`);
+                const data = await response.json();
+                componentDefinitions[type] = data;
+                return data;
+            } catch (e) {
+                addLog(`Failed to load component definition: ${type}`, 'error', e);
+                return null;
+            }
+        }
+        
+        async function loadLayout() {
+            const selector = document.getElementById('layout-selector');
+            const layoutId = selector.value;
+            
+            if (!layoutId) {
+                document.getElementById('layout-info').style.display = 'none';
+                document.getElementById('layout-visualization').style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`profiles/configurations/${layoutId}.json`);
+                const layout = await response.json();
+                currentLayout = layout;
+                
+                await Promise.all(
+                    layout.components.map(comp => loadComponentDefinition(comp.type))
+                );
+                
+                processLayoutComponents(layout);
+                
+                document.getElementById('config-name').textContent = layout.name;
+                document.getElementById('total-components').textContent = layout.components.length;
+                
+                document.getElementById('layout-info').style.display = 'block';
+                document.getElementById('layout-visualization').style.display = 'flex';
+                
+                renderLayoutVisual(layout);
+                
+                addLog(`Loaded layout: ${layout.name}`, 'received', layout);
+            } catch (e) {
+                addLog(`Failed to load layout: ${layoutId}`, 'error', e.message);
+            }
+        }
+        
+        function processLayoutComponents(layout) {
+            layout.components.sort((a, b) => a.order - b.order);
+            
+            encoderComponents = layout.components.filter(c => 
+                c.type && (c.type.startsWith('encoder-') || c.type === 'rotary_encoder')
+            );
+            currentEncoderIndex = 0;
+            
+            let totalLEDs = 0;
+            
+            for (const component of layout.components) {
+                if (component.hardware) {
+                    component.ledStart = component.hardware.led_start;
+                    component.ledCount = component.hardware.led_count;
+                    component.ledEnd = component.ledStart + component.ledCount - 1;
+                    
+                    totalLEDs = Math.max(totalLEDs, component.ledEnd + 1);
+                    
+                    component.pcfAddress = component.hardware.pcf_address;
+                    component.pcfPins = component.hardware.pcf_pins;
+                } else {
+                    const componentDef = componentDefinitions[component.type];
+                    component.ledCount = componentDef ? componentDef.ledCount : 0;
+                }
+                
+                if (component.vst_mapping) {
+                    component.parameterIndex = component.vst_mapping.parameter_index;
+                    component.parameterName = component.vst_mapping.parameter_name;
+                }
+            }
+            
+            document.getElementById('total-leds').textContent = totalLEDs;
+            
+            return totalLEDs;
+        }
+        
+        function renderLayoutVisual(layout) {
+            const container = document.getElementById('layout-visualization');
+            container.innerHTML = '';
+            
+            for (const component of layout.components) {
+                const componentDef = componentDefinitions[component.type];
+                if (!componentDef) continue;
+                
+                const visual = createComponentVisual(component, componentDef);
+                container.appendChild(visual);
+            }
+        }
+        
+        function createComponentVisual(component, componentDef) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'component-visual';
+            wrapper.onclick = () => toggleComponentDetails(wrapper, component);
+            
+            const order = document.createElement('div');
+            order.className = 'component-order';
+            order.textContent = `Order: ${component.order}`;
+            
+            const body = document.createElement('div');
+            body.className = 'component-body';
+            
+            if (componentDef.type === 'button') {
+                body.appendChild(createButtonVisual(component));
+            } else if (componentDef.type === 'switch') {
+                body.appendChild(createSwitchVisual(component));
+            } else if (componentDef.type === 'rotary_encoder') {
+                body.appendChild(createEncoderVisual(component, componentDef));
+            }
+            
+            const label = document.createElement('div');
+            label.className = 'component-label';
+            label.textContent = component.label;
+            
+            const type = document.createElement('div');
+            type.className = 'component-type';
+            type.textContent = componentDef.name;
+            
+            const ledRange = document.createElement('div');
+            ledRange.className = 'component-led-range';
+            if (component.ledCount > 0) {
+                if (component.ledCount === 1) {
+                    ledRange.textContent = `LED: ${component.ledStart}`;
+                } else {
+                    ledRange.textContent = `LEDs: ${component.ledStart}-${component.ledEnd}`;
+                }
+            } else {
+                ledRange.textContent = 'No LEDs';
+            }
+            
+            const hardware = document.createElement('div');
+            hardware.className = 'component-hardware';
+            if (component.pcfAddress && component.pcfPins) {
+                const pinsStr = component.pcfPins.join(', ');
+                hardware.textContent = `PCF ${component.pcfAddress} / Pins: ${pinsStr}`;
+            } else {
+                hardware.textContent = 'No hardware config';
+            }
+            
+            const vstMapping = document.createElement('div');
+            vstMapping.className = 'component-vst';
+            if (component.parameterName) {
+                vstMapping.textContent = `VST Param ${component.parameterIndex}: ${component.parameterName}`;
+            } else {
+                vstMapping.textContent = 'No VST mapping';
+            }
+            
+            wrapper.appendChild(order);
+            wrapper.appendChild(body);
+            wrapper.appendChild(label);
+            wrapper.appendChild(type);
+            wrapper.appendChild(ledRange);
+            wrapper.appendChild(hardware);
+            wrapper.appendChild(vstMapping);
+            
+            return wrapper;
+        }
+        
+        function createButtonVisual(component) {
+            const button = document.createElement('div');
+            button.className = 'button-component';
+            
+            const led = document.createElement('div');
+            led.className = 'led-indicator';
+            
+            if (component.default_color) {
+                const c = component.default_color;
+                led.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                led.style.boxShadow = `0 0 8px rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
+            }
+            
+            const ledNum = document.createElement('div');
+            ledNum.className = 'led-number';
+            ledNum.textContent = component.ledStart;
+            
+            led.appendChild(ledNum);
+            button.appendChild(led);
+            
+            return button;
+        }
+        
+        function createSwitchVisual(component) {
+            const switchElem = document.createElement('div');
+            switchElem.className = 'switch-component';
+            switchElem.style.cursor = 'pointer';
+            
+            let currentState = 0;
+            
+            const led1 = document.createElement('div');
+            led1.className = 'led-indicator';
+            led1.dataset.ledPosition = 0;
+            
+            const led2 = document.createElement('div');
+            led2.className = 'led-indicator';
+            led2.dataset.ledPosition = 1;
+            
+            const ledNum1 = document.createElement('div');
+            ledNum1.className = 'led-number';
+            ledNum1.textContent = component.ledStart;
+            led1.appendChild(ledNum1);
+            
+            const ledNum2 = document.createElement('div');
+            ledNum2.className = 'led-number';
+            ledNum2.textContent = component.ledEnd;
+            led2.appendChild(ledNum2);
+            
+            const updateSwitchState = (state) => {
+                currentState = state;
+                const c = component.default_color;
+                const cDim = {
+                    r: Math.floor(c.r / 8),
+                    g: Math.floor(c.g / 8),
+                    b: Math.floor(c.b / 8)
+                };
+                
+                if (state === 0) {
+                    led1.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                    led1.style.boxShadow = `0 0 10px rgba(${c.r}, ${c.g}, ${c.b}, 0.8)`;
+                    led2.style.background = `rgb(${cDim.r}, ${cDim.g}, ${cDim.b})`;
+                    led2.style.boxShadow = `0 0 4px rgba(${c.r}, ${c.g}, ${c.b}, 0.3)`;
+                    
+                    sendSwitchUpdate(component, 0);
+                } else {
+                    led1.style.background = `rgb(${cDim.r}, ${cDim.g}, ${cDim.b})`;
+                    led1.style.boxShadow = `0 0 4px rgba(${c.r}, ${c.g}, ${c.b}, 0.3)`;
+                    led2.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                    led2.style.boxShadow = `0 0 10px rgba(${c.r}, ${c.g}, ${c.b}, 0.8)`;
+                    
+                    sendSwitchUpdate(component, 1);
+                }
+            };
+            
+            switchElem.addEventListener('click', () => {
+                updateSwitchState(currentState === 0 ? 1 : 0);
+            });
+            
+            switchElem.appendChild(led1);
+            switchElem.appendChild(led2);
+            
+            updateSwitchState(0);
+            
+            return switchElem;
+        }
+        
+        function sendSwitchUpdate(component, state) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (!component.hardware) return;
+            
+            const c = component.default_color;
+            const cDim = {
+                r: Math.floor(c.r / 8),
+                g: Math.floor(c.g / 8),
+                b: Math.floor(c.b / 8)
+            };
+            
+            const led1Message = {
+                type: 'led_update',
+                led_start: component.ledStart,
+                led_count: 1,
+                color: state === 0 ? c : cDim,
+                pattern: 'solid',
+                value: 1.0
+            };
+            
+            const led2Message = {
+                type: 'led_update',
+                led_start: component.ledEnd,
+                led_count: 1,
+                color: state === 1 ? c : cDim,
+                pattern: 'solid',
+                value: 1.0
+            };
+            
+            ws.send(JSON.stringify(led1Message));
+            ws.send(JSON.stringify(led2Message));
+        }
+        
+        function createVirtualKnob(component, componentDef, encoderElement) {
+            const knobContainer = document.createElement('div');
+            knobContainer.className = 'virtual-knob-container';
+            
+            const knobId = 'knob-' + component.id;
+            const indicatorId = 'indicator-' + component.id;
+            
+            knobContainer.innerHTML = `
+                <svg viewBox="0 0 100 100" width="70" height="70" class="virtual-knob" id="${knobId}">
+                    <circle class="knob-center" cx="50" cy="50" r="30" 
+                            fill="#2a2a2a" stroke="#4b5563" stroke-width="2"/>
+                    <g id="${indicatorId}" transform="rotate(-135 50 50)">
+                        <rect x="47" y="25" width="6" height="15" rx="3" fill="#ffffff"/>
+                    </g>
+                </svg>
+                <div class="knob-value">0%</div>
+            `;
+            
+            let isDragging = false;
+            let startY = 0;
+            let startValue = 0;
+            let currentValue = 0;
+            
+            const svg = knobContainer.querySelector('.virtual-knob');
+            const indicator = knobContainer.querySelector(`#${indicatorId}`);
+            const valueDisplay = knobContainer.querySelector('.knob-value');
+            
+            function updateKnob(value, skipESP32 = false) {
+                currentValue = Math.max(0, Math.min(1, value));
+                knobContainer.currentValue = currentValue;
+                const rotation = -135 + (currentValue * 270);
+                indicator.setAttribute('transform', `rotate(${rotation} 50 50)`);
+                valueDisplay.textContent = Math.round(currentValue * 100) + '%';
+                
+                if (encoderElement && encoderElement.updateLEDStates) {
+                    encoderElement.updateLEDStates(currentValue);
+                }
+                
+                if (!skipESP32) {
+                    sendLEDUpdateToESP32(component, currentValue);
+                }
+            }
+            
+            function updateKnobVisualOnly(value) {
+                currentValue = Math.max(0, Math.min(1, value));
+                knobContainer.currentValue = currentValue;
+                const rotation = -135 + (currentValue * 270);
+                indicator.setAttribute('transform', `rotate(${rotation} 50 50)`);
+                valueDisplay.textContent = Math.round(currentValue * 100) + '%';
+                
+                if (encoderElement && encoderElement.updateLEDStates) {
+                    encoderElement.updateLEDStates(currentValue);
+                }
+            }
+            
+            knobContainer.currentValue = 0;
+            
+            svg.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startY = e.clientY;
+                startValue = currentValue;
+                e.preventDefault();
+            });
+            
+            svg.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                startY = e.touches[0].clientY;
+                startValue = currentValue;
+                e.preventDefault();
+            });
+            
+            const handleMouseMove = (e) => {
+                if (!isDragging) return;
+                const deltaY = startY - e.clientY;
+                const newValue = startValue + (deltaY / 200);
+                updateKnob(newValue);
+            };
+            
+            const handleTouchMove = (e) => {
+                if (!isDragging) return;
+                const currentY = e.touches[0].clientY;
+                const deltaY = startY - currentY;
+                const newValue = startValue + (deltaY / 200);
+                updateKnob(newValue);
+                e.preventDefault();
+            };
+            
+            const handleEnd = () => {
+                isDragging = false;
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('mouseup', handleEnd);
+            document.addEventListener('touchend', handleEnd);
+            
+            knobContainer.updateKnob = updateKnob;
+            knobContainer.updateKnobVisualOnly = updateKnobVisualOnly;
+            knobContainer.getCurrentValue = () => currentValue;
+            
+            return knobContainer;
+        }
+        
+        let ledUpdateThrottle = {};
+        let lastLEDUpdateTime = {};
+        let virtualKnobsByComponent = {};
+        let currentEncoderIndex = 0;
+        let encoderComponents = [];
+        let lastButtonPressTime = 0;
+        let dimBrightnessFactor = 0.125;
+        
+        let encoderUpdateCount = 0;
+        
+        function handleEncoderUpdate(data) {
+            const encoderId = data.encoder_id;
+            const value = data.value;
+            encoderUpdateCount++;
+            
+            if (encoderUpdateCount % 10 === 0) {
+                console.log(`Encoder updates received: ${encoderUpdateCount}`);
+            }
+            
+            if (encoderId === 0 && currentLayout && encoderComponents.length > 0) {
+                const activeComponent = encoderComponents[currentEncoderIndex];
+                
+                if (activeComponent && virtualKnobsByComponent[activeComponent.id]) {
+                    const knobContainer = virtualKnobsByComponent[activeComponent.id];
+                    if (knobContainer.updateKnobVisualOnly) {
+                        knobContainer.updateKnobVisualOnly(value);
+                    }
+                }
+                
+                updatePhysicalLEDsForComponent(activeComponent, value);
+            }
+        }
+        
+        function handleButtonPress(data) {
+            if (!currentLayout || encoderComponents.length === 0) return;
+            
+            const now = Date.now();
+            if (now - lastButtonPressTime < 200) {
+                console.log('Button press ignored - too soon');
+                return;
+            }
+            lastButtonPressTime = now;
+            
+            let clearedCount = 0;
+            for (const componentId in ledUpdateThrottle) {
+                if (ledUpdateThrottle[componentId]) {
+                    clearTimeout(ledUpdateThrottle[componentId]);
+                    ledUpdateThrottle[componentId] = null;
+                    clearedCount++;
+                }
+            }
+            console.log(`Cleared ${clearedCount} pending LED updates`);
+            
+            currentEncoderIndex = (currentEncoderIndex + 1) % encoderComponents.length;
+            const activeComponent = encoderComponents[currentEncoderIndex];
+            
+            console.log(`Switched to encoder ${currentEncoderIndex}: ${activeComponent.label}`);
+            addLog(`Switched to: ${activeComponent.label}`, 'received');
+        }
+        
+        function updatePhysicalLEDsForComponent(component, value) {
+            if (!component.hardware) return;
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            const componentId = component.id;
+            const now = Date.now();
+            const minInterval = 16;
+            
+            if (ledUpdateThrottle[componentId]) {
+                clearTimeout(ledUpdateThrottle[componentId]);
+                ledUpdateThrottle[componentId] = null;
+            }
+            
+            const ledStart = component.hardware.led_start;
+            const ledCount = component.hardware.led_count;
+            const litCount = Math.round(value * ledCount);
+            
+            const c = component.default_color;
+            const cDim = {
+                r: Math.floor(c.r * dimBrightnessFactor),
+                g: Math.floor(c.g * dimBrightnessFactor),
+                b: Math.floor(c.b * dimBrightnessFactor)
+            };
+            
+            const sendUpdate = () => {
+                ledUpdateThrottle[componentId] = null;
+                
+                if (litCount > 0) {
+                    const litMessage = {
+                        type: 'led_update',
+                        led_start: ledStart,
+                        led_count: litCount,
+                        color: c,
+                        pattern: 'solid',
+                        value: 1.0
+                    };
+                    console.log(`Sending lit LEDs: ${ledStart}-${ledStart+litCount-1}, RGB(${c.r},${c.g},${c.b})`);
+                    ws.send(JSON.stringify(litMessage));
+                }
+                
+                if (litCount < ledCount) {
+                    const dimMessage = {
+                        type: 'led_update',
+                        led_start: ledStart + litCount,
+                        led_count: ledCount - litCount,
+                        color: cDim,
+                        pattern: 'solid',
+                        value: 1.0
+                    };
+                    console.log(`Sending dim LEDs: ${ledStart+litCount}-${ledStart+ledCount-1}, RGB(${cDim.r},${cDim.g},${cDim.b}) [factor: ${dimBrightnessFactor}]`);
+                    ws.send(JSON.stringify(dimMessage));
+                }
+                
+                lastLEDUpdateTime[componentId] = Date.now();
+            };
+            
+            const timeSinceLastUpdate = now - (lastLEDUpdateTime[componentId] || 0);
+            
+            if (timeSinceLastUpdate >= minInterval) {
+                sendUpdate();
+            } else {
+                ledUpdateThrottle[componentId] = setTimeout(sendUpdate, minInterval - timeSinceLastUpdate);
+            }
+        }
+        
+        function sendLEDUpdateToESP32(component, value) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (!component.hardware) return;
+            
+            const componentId = component.id;
+            const now = Date.now();
+            const minInterval = 16;
+            
+            if (ledUpdateThrottle[componentId]) {
+                clearTimeout(ledUpdateThrottle[componentId]);
+            }
+            
+            const timeSinceLastUpdate = now - (lastLEDUpdateTime[componentId] || 0);
+            
+            const sendUpdate = () => {
+                lastLEDUpdateTime[componentId] = Date.now();
+                
+                const ledStart = component.hardware.led_start;
+                const ledCount = component.hardware.led_count;
+                const litCount = Math.round(value * ledCount);
+                
+                const c = component.default_color;
+                const cDim = {
+                    r: Math.floor(c.r / 8),
+                    g: Math.floor(c.g / 8),
+                    b: Math.floor(c.b / 8)
+                };
+                
+                if (litCount > 0) {
+                    const litMessage = {
+                        type: 'led_update',
+                        led_start: ledStart,
+                        led_count: litCount,
+                        color: c,
+                        pattern: 'solid',
+                        value: 1.0
+                    };
+                    ws.send(JSON.stringify(litMessage));
+                }
+                
+                if (litCount < ledCount) {
+                    const dimMessage = {
+                        type: 'led_update',
+                        led_start: ledStart + litCount,
+                        led_count: ledCount - litCount,
+                        color: cDim,
+                        pattern: 'solid',
+                        value: 1.0
+                    };
+                    ws.send(JSON.stringify(dimMessage));
+                }
+            };
+            
+            if (timeSinceLastUpdate >= minInterval) {
+                sendUpdate();
+            } else {
+                ledUpdateThrottle[componentId] = setTimeout(sendUpdate, minInterval - timeSinceLastUpdate);
+            }
+        }
+        
+        function createEncoderVisual(component, componentDef) {
+            const encoder = document.createElement('div');
+            encoder.className = 'encoder-component';
+            encoder.dataset.componentId = component.id;
+            
+            const ledCount = componentDef.ledCount;
+            const radius = 60;
+            const centerX = 80;
+            const centerY = 80;
+            
+            const ledElements = [];
+            
+            for (let i = 0; i < ledCount; i++) {
+                const angle = (i / ledCount) * Math.PI * 2 - Math.PI / 2;
+                const ledX = centerX + radius * Math.cos(angle);
+                const ledY = centerY + radius * Math.sin(angle);
+                
+                const led = document.createElement('div');
+                led.className = 'encoder-led dim';
+                led.style.left = `${ledX}px`;
+                led.style.top = `${ledY}px`;
+                led.dataset.ledIndex = i;
+                
+                if (component.default_color) {
+                    const c = component.default_color;
+                    led.style.setProperty('--led-color', `rgb(${c.r}, ${c.g}, ${c.b})`);
+                    led.style.setProperty('--led-color-dim', `rgb(${Math.floor(c.r/8)}, ${Math.floor(c.g/8)}, ${Math.floor(c.b/8)})`);
+                    led.style.setProperty('--led-color-alpha', `rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`);
+                }
+                
+                const ledNum = document.createElement('div');
+                ledNum.className = 'encoder-led-number';
+                ledNum.textContent = component.ledStart + i;
+                
+                const numRadius = radius + 20;
+                const numX = centerX + numRadius * Math.cos(angle);
+                const numY = centerY + numRadius * Math.sin(angle);
+                ledNum.style.left = `${numX}px`;
+                ledNum.style.top = `${numY}px`;
+                
+                encoder.appendChild(led);
+                encoder.appendChild(ledNum);
+                ledElements.push(led);
+            }
+            
+            encoder.updateLEDStates = function(value) {
+                const litCount = Math.round(value * ledCount);
+                
+                ledElements.forEach((led, i) => {
+                    led.classList.remove('lit', 'dim', 'off');
+                    if (i < litCount) {
+                        led.classList.add('lit');
+                    } else {
+                        led.classList.add('dim');
+                    }
+                });
+            };
+            
+            const virtualKnob = createVirtualKnob(component, componentDef, encoder);
+            encoder.appendChild(virtualKnob);
+            
+            virtualKnobsByComponent[component.id] = virtualKnob;
+            
+            encoder.updateLEDStates(0);
+            
+            return encoder;
+        }
+        
+        function toggleComponentDetails(element, component) {
+            element.classList.toggle('expanded');
+        }
+        
+        function setDimBrightness(factor) {
+            dimBrightnessFactor = factor;
+            const percentage = (factor * 100).toFixed(1);
+            document.getElementById('dim-brightness-display').textContent = percentage + '%';
+            console.log(`Dim brightness set to ${percentage}%`);
+            
+            if (currentLayout && encoderComponents.length > 0) {
+                encoderComponents.forEach((component, index) => {
+                    if (component && virtualKnobsByComponent[component.id]) {
+                        const knobContainer = virtualKnobsByComponent[component.id];
+                        if (knobContainer.getCurrentValue) {
+                            const currentValue = knobContainer.getCurrentValue();
+                            setTimeout(() => {
+                                updatePhysicalLEDsForComponent(component, currentValue);
+                            }, index * 50);
+                        }
+                    }
+                });
+                
+                console.log(`Updated ${encoderComponents.length} encoders with new dim brightness`);
+            }
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r: 255, g: 0, b: 0};
+        }
+        
+        document.getElementById('led-color').addEventListener('input', (e) => {
+            document.getElementById('led-color-rgb').textContent = e.target.value;
+            updateKnobVisuals(knobValue);
+        });
+        
+        updateKnobVisuals(0);
+        connectWebSocket();
+        loadLayout();
+    </script>
+</body>
+</html>

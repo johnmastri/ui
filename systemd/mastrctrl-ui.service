@@ -1,0 +1,20 @@
+[Unit]
+Description=MastrCtrl Electron UI
+After=network.target mastrctrl-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mastrctrl/ui
+Environment=DISPLAY=:0
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/electron electron/kiosk_basic_fast.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
