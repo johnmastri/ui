@@ -9,6 +9,7 @@
         <div>N: Play/Pause</div>
         <div>M: Audio Modal</div>
         <div>T: Test Compression</div>
+        <div>P: Pendulum Demo</div>
       </div>
     </div>
     <svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" ref="vuMeterSvg" @click="onOpenSettingsMenu">
@@ -399,15 +400,21 @@ export default {
         }
       }
       
-      // 'T' key for testing compression (manual trigger)
-      if (event.key.toLowerCase() === 't') {
-        event.preventDefault()
-        console.log('🧪 Manual test trigger')
-        // Simulate audio level for testing
-        const testLevel = -10 + Math.random() * 15 // Random between -10 and +5 dB
-        updateVUMeter(testLevel)
-      }
+    // 'T' key for testing compression (manual trigger)
+    if (event.key.toLowerCase() === 't') {
+      event.preventDefault()
+      console.log('🧪 Manual test trigger')
+      // Simulate audio level for testing
+      const testLevel = -10 + Math.random() * 15 // Random between -10 and +5 dB
+      updateVUMeter(testLevel)
     }
+    
+    // 'P' key toggles pendulum/demo mode
+    if (event.key.toLowerCase() === 'p') {
+      event.preventDefault()
+      toggleMode()
+    }
+  }
     
     // Load current track
     const loadCurrentTrack = async () => {

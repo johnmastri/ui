@@ -94,31 +94,61 @@ function Build-Firmware {
     
     Write-Host "Building ESP32 firmware..." -ForegroundColor Yellow
     
-    # Check if arduino-cli is available
     $arduinoCli = Get-Command arduino-cli -ErrorAction SilentlyContinue
     
     if (-not $arduinoCli) {
-        Write-Host "  Warning: arduino-cli not found. Firmware must be built manually." -ForegroundColor Yellow
+        Write-Host "  Warning: arduino-cli not found." -ForegroundColor Yellow
+        Write-Host "  Install with: winget install ArduinoSA.CLI" -ForegroundColor Yellow
+        Write-Host "  Then configure with:" -ForegroundColor Yellow
+        Write-Host "    arduino-cli config init" -ForegroundColor Yellow
+        Write-Host "    arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json" -ForegroundColor Yellow
+        Write-Host "    arduino-cli core update-index" -ForegroundColor Yellow
+        Write-Host "    arduino-cli core install esp32:esp32" -ForegroundColor Yellow
         Write-Host "  Place firmware-v${Version}.bin in $ReleaseDir manually" -ForegroundColor Yellow
         return $true
     }
     
-    Push-Location "$PSScriptRoot/../esp32/MasterController"
+    $esp32Core = arduino-cli core list 2>&1 | Select-String "esp32:esp32"
+    if (-not $esp32Core) {
+        Write-Host "  Warning: ESP32 core not installed." -ForegroundColor Yellow
+        Write-Host "  Install with: arduino-cli core install esp32:esp32" -ForegroundColor Yellow
+        Write-Host "  (Note: This is a large download ~1GB and may take several minutes)" -ForegroundColor Yellow
+        Write-Host "  Place firmware-v${Version}.bin in $ReleaseDir manually" -ForegroundColor Yellow
+        return $true
+    }
     
-    Write-Host "  Compiling firmware..."
-    arduino-cli compile --fqbn esp32:esp32:esp32s3 MasterController.ino --output-dir ../../$ReleaseDir
-    
-    if ($LASTEXITCODE -ne 0) {
-        Pop-Location
-        Write-Host "Error: Firmware build failed" -ForegroundColor Red
+    $sourcePath = "$PSScriptRoot/../esp32/MasterController"
+    if (-not (Test-Path $sourcePath)) {
+        Write-Host "  Error: Firmware source not found at $sourcePath" -ForegroundColor Red
         return $false
     }
     
-    # Rename firmware file
-    Move-Item "$ReleaseDir/MasterController.ino.bin" "$ReleaseDir/firmware-v${Version}.bin" -Force
+    Push-Location $sourcePath
+    
+    Write-Host "  Compiling firmware for ESP32-S3..."
+    $outputDir = Join-Path $ReleaseDir "build"
+    New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+    
+    arduino-cli compile --fqbn esp32:esp32:esp32s3 MasterController.ino --output-dir $outputDir 2>&1
+    
+    if ($LASTEXITCODE -ne 0) {
+        Pop-Location
+        Write-Host "  Error: Firmware compilation failed" -ForegroundColor Red
+        Write-Host "  You may need to build manually in Arduino IDE or platformio" -ForegroundColor Yellow
+        return $true
+    }
+    
+    $binFile = Get-ChildItem $outputDir -Filter "*.bin" | Where-Object { $_.Name -like "*MasterController*" } | Select-Object -First 1
+    if ($binFile) {
+        Copy-Item $binFile.FullName "$ReleaseDir/firmware-v${Version}.bin" -Force
+        Start-Sleep -Milliseconds 500
+        Remove-Item $outputDir -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "  Firmware build complete: firmware-v${Version}.bin" -ForegroundColor Green
+    } else {
+        Write-Host "  Warning: Compiled .bin file not found" -ForegroundColor Yellow
+    }
     
     Pop-Location
-    Write-Host "  Firmware build complete" -ForegroundColor Green
     return $true
 }
 
@@ -145,15 +175,26 @@ function Package-UI {
     
     Write-Host "  Creating archive..."
     
-    # Small delay to ensure file handles are released
-    Start-Sleep -Milliseconds 500
+    # Longer delay to ensure file handles are released
+    Start-Sleep -Seconds 2
     
-    try {
-        Compress-Archive -Path $files -DestinationPath $uiZip -Force -ErrorAction Stop
-    } catch {
-        Write-Host "  Warning: Compression error, retrying..." -ForegroundColor Yellow
-        Start-Sleep -Seconds 2
-        Compress-Archive -Path $files -DestinationPath $uiZip -Force
+    $maxRetries = 3
+    $retryCount = 0
+    $success = $false
+    
+    while (-not $success -and $retryCount -lt $maxRetries) {
+        try {
+            Compress-Archive -Path $files -DestinationPath $uiZip -Force -ErrorAction Stop
+            $success = $true
+        } catch {
+            $retryCount++
+            if ($retryCount -lt $maxRetries) {
+                Write-Host "  Warning: Compression failed, retrying ($retryCount/$maxRetries)..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 3
+            } else {
+                throw
+            }
+        }
     }
     
     Pop-Location

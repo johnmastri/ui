@@ -45,7 +45,26 @@ This script:
 - GitHub CLI (`gh`) - installed via `setup-github-auth.ps1`
 - Node.js & npm - for UI builds
 - Python 3 - for manifest generation
-- arduino-cli - optional, for firmware compilation
+- arduino-cli - for firmware compilation (see FIRMWARE_BUILD_SETUP.md)
+
+### Firmware Build Setup
+
+To enable automatic firmware building during releases:
+
+1. Install Arduino CLI:
+   ```powershell
+   winget install ArduinoSA.CLI
+   ```
+
+2. Configure for ESP32:
+   ```powershell
+   arduino-cli config init
+   arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+   arduino-cli core update-index
+   arduino-cli core install esp32:esp32
+   ```
+
+For detailed setup instructions, see [FIRMWARE_BUILD_SETUP.md](FIRMWARE_BUILD_SETUP.md).
 
 ## Release Flow
 
