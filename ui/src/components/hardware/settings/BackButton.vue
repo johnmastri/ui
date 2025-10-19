@@ -2,10 +2,11 @@
   <g
     ref="BackButton"
     id="BackButton"
-    @click="handleBack"
+    @mousedown="handleMouseDown"
+    @click="handleClick"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
-    style="cursor:pointer; pointer-events: auto !important;"
+    :style="{ cursor: 'pointer', pointerEvents: isVisible ? 'auto' : 'none' }"
   >
     <rect 
       id="TransparentBack" 
@@ -64,6 +65,7 @@
 
 <script>
 import { gsap } from 'gsap'
+import { useHardwareSettingsStore } from '../../../stores/hardwareSettingsStore'
 
 export default {
   name: 'BackButton',
@@ -76,6 +78,12 @@ export default {
   data() {
     return {
       arrowTween: null
+    }
+  },
+  computed: {
+    isVisible() {
+      const hardwareSettingsStore = useHardwareSettingsStore()
+      return hardwareSettingsStore.navigationMode === 'parameters'
     }
   },
   watch: {
@@ -97,6 +105,21 @@ export default {
     })
   },
   methods: {
+    handleMouseDown(event) {
+      if (event.button === 1) {
+        event.preventDefault()
+        event.stopPropagation()
+        this.$emit('back')
+      }
+    },
+    
+    handleClick(event) {
+      if (event.button === 0 || event.button === undefined) {
+        event.stopPropagation()
+        this.$emit('back')
+      }
+    },
+    
     fadeIn() {
       gsap.to(this.$refs.BackButton, {
         opacity: 1,
@@ -127,10 +150,6 @@ export default {
         duration: 0.3,
         ease: 'power2.out'
       })
-    },
-
-    handleBack() {
-      this.$emit('back')
     },
 
     handleMouseEnter() {

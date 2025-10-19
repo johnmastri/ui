@@ -117,6 +117,9 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
   // Navigation mode: 'menu' | 'parameters' | 'modal'
   const navigationMode = ref('menu')
   
+  // NEW: Track active interaction layer for better event isolation
+  const interactionLayer = ref('menu')
+  
   // Track if back button is selected during parameter navigation
   const isBackButtonSelected = ref(false)
   
@@ -127,11 +130,25 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
   
   const setNavigationMode = (mode) => {
     navigationMode.value = mode
-    // Reset back button selection when switching modes
+    interactionLayer.value = mode
     if (mode === 'menu') {
       isBackButtonSelected.value = false
       selectedParameterIndex.value = 0
     }
+  }
+  
+  const setInteractionLayer = (layer) => {
+    interactionLayer.value = layer
+    
+    if (layer === 'menu') {
+      isBackButtonSelected.value = false
+      selectedParameterIndex.value = 0
+      isSelectFocused.value = false
+    }
+  }
+  
+  const canHandleEvents = (requiredLayer) => {
+    return interactionLayer.value === requiredLayer
   }
   
   const setBackButtonSelected = (selected) => {
@@ -245,6 +262,7 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
     selectedParameterIndex,
     navigationMode,
     isBackButtonSelected,
+    interactionLayer,
     // Focus mode state
     isSelectFocused,
     highlightedSelectIndex,
@@ -258,6 +276,8 @@ export const useHardwareSettingsStore = defineStore('hardwareSettings', () => {
     clearHoveredButton,
     setSelectedParameterIndex,
     setNavigationMode,
+    setInteractionLayer,
+    canHandleEvents,
     setBackButtonSelected,
     getSettingForButton,
     // Focus mode actions

@@ -22,13 +22,13 @@
     />
     
     <!-- SVG lines omitted for brevity, copy from SettingsButton.svg -->
-    <g><!-- ... lines ... --></g>
+    <g style="pointer-events: none;"><!-- ... lines ... --></g>
     
     <text
       ref="textElement"
       fill="white"
       xml:space="preserve"
-      style="white-space: pre"
+      style="white-space: pre; pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; cursor: inherit;"
       font-family="Barlow"
       font-size="36"
       font-style="italic"
@@ -77,7 +77,7 @@ export default {
     }
   },
   
-  emits: ['click'],
+  emits: ['click', 'mouseenter', 'mouseleave'],
   
   data() {
     return {
@@ -111,23 +111,21 @@ export default {
   methods: {
     handleMouseEnter() {
       if (!this.isAnimating && this.buttonId !== this.expandedButtonId) {
-        const hardwareSettingsStore = useHardwareSettingsStore()
-        hardwareSettingsStore.setHoveredButton(this.buttonId)
+        this.$emit('mouseenter')
       }
     },
     
     handleMouseLeave() {
       if (!this.isAnimating && this.buttonId !== this.expandedButtonId) {
-        const hardwareSettingsStore = useHardwareSettingsStore()
-        hardwareSettingsStore.clearHoveredButton()
+        this.$emit('mouseleave')
       }
     },
     
     handleClick(event) {
-      if (event) {
+      if (!this.isAnimating) {
         event.stopPropagation()
+        this.$emit('click')
       }
-      this.$emit('click')
     }
   },
   

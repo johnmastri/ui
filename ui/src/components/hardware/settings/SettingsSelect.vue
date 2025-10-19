@@ -1,7 +1,7 @@
 <template>
   <g 
     id="SettingsSelect"
-    @wheel="handleWheel"
+    @wheel.stop.prevent="handleWheel"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
     style="cursor: pointer"

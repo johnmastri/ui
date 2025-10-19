@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useWebsocketStore } from './websocketStore'
+import { useWebSocketStore } from './websocketStore'
 
 export const useUpdateStore = defineStore('update', () => {
-  const websocketStore = useWebsocketStore()
+  const websocketStore = useWebSocketStore()
   
   const updateAvailable = ref(false)
   const availableVersion = ref(null)
@@ -63,14 +63,20 @@ export const useUpdateStore = defineStore('update', () => {
   })
   
   function checkForUpdates() {
+    console.log('[UPDATE STORE] checkForUpdates called')
+    console.log('[UPDATE STORE] WebSocket connected:', websocketStore.isConnected)
+    
     isChecking.value = true
     errorMessage.value = null
     
-    if (websocketStore.connected) {
+    if (websocketStore.isConnected) {
+      console.log('[UPDATE STORE] Sending check_updates message...')
       websocketStore.send({
         type: 'check_updates'
       })
+      console.log('[UPDATE STORE] Message sent')
     } else {
+      console.log('[UPDATE STORE] WebSocket not connected!')
       errorMessage.value = 'Not connected to server'
       isChecking.value = false
     }
@@ -83,7 +89,7 @@ export const useUpdateStore = defineStore('update', () => {
     const selected = Object.keys(selectedComponents.value)
       .filter(k => selectedComponents.value[k])
     
-    if (websocketStore.connected && selected.length > 0) {
+    if (websocketStore.isConnected && selected.length > 0) {
       websocketStore.send({
         type: 'download_updates',
         components: selected
@@ -101,7 +107,7 @@ export const useUpdateStore = defineStore('update', () => {
     const selected = Object.keys(selectedComponents.value)
       .filter(k => selectedComponents.value[k])
     
-    if (websocketStore.connected && selected.length > 0) {
+    if (websocketStore.isConnected && selected.length > 0) {
       websocketStore.send({
         type: 'install_updates',
         components: selected
@@ -129,12 +135,16 @@ export const useUpdateStore = defineStore('update', () => {
   }
   
   function handleUpdateMessage(message) {
+    console.log('[UPDATE STORE] handleUpdateMessage called with:', message)
+    
     switch (message.type) {
       case 'update_check_result':
+        console.log('[UPDATE STORE] Received update_check_result')
         isChecking.value = false
         lastChecked.value = new Date()
         
         if (message.available) {
+          console.log('[UPDATE STORE] Update available:', message.version)
           updateAvailable.value = true
           availableVersion.value = message.version
           releaseDate.value = message.release_date
@@ -147,6 +157,7 @@ export const useUpdateStore = defineStore('update', () => {
             }
           })
         } else {
+          console.log('[UPDATE STORE] No updates available')
           updateAvailable.value = false
         }
         break
@@ -189,6 +200,7 @@ export const useUpdateStore = defineStore('update', () => {
         break
         
       case 'update_error':
+        console.log('[UPDATE STORE] Received error:', message.error)
         errorMessage.value = message.error || 'Unknown error occurred'
         isChecking.value = false
         isDownloading.value = false

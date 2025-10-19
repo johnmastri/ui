@@ -12,7 +12,7 @@
         <div>P: Pendulum Demo</div>
       </div>
     </div>
-    <svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" ref="vuMeterSvg" @click="onOpenSettingsMenu">
+    <svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" ref="vuMeterSvg" @click="onOpenSettingsMenu" @wheel.prevent="handleSvgWheel">
       <defs>
         <filter id="filter0_d_39_1020" x="-6.8" y="-9.80003" width="839.6" height="519.6" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
           <feFlood flood-opacity="0" result="BackgroundImageFix"/>
@@ -554,6 +554,13 @@ export default {
       }
     }
     
+    const handleSvgWheel = (event) => {
+      if (showSettingsMenu.value) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    }
+    
     onMounted(async () => {
       // Initialize needle position
       nextTick(() => {
@@ -611,6 +618,7 @@ export default {
       showSettingsMenu,
       onCloseSettingsMenu,
       onOpenSettingsMenu,
+      handleSvgWheel,
       updateVUMeter,
       isCompressionMode,
       toggleMode,

@@ -1,13 +1,11 @@
 <template>
-  <g @wheel="handleWheel" @mousedown="handleMouseDown">
-        <!-- 2x2 Grid of Settings Buttons -->
+  <g @wheel.stop.prevent="handleWheel" @mousedown="handleMouseDown">
+    <!-- 2x2 Grid of Settings Buttons -->
     <g 
       v-for="(btn, idx) in hardwareSettingsStore.buttons" 
       :key="btn.id" 
       :ref="el => setButtonRef(el, btn.id)"
       :transform="`translate(${btn.x}, ${btn.y})`"
-      @mouseenter="handleMouseEnter(btn.id)"
-      @mouseleave="handleMouseLeave"
       style="opacity: 0; pointer-events: auto;"
     >
       <SettingsButton 
@@ -17,29 +15,37 @@
         :is-animating="isAnimating"
         :expanded-button-id="expandedButtonId"
         @click="handleButtonClick(btn.id)"
+        @mouseenter="handleButtonMouseEnter(btn.id)"
+        @mouseleave="handleButtonMouseLeave"
         :ref="el => setSettingsButtonRef(el, btn.id)"
       />
     </g>
     
-        <!-- Close Button -->
+    <!-- Close Button -->
     <g :ref="el => closeButtonWrapper = el" style="opacity: 0; pointer-events: auto;">
       <CloseButton 
         :is-selected="isButtonSelected('close')"
         :is-expanded="isAnimating || hardwareSettingsStore.navigationMode === 'parameters'"
         @close="emitClose"
-        @mouseenter="handleMouseEnter('close')"
-        @mouseleave="handleMouseLeave"
+        @mouseenter="handleCloseMouseEnter"
+        @mouseleave="handleCloseMouseLeave"
       />
     </g>
  
-      <SettingsHolder ref="SettingsHolder" />
-      <BackButton 
-        ref="BackButton" 
-        :is-selected="hardwareSettingsStore.isBackButtonSelected"
-        @back="handleBack" 
-      />
+    <SettingsHolder 
+      ref="SettingsHolder" 
+      @button-click="handleSettingsButtonClick" 
+    />
+    <BackButton 
+      ref="BackButton" 
+      :is-selected="hardwareSettingsStore.isBackButtonSelected"
+      @back="handleBack" 
+    />
   
-    
+    <UpdatePanel 
+      v-if="showUpdatePanel" 
+      @close="closeUpdatePanel"
+    />
   </g>
 </template>
 
@@ -48,6 +54,7 @@ import SettingsButton from './SettingsButton.vue'
 import CloseButton from './CloseButton.vue'
 import BackButton from './settings/BackButton.vue'
 import SettingsHolder from './settings/SettingsHolder.vue'
+import UpdatePanel from './settings/UpdatePanel.vue'
 import { useHardwareSettingsStore } from '../../stores/hardwareSettingsStore'
 import { gsap } from 'gsap'
 import { CSSPlugin } from 'gsap/CSSPlugin'
@@ -61,7 +68,8 @@ export default {
     SettingsButton,
     CloseButton,
     BackButton,
-    SettingsHolder
+    SettingsHolder,
+    UpdatePanel
   },
   emits: ['close'],
   setup() {
@@ -78,10 +86,21 @@ export default {
       closeButtonWrapper: null,
       isAnimating: false,
       animatingButtonId: null,
-      expandedButtonId: null
+      expandedButtonId: null,
+      showUpdatePanel: false
     }
   },
   watch: {
+    showUpdatePanel(newVal) {
+      console.log('[SETTINGS MENU] showUpdatePanel changed to:', newVal)
+      if (newVal) {
+        console.log('[SETTINGS MENU] Entering modal navigation mode')
+        this.hardwareSettingsStore.setNavigationMode('modal')
+      } else {
+        console.log('[SETTINGS MENU] Exiting modal, returning to parameters mode')
+        this.hardwareSettingsStore.setNavigationMode('parameters')
+      }
+    },
     'hardwareSettingsStore.navigationMode'(newMode, oldMode) {
       // Only clear expandedButtonId when returning to menu mode
       if (oldMode === 'parameters' && newMode === 'menu') {
@@ -99,20 +118,43 @@ export default {
     }
   },
   methods: {
-    handleMouseEnter(buttonId) {
-      // Don't set hover state for any button when animation is active, if it's the expanded button, or if any button is expanded
+    handleButtonMouseEnter(buttonId) {
       if (this.isAnimating || buttonId === this.expandedButtonId || this.expandedButtonId) {
         return
       }
       this.hardwareSettingsStore.setHoveredButton(buttonId)
     },
     
-    handleMouseLeave() {
-      // Don't clear hover state if we're animating or have an expanded button
+    handleButtonMouseLeave() {
       if (this.isAnimating || this.expandedButtonId) {
         return
       }
       this.hardwareSettingsStore.clearHoveredButton()
+    },
+    
+    handleCloseMouseEnter() {
+      if (this.hardwareSettingsStore.navigationMode === 'menu' && !this.isAnimating) {
+        this.hardwareSettingsStore.setHoveredButton('close')
+      }
+    },
+    
+    handleCloseMouseLeave() {
+      if (this.isAnimating || this.expandedButtonId) {
+        return
+      }
+      this.hardwareSettingsStore.clearHoveredButton()
+    },
+    
+    handleSettingsButtonClick(event) {
+      console.log('[SETTINGS MENU] Button clicked:', event)
+      if (event.parameterId === 'systemUpdate' && event.type === 'update_panel') {
+        console.log('[SETTINGS MENU] System Update detected, showing panel')
+        this.showUpdatePanel = true
+      }
+    },
+    
+    closeUpdatePanel() {
+      this.showUpdatePanel = false
     },
     
     isButtonSelected(buttonId) {
@@ -557,29 +599,80 @@ export default {
     
     handleWheel(event) {
       event.preventDefault();
+      event.stopPropagation();
       const mode = this.hardwareSettingsStore.navigationMode;
       
-      // Check if we're in select focus mode
       if (this.hardwareSettingsStore.isSelectFocused) {
-        // Delegate the wheel event to the SettingsSelect component
-        this.delegateWheelToSettingsSelect(event);
+        const dir = event.deltaY > 0 ? 1 : -1;
+        this.hardwareSettingsStore.updateHighlightedSelectIndex(dir);
         return
       }
       
       if (mode === 'menu') {
         this.cycleCategories(event.deltaY);
-      } else if (mode === 'parameters') {
-        this.cycleParameters(event.deltaY);
       }
     },
     
-    delegateWheelToSettingsSelect(event) {
-      // Directly call the store method that handles wheel events in focus mode
-      const dir = event.deltaY > 0 ? 1 : -1;
-      this.hardwareSettingsStore.updateHighlightedSelectIndex(dir);
+    cycleCategories(deltaY) {
+      const clockwiseOrder = ['device', 'network', 'midi', 'display', 'close']
+      const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
+      const currentIndex = clockwiseOrder.indexOf(currentButtonId)
+      
+      let nextIndex
+      if (deltaY > 0) {
+        nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % clockwiseOrder.length
+      } else {
+        nextIndex = currentIndex === -1 ? clockwiseOrder.length - 1 : (currentIndex - 1 + clockwiseOrder.length) % clockwiseOrder.length
+      }
+      
+      const nextButton = clockwiseOrder[nextIndex]
+      this.hardwareSettingsStore.setHoveredButton(nextButton)
+    },
+    
+    handleMouseDown(event) {
+      if (event.button === 1) {
+        event.preventDefault()
+        
+        const mode = this.hardwareSettingsStore.navigationMode
+        
+        if (mode === 'parameters') {
+          if (this.hardwareSettingsStore.isBackButtonSelected) {
+            this.handleBack()
+            return
+          }
+          
+          const currentParams = this.hardwareSettingsStore.currentParameters
+          const currentIndex = this.hardwareSettingsStore.selectedParameterIndex
+          
+          if (currentIndex >= 0 && currentIndex < currentParams.length) {
+            const currentParam = currentParams[currentIndex]
+            this.handleParameterInteraction(currentParam)
+          }
+          return
+        }
+        
+        if (mode === 'menu' && !this.expandedButtonId) {
+          const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
+          
+          if (currentButtonId === 'close') {
+            this.emitClose()
+          } else if (currentButtonId) {
+            this.handleButtonClick(currentButtonId)
+          }
+        }
+        
+        return
+      }
+      
+      if (this.expandedButtonId) {
+        event.preventDefault()
+        return
+      }
     },
     
     handleParameterInteraction(parameter) {
+      console.log('[SETTINGS MENU] handleParameterInteraction called with:', parameter)
+      
       // Check if we're in select focus mode
       if (this.hardwareSettingsStore.isSelectFocused) {
         // Already in focus mode - confirm selection and exit
@@ -591,105 +684,13 @@ export default {
         } else if (parameter.type === 'toggle') {
           // Toggle the parameter value
           parameter.value = !parameter.value
+        } else if (parameter.type === 'update_panel') {
+          console.log('[SETTINGS MENU] Update panel type detected, showing panel')
+          this.showUpdatePanel = true
+        } else if (parameter.type === 'button') {
+          console.log('[SETTINGS MENU] Button type detected:', parameter.id)
+          // Handle other button types in the future
         }
-      }
-    },
-    
-    cycleCategories(deltaY) {
-      // Define clockwise order: device → network → midi → display → close → device...
-      const clockwiseOrder = ['device', 'network', 'midi', 'display', 'close']
-      const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
-      const currentIndex = clockwiseOrder.indexOf(currentButtonId)
-      
-      let nextIndex
-      if (deltaY > 0) {
-        // Scroll down - move clockwise
-        nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % clockwiseOrder.length
-      } else {
-        // Scroll up - move counter-clockwise
-        nextIndex = currentIndex === -1 ? clockwiseOrder.length - 1 : (currentIndex - 1 + clockwiseOrder.length) % clockwiseOrder.length
-      }
-      
-      const nextButton = clockwiseOrder[nextIndex]
-      
-      // Set the new selected button
-      this.hardwareSettingsStore.setHoveredButton(nextButton)
-    },
-    cycleParameters(deltaY) {
-      const dir = deltaY > 0 ? 1 : -1;
-      const currentIdx = this.hardwareSettingsStore.selectedParameterIndex;
-      const paramCount = this.hardwareSettingsStore.currentParameters.length;
-      const isBackSelected = this.hardwareSettingsStore.isBackButtonSelected;
-      
-      if (isBackSelected) {
-        // Currently on back button
-        if (dir < 0) {
-          // Scroll up: go to last parameter
-          this.hardwareSettingsStore.setBackButtonSelected(false);
-          this.hardwareSettingsStore.setSelectedParameterIndex(paramCount - 1);
-        }
-        // Scroll down: stay on back button (do nothing)
-      } else {
-        // Currently on a parameter
-        const newIdx = currentIdx + dir;
-        if (newIdx >= 0 && newIdx < paramCount) {
-          // Valid parameter index
-          this.hardwareSettingsStore.setSelectedParameterIndex(newIdx);
-        } else if (newIdx >= paramCount && dir > 0) {
-          // Scrolled past last parameter: select back button
-          this.hardwareSettingsStore.setBackButtonSelected(true);
-          // Keep the marker at the last parameter position
-          this.hardwareSettingsStore.setSelectedParameterIndex(paramCount - 1);
-        }
-        // Scrolled before first parameter: do nothing (stay at 0)
-      }
-    },
-    handleMouseDown(event) {
-      // Check if it's a middle mouse click (button 1)
-      if (event.button === 1) {
-        event.preventDefault()
-        
-        const mode = this.hardwareSettingsStore.navigationMode
-        
-        // Allow parameter interactions even when there's an expanded button
-        if (mode === 'parameters') {
-          // Check if back button is selected
-          if (this.hardwareSettingsStore.isBackButtonSelected) {
-            this.handleBack()
-            return
-          }
-          
-          // Get the currently selected parameter
-          const currentParams = this.hardwareSettingsStore.currentParameters
-          const currentIndex = this.hardwareSettingsStore.selectedParameterIndex
-          
-          if (currentIndex >= 0 && currentIndex < currentParams.length) {
-            const currentParam = currentParams[currentIndex]
-            
-            // Handle the parameter interaction
-            this.handleParameterInteraction(currentParam)
-          }
-          return
-        }
-        
-        // Handle menu mode middle mouse clicks (only when no expanded button)
-        if (mode === 'menu' && !this.expandedButtonId) {
-          // Get the currently selected button
-          const currentButtonId = this.hardwareSettingsStore.currentSelectedButton
-          
-          // Don't trigger animation for the close button
-          if (currentButtonId !== 'close') {
-            this.handleButtonClick(currentButtonId)
-          }
-        }
-        
-        return
-      }
-      
-      // For all other cases, if there's an expanded button, do nothing - no mouse events should work
-      if (this.expandedButtonId) {
-        event.preventDefault()
-        return
       }
     }
   },

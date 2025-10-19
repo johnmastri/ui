@@ -48,6 +48,7 @@ export default {
   },
   methods: {
     handleClick() {
+      console.log('[SETTINGS BUTTON] Clicked, emitting:', this.value)
       this.$emit('click', this.value)
     }
   }

@@ -1,5 +1,10 @@
 <template>
-  <g ref="SettingsHolder" id="SettingsHolder">
+  <g 
+    ref="SettingsHolder" 
+    id="SettingsHolder"
+    @wheel.stop.prevent="handleWheel"
+    :style="{ pointerEvents: isVisible ? 'auto' : 'none' }"
+  >
     <!-- Settings Parameter Templates -->
     <SettingsParameterTemplate 
       v-for="(parameter, index) in currentParameters" 
@@ -30,7 +35,7 @@
       id="SettingsHeader" 
       fill="white" 
       xml:space="preserve" 
-      style="white-space: pre" 
+      style="white-space: pre; pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; cursor: inherit;" 
       font-family="IBM Plex Sans Condensed" 
       font-size="48" 
       font-style="italic" 
@@ -171,6 +176,7 @@ export default {
       currentParameters,
       calculateYPosition,
       resetMarkerPosition,
+      isVisible: computed(() => hardwareSettingsStore.navigationMode === 'parameters'),
       headerText: computed(() => {
         const currentButton = hardwareSettingsStore.buttons.find(
           btn => btn.id === hardwareSettingsStore.currentMenu
@@ -180,6 +186,32 @@ export default {
     }
   },
   methods: {
+    handleWheel(event) {
+      event.preventDefault()
+      
+      if (this.hardwareSettingsStore.isSelectFocused) {
+        return
+      }
+      
+      const direction = event.deltaY > 0 ? 1 : -1
+      this.navigateParameters(direction)
+    },
+    
+    navigateParameters(direction) {
+      const currentIdx = this.hardwareSettingsStore.selectedParameterIndex
+      const maxIdx = this.hardwareSettingsStore.totalSelectableItems - 1
+      
+      let newIdx = currentIdx + direction
+      
+      if (newIdx < 0) newIdx = maxIdx
+      if (newIdx > maxIdx) newIdx = 0
+      
+      this.hardwareSettingsStore.setSelectedParameterIndex(newIdx)
+      
+      const isBackSelected = newIdx === this.currentParameters.length
+      this.hardwareSettingsStore.setBackButtonSelected(isBackSelected)
+    },
+    
     fadeIn() {
       gsap.to(this.$refs.SettingsHolder, {
         opacity: 1,
@@ -213,12 +245,19 @@ export default {
       }
     },
     handleButtonClick({ id, value, type }) {
+      console.log('[SETTINGS HOLDER] Button clicked:', { id, value, type })
       const currentSetting = this.hardwareSettingsStore.getSettingForButton(
         this.hardwareSettingsStore.currentMenu
       )
       if (currentSetting) {
         const parameter = currentSetting.parameters.find(p => p.id === id)
         if (parameter) {
+          console.log('[SETTINGS HOLDER] Emitting button-click event:', {
+            category: this.hardwareSettingsStore.currentMenu,
+            parameterId: id,
+            value: value,
+            type: type
+          })
           this.$emit('button-click', {
             category: this.hardwareSettingsStore.currentMenu,
             parameterId: id,

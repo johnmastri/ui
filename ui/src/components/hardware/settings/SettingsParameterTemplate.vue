@@ -16,7 +16,7 @@
         id="SettingsLabel" 
         :fill="isSelected ? '#3ED72A' : '#F8F8F8'"
         xml:space="preserve" 
-        style="white-space: pre" 
+        style="white-space: pre; pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; cursor: inherit;" 
         font-family="Barlow" 
         font-size="32" 
         font-weight="600" 
@@ -49,9 +49,9 @@
         :value="parameter.value"
       />
       
-      <!-- Button Component -->
+      <!-- Button Component (includes update_panel) -->
       <SettingsButton 
-        v-else-if="parameter.type === 'button'"
+        v-else-if="parameter.type === 'button' || parameter.type === 'update_panel'"
         :value="parameter.value"
         @click="handleButtonClick"
       />
@@ -120,6 +120,11 @@ export default {
       })
     },
     handleButtonClick(value) {
+      console.log('[PARAMETER TEMPLATE] Button clicked:', {
+        id: this.parameter.id,
+        value: value,
+        type: this.parameter.type
+      })
       this.$emit('button-click', {
         id: this.parameter.id,
         value: value,

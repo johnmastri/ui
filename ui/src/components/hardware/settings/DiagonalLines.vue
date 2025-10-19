@@ -12,7 +12,7 @@
     </defs>
     
     <!-- Background rectangle with pattern -->
-    <rect width="400px" height="240px" :fill="`url(#${patternId})`" ref="background"/>
+    <rect width="400px" height="240px" :fill="`url(#${patternId})`" ref="background" style="pointer-events: none;"/>
   </g>
 </template>
 

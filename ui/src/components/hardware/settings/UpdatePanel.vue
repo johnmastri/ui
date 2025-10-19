@@ -1,6 +1,15 @@
 <template>
-  <g>
-    <rect x="0" y="0" width="800" height="480" fill="#000" />
+  <g 
+    @mousedown.stop="handleBackdropClick" 
+    @wheel.stop 
+    @click.stop
+  >
+    <rect 
+      x="0" y="0" 
+      width="800" height="480" 
+      fill="#000" 
+      fill-opacity="0.95"
+    />
     
     <text 
       x="400" 
@@ -13,6 +22,26 @@
     >
       SYSTEM UPDATE
     </text>
+    
+    <g 
+      @mousedown.stop="handleCloseClick" 
+      @click.stop="handleCloseClick"
+      @mouseenter="isCloseHovered = true"
+      @mouseleave="isCloseHovered = false"
+      style="cursor: pointer;"
+    >
+      <rect 
+        x="720" y="20" 
+        width="60" height="40" 
+        :fill="isCloseHovered ? '#444' : '#333'" 
+        stroke="#666" 
+        stroke-width="2" 
+        rx="4" 
+      />
+      <text x="750" y="45" text-anchor="middle" fill="#fff" font-size="20">
+        ✕
+      </text>
+    </g>
     
     <g v-if="!updateStore.updateAvailable && !updateStore.isChecking">
       <text x="400" y="150" text-anchor="middle" fill="#888" font-size="18">
@@ -37,9 +66,28 @@
         Last checked: {{ formatDate(updateStore.lastChecked) }}
       </text>
       
-      <g @click="updateStore.checkForUpdates" style="cursor: pointer;">
-        <rect x="300" y="320" width="200" height="50" fill="#333" stroke="#666" stroke-width="2" rx="4" />
-        <text x="400" y="352" text-anchor="middle" fill="#fff" font-size="16">
+      <g 
+        @mousedown.stop="handleCheckClick" 
+        @click.stop="handleCheckClick"
+        @mouseenter="isCheckHovered = true"
+        @mouseleave="isCheckHovered = false"
+        style="cursor: pointer;"
+      >
+        <rect 
+          x="300" y="320" 
+          width="200" height="50" 
+          :fill="isCheckHovered ? '#444' : '#333'" 
+          stroke="#666" 
+          stroke-width="2" 
+          rx="4"
+        />
+        <text 
+          x="400" y="352" 
+          text-anchor="middle" 
+          fill="#fff" 
+          font-size="16" 
+          style="pointer-events: none;"
+        >
           Check for Updates
         </text>
       </g>
@@ -63,7 +111,8 @@
       <g 
         v-for="(component, idx) in ['ui', 'server', 'firmware']" 
         :key="component"
-        @click="updateStore.toggleComponent(component)"
+        @mousedown.stop="(e) => handleComponentToggle(e, component)"
+        @click.stop="(e) => handleComponentToggle(e, component)"
         style="cursor: pointer;"
       >
         <rect 
@@ -100,8 +149,21 @@
         {{ updateStore.releaseNotes.substring(0, 80) }}
       </text>
       
-      <g @click="updateStore.downloadUpdates" style="cursor: pointer;">
-        <rect x="250" y="360" width="300" height="50" fill="#1976D2" stroke="#2196F3" stroke-width="2" rx="4" />
+      <g 
+        @mousedown.stop="handleDownloadClick" 
+        @click.stop="handleDownloadClick"
+        @mouseenter="isDownloadHovered = true"
+        @mouseleave="isDownloadHovered = false"
+        style="cursor: pointer;"
+      >
+        <rect 
+          x="250" y="360" 
+          width="300" height="50" 
+          :fill="isDownloadHovered ? '#2196F3' : '#1976D2'" 
+          stroke="#2196F3" 
+          stroke-width="2" 
+          rx="4" 
+        />
         <text x="400" y="392" text-anchor="middle" fill="#fff" font-size="16">
           Download Update
         </text>
@@ -184,17 +246,52 @@
 </template>
 
 <script>
+import { ref } from 'vue'
 import { useUpdateStore } from '../../../stores/updateStore'
 
 export default {
   name: 'UpdatePanel',
-  setup() {
+  emits: ['close'],
+  
+  setup(props, { emit }) {
     const updateStore = useUpdateStore()
+    
+    const isCheckHovered = ref(false)
+    const isCloseHovered = ref(false)
+    const isDownloadHovered = ref(false)
+    
+    const handleBackdropClick = (event) => {
+      console.log('[UPDATE PANEL] Backdrop clicked - ignoring')
+    }
+    
+    const handleCheckClick = (event) => {
+      console.log('[UPDATE PANEL] Check button clicked')
+      updateStore.checkForUpdates()
+    }
+    
+    const handleCloseClick = (event) => {
+      console.log('[UPDATE PANEL] Close clicked')
+      emit('close')
+    }
+    
+    const handleDownloadClick = (event) => {
+      console.log('[UPDATE PANEL] Download clicked')
+      updateStore.downloadUpdates()
+    }
+    
+    const handleInstallClick = (event) => {
+      console.log('[UPDATE PANEL] Install clicked')
+      updateStore.installUpdates()
+    }
+    
+    const handleComponentToggle = (event, component) => {
+      console.log('[UPDATE PANEL] Toggle component:', component)
+      updateStore.toggleComponent(component)
+    }
     
     const formatDate = (date) => {
       if (!date) return ''
-      const d = new Date(date)
-      return d.toLocaleTimeString()
+      return new Date(date).toLocaleTimeString()
     }
     
     const formatBytes = (bytes) => {
@@ -207,10 +304,18 @@ export default {
     
     return {
       updateStore,
+      isCheckHovered,
+      isCloseHovered,
+      isDownloadHovered,
+      handleBackdropClick,
+      handleCheckClick,
+      handleCloseClick,
+      handleDownloadClick,
+      handleInstallClick,
+      handleComponentToggle,
       formatDate,
       formatBytes
     }
   }
 }
 </script>
-

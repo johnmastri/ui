@@ -65,16 +65,48 @@ console.log('Vue app mounted!')
 // Set up JUCE bridge after Vue is mounted
 import { useJuceIntegration } from './composables/useJuceIntegration.js'
 import { useParameterStore } from './stores/parameterStore.js'
+import { useWebSocketStore } from './stores/websocketStore.js'
+import { useUpdateStore } from './stores/updateStore.js'
 
 const juceIntegration = useJuceIntegration()
 const parameterStore = useParameterStore(pinia)
+const websocketStore = useWebSocketStore()
+const updateStore = useUpdateStore()
 
 // Initialize WebSocket handlers for parameter synchronization
 parameterStore.initWebSocketHandlers()
 
-// Request parameter state from other clients when page loads
-import { useWebSocketStore } from './stores/websocketStore.js'
-const websocketStore = useWebSocketStore()
+// Initialize update store WebSocket handlers
+console.log('[MAIN] Registering update store WebSocket handlers')
+websocketStore.registerHandler('update_check_result', (message) => {
+  console.log('[MAIN] Received update_check_result, forwarding to updateStore')
+  updateStore.handleUpdateMessage(message)
+})
+websocketStore.registerHandler('update_progress', (message) => {
+  console.log('[MAIN] Received update_progress, forwarding to updateStore')
+  updateStore.handleUpdateMessage(message)
+})
+websocketStore.registerHandler('update_download_complete', (message) => {
+  console.log('[MAIN] Received update_download_complete, forwarding to updateStore')
+  updateStore.handleUpdateMessage(message)
+})
+websocketStore.registerHandler('update_install_progress', (message) => {
+  console.log('[MAIN] Received update_install_progress, forwarding to updateStore')
+  updateStore.handleUpdateMessage(message)
+})
+websocketStore.registerHandler('update_complete', (message) => {
+  console.log('[MAIN] Received update_complete, forwarding to updateStore')
+  updateStore.handleUpdateMessage(message)
+})
+websocketStore.registerHandler('update_error', (message) => {
+  console.log('[MAIN] Received update_error, forwarding to updateStore')
+  updateStore.handleUpdateMessage(message)
+})
+websocketStore.registerHandler('current_versions', (message) => {
+  console.log('[MAIN] Received current_versions, forwarding to updateStore')
+  updateStore.handleUpdateMessage(message)
+})
+console.log('[MAIN] Update store handlers registered')
 
 // Function to request parameter state from other clients
 const requestParameterState = () => {
