@@ -20,13 +20,14 @@ export const useUpdateStore = defineStore('update', () => {
   const isChecking = ref(false)
   const isDownloading = ref(false)
   const isInstalling = ref(false)
+  const downloadComplete = ref(false)
   const lastChecked = ref(null)
   const errorMessage = ref(null)
   
   const currentVersions = ref({
-    ui: '1.0.0',
-    server: '1.0.0',
-    firmware: '1.0.0'
+    ui: '0.0.1',
+    server: '0.0.1',
+    firmware: '0.0.1'
   })
   
   const selectedComponents = ref({
@@ -65,8 +66,10 @@ export const useUpdateStore = defineStore('update', () => {
   function checkForUpdates() {
     console.log('[UPDATE STORE] checkForUpdates called')
     console.log('[UPDATE STORE] WebSocket connected:', websocketStore.isConnected)
+    console.log('[UPDATE STORE] Current selections BEFORE check:', JSON.stringify(selectedComponents.value))
     
     isChecking.value = true
+    downloadComplete.value = false
     errorMessage.value = null
     
     if (websocketStore.isConnected) {
@@ -119,7 +122,11 @@ export const useUpdateStore = defineStore('update', () => {
   }
   
   function toggleComponent(component) {
+    console.log('[UPDATE STORE] toggleComponent called for:', component)
+    console.log('[UPDATE STORE] Current value:', selectedComponents.value[component])
     selectedComponents.value[component] = !selectedComponents.value[component]
+    console.log('[UPDATE STORE] New value:', selectedComponents.value[component])
+    console.log('[UPDATE STORE] All selections:', JSON.stringify(selectedComponents.value))
   }
   
   function selectAllComponents() {
@@ -140,6 +147,7 @@ export const useUpdateStore = defineStore('update', () => {
     switch (message.type) {
       case 'update_check_result':
         console.log('[UPDATE STORE] Received update_check_result')
+        console.log('[UPDATE STORE] Selections BEFORE processing:', JSON.stringify(selectedComponents.value))
         isChecking.value = false
         lastChecked.value = new Date()
         
@@ -151,11 +159,13 @@ export const useUpdateStore = defineStore('update', () => {
           releaseNotes.value = message.release_notes || ''
           componentsToUpdate.value = Object.keys(message.components)
           
-          message.components.forEach((comp, data) => {
+          Object.entries(message.components).forEach(([comp, data]) => {
             if (downloadProgress.value[comp]) {
               downloadProgress.value[comp].bytes_total = data.size_bytes || 0
             }
           })
+          
+          console.log('[UPDATE STORE] Selections AFTER processing:', JSON.stringify(selectedComponents.value))
         } else {
           console.log('[UPDATE STORE] No updates available')
           updateAvailable.value = false
@@ -173,7 +183,9 @@ export const useUpdateStore = defineStore('update', () => {
         break
         
       case 'update_download_complete':
+        console.log('[UPDATE STORE] Download complete!')
         isDownloading.value = false
+        downloadComplete.value = true
         break
         
       case 'update_install_progress':
@@ -219,6 +231,7 @@ export const useUpdateStore = defineStore('update', () => {
     updateAvailable.value = false
     isDownloading.value = false
     isInstalling.value = false
+    downloadComplete.value = false
     errorMessage.value = null
     installPhase.value = ''
     installSteps.value = []
@@ -235,6 +248,7 @@ export const useUpdateStore = defineStore('update', () => {
     isChecking,
     isDownloading,
     isInstalling,
+    downloadComplete,
     lastChecked,
     errorMessage,
     currentVersions,

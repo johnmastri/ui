@@ -1,9 +1,48 @@
 import asyncio
 import websockets
 import json
+import os
+from pathlib import Path
+
+# For development, use a local UpdateManager that reads from local manifest
+class LocalUpdateManager:
+    def __init__(self):
+        self.manifest_path = Path(__file__).parent.parent / 'scripts' / 'release' / 'manifest.json'
+        print(f"[UPDATE MANAGER] Using local manifest: {self.manifest_path}")
+        
+    async def check_for_updates(self):
+        try:
+            if not self.manifest_path.exists():
+                print(f"[UPDATE MANAGER] Manifest not found: {self.manifest_path}")
+                return {
+                    'available': False,
+                    'error': 'No local manifest found'
+                }
+            
+            with open(self.manifest_path, 'r') as f:
+                manifest = json.load(f)
+            
+            print(f"[UPDATE MANAGER] Loaded manifest version {manifest['latest_version']}")
+            
+            return {
+                'available': True,
+                'version': manifest['latest_version'],
+                'release_date': manifest['release_date'],
+                'components': manifest['components'],
+                'release_notes': manifest.get('update_notes', '')
+            }
+        except Exception as e:
+            print(f"[UPDATE MANAGER] Error loading manifest: {e}")
+            return {
+                'available': False,
+                'error': str(e)
+            }
 
 # Store connected clients for broadcasting
 connected_clients = set()
+
+# Initialize update manager with local manifest for testing
+update_manager = LocalUpdateManager()
 
 async def handler(websocket):
     print("Client connected!")
@@ -70,6 +109,24 @@ async def handler(websocket):
                                 connected_clients.remove(client)
                                 print(f"❌ Client disconnected during state request broadcast: {e}")
                                 
+                elif message_type == 'check_updates':
+                    print("[UPDATE] Checking for updates...")
+                    try:
+                        result = await update_manager.check_for_updates()
+                        if result:
+                            await websocket.send(json.dumps(result))
+                        else:
+                            await websocket.send(json.dumps({
+                                "type": "update_check_result",
+                                "available": False
+                            }))
+                    except Exception as e:
+                        print(f"[UPDATE] Error: {e}")
+                        await websocket.send(json.dumps({
+                            "type": "update_error",
+                            "error": str(e)
+                        }))
+                        
                 elif message_type == 'parameter_update':
                     # Legacy support - echo back a mock LED update
                     await websocket.send(json.dumps({

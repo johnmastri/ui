@@ -85,12 +85,12 @@ def connect_to_esp32(port, baud=115200):
         
         time.sleep(2)
         
-        print(f"✅ Connected to ESP32 on {port}")
+        print(f"[OK] Connected to ESP32 on {port}")
         stats['esp32_connected'] = True
         return True
         
     except serial.SerialException as e:
-        print(f"\n❌ Failed to connect to ESP32: {e}")
+        print(f"\n[ERROR] Failed to connect to ESP32: {e}")
         print("\nTroubleshooting steps:")
         print("  1. Close Arduino IDE Serial Monitor")
         print("  2. Close any other programs using the serial port")

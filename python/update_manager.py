@@ -3,6 +3,7 @@ import aiohttp
 import hashlib
 import json
 import os
+import sys
 import shutil
 import subprocess
 import time
@@ -11,11 +12,20 @@ from pathlib import Path
 from typing import Optional, Dict, List
 
 class UpdateManager:
-    def __init__(self, config_path='/home/pi/mastrctrl/update_config.json'):
+    def __init__(self, config_path=None):
+        if config_path is None:
+            if sys.platform == 'win32':
+                self.base_path = Path.cwd() / 'mastrctrl_updates'
+                config_path = self.base_path / 'update_config.json'
+            else:
+                self.base_path = Path('/home/pi/mastrctrl')
+                config_path = '/home/pi/mastrctrl/update_config.json'
+        else:
+            self.base_path = Path(config_path).parent
+            
         self.config_path = config_path
         self.load_config()
         
-        self.base_path = Path('/home/pi/mastrctrl')
         self.staging_path = self.base_path / 'staging'
         self.backup_path = self.base_path / 'backups'
         self.current_path = self.base_path / 'current'
@@ -55,9 +65,9 @@ class UpdateManager:
                 return json.load(f)
         else:
             return {
-                'ui': '1.0.0',
-                'server': '1.0.0',
-                'firmware': '1.0.0'
+                'ui': '0.0.1',
+                'server': '0.0.1',
+                'firmware': '0.0.1'
             }
             
     def save_current_versions(self):
@@ -79,8 +89,9 @@ class UpdateManager:
                     if response.status != 200:
                         self.update_status['error'] = f"Failed to fetch manifest: HTTP {response.status}"
                         return None
-                        
-                    manifest = await response.json()
+                    
+                    text = await response.text()
+                    manifest = json.loads(text)
                     
             available_updates = {}
             for component in ['ui', 'server', 'firmware']:

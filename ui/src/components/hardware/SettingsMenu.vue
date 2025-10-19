@@ -602,6 +602,10 @@ export default {
       event.stopPropagation();
       const mode = this.hardwareSettingsStore.navigationMode;
       
+      if (mode === 'modal') {
+        return
+      }
+      
       if (this.hardwareSettingsStore.isSelectFocused) {
         const dir = event.deltaY > 0 ? 1 : -1;
         this.hardwareSettingsStore.updateHighlightedSelectIndex(dir);
@@ -610,6 +614,8 @@ export default {
       
       if (mode === 'menu') {
         this.cycleCategories(event.deltaY);
+      } else if (mode === 'parameters') {
+        this.cycleParameters(event.deltaY);
       }
     },
     
@@ -629,11 +635,37 @@ export default {
       this.hardwareSettingsStore.setHoveredButton(nextButton)
     },
     
+    cycleParameters(deltaY) {
+      const dir = deltaY > 0 ? 1 : -1;
+      const currentIdx = this.hardwareSettingsStore.selectedParameterIndex;
+      const paramCount = this.hardwareSettingsStore.currentParameters.length;
+      const isBackSelected = this.hardwareSettingsStore.isBackButtonSelected;
+      
+      if (isBackSelected) {
+        if (dir < 0) {
+          this.hardwareSettingsStore.setBackButtonSelected(false);
+          this.hardwareSettingsStore.setSelectedParameterIndex(paramCount - 1);
+        }
+      } else {
+        const newIdx = currentIdx + dir;
+        if (newIdx >= 0 && newIdx < paramCount) {
+          this.hardwareSettingsStore.setSelectedParameterIndex(newIdx);
+        } else if (newIdx >= paramCount && dir > 0) {
+          this.hardwareSettingsStore.setBackButtonSelected(true);
+          this.hardwareSettingsStore.setSelectedParameterIndex(paramCount - 1);
+        }
+      }
+    },
+    
     handleMouseDown(event) {
+      const mode = this.hardwareSettingsStore.navigationMode
+      
+      if (mode === 'modal') {
+        return
+      }
+      
       if (event.button === 1) {
         event.preventDefault()
-        
-        const mode = this.hardwareSettingsStore.navigationMode
         
         if (mode === 'parameters') {
           if (this.hardwareSettingsStore.isBackButtonSelected) {

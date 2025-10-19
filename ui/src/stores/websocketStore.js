@@ -4,8 +4,8 @@ import { ref, computed } from 'vue'
 export const useWebSocketStore = defineStore('websocket', () => {
   // Server configuration
   const availableServers = ref([
-    { id: 'local', name: 'Local Server', url: 'ws://localhost:8765' },
-    { id: 'pi', name: 'Pi Server', url: 'ws://192.168.1.195:8765' }
+    { id: 'local', name: 'Local Server', url: 'ws://localhost:8766' },
+    { id: 'pi', name: 'Pi Server', url: 'ws://192.168.1.195:8766' }
   ])
   const selectedServerId = ref('local') // Default to local
   

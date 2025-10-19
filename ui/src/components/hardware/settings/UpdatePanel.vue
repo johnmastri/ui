@@ -3,12 +3,14 @@
     @mousedown.stop="handleBackdropClick" 
     @wheel.stop 
     @click.stop
+    style="pointer-events: all;"
   >
     <rect 
       x="0" y="0" 
       width="800" height="480" 
       fill="#000" 
       fill-opacity="0.95"
+      style="pointer-events: all;"
     />
     
     <text 
@@ -44,8 +46,12 @@
     </g>
     
     <g v-if="!updateStore.updateAvailable && !updateStore.isChecking">
-      <text x="400" y="150" text-anchor="middle" fill="#888" font-size="18">
+      <text x="400" y="120" text-anchor="middle" fill="#888" font-size="18">
         No updates available
+      </text>
+      
+      <text x="400" y="160" text-anchor="middle" :fill="websocketStore.isConnected ? '#4CAF50' : '#F44336'" font-size="14">
+        Server: {{ websocketStore.isConnected ? 'Connected' : 'Disconnected' }}
       </text>
       
       <text x="400" y="190" text-anchor="middle" fill="#666" font-size="14">
@@ -71,7 +77,7 @@
         @click.stop="handleCheckClick"
         @mouseenter="isCheckHovered = true"
         @mouseleave="isCheckHovered = false"
-        style="cursor: pointer;"
+        style="cursor: pointer; pointer-events: all;"
       >
         <rect 
           x="300" y="320" 
@@ -80,6 +86,7 @@
           stroke="#666" 
           stroke-width="2" 
           rx="4"
+          style="pointer-events: all;"
         />
         <text 
           x="400" y="352" 
@@ -111,7 +118,6 @@
       <g 
         v-for="(component, idx) in ['ui', 'server', 'firmware']" 
         :key="component"
-        @mousedown.stop="(e) => handleComponentToggle(e, component)"
         @click.stop="(e) => handleComponentToggle(e, component)"
         style="cursor: pointer;"
       >
@@ -150,6 +156,7 @@
       </text>
       
       <g 
+        v-if="!updateStore.downloadComplete"
         @mousedown.stop="handleDownloadClick" 
         @click.stop="handleDownloadClick"
         @mouseenter="isDownloadHovered = true"
@@ -166,6 +173,27 @@
         />
         <text x="400" y="392" text-anchor="middle" fill="#fff" font-size="16">
           Download Update
+        </text>
+      </g>
+      
+      <g 
+        v-else
+        @mousedown.stop="handleInstallClick" 
+        @click.stop="handleInstallClick"
+        @mouseenter="isDownloadHovered = true"
+        @mouseleave="isDownloadHovered = false"
+        style="cursor: pointer;"
+      >
+        <rect 
+          x="250" y="360" 
+          width="300" height="50" 
+          :fill="isDownloadHovered ? '#4CAF50' : '#388E3C'" 
+          stroke="#4CAF50" 
+          stroke-width="2" 
+          rx="4" 
+        />
+        <text x="400" y="392" text-anchor="middle" fill="#fff" font-size="16">
+          Install Update
         </text>
       </g>
     </g>
@@ -248,6 +276,7 @@
 <script>
 import { ref } from 'vue'
 import { useUpdateStore } from '../../../stores/updateStore'
+import { useWebSocketStore } from '../../../stores/websocketStore'
 
 export default {
   name: 'UpdatePanel',
@@ -255,6 +284,7 @@ export default {
   
   setup(props, { emit }) {
     const updateStore = useUpdateStore()
+    const websocketStore = useWebSocketStore()
     
     const isCheckHovered = ref(false)
     const isCloseHovered = ref(false)
@@ -285,6 +315,8 @@ export default {
     }
     
     const handleComponentToggle = (event, component) => {
+      event.preventDefault()
+      event.stopPropagation()
       console.log('[UPDATE PANEL] Toggle component:', component)
       updateStore.toggleComponent(component)
     }
@@ -304,6 +336,7 @@ export default {
     
     return {
       updateStore,
+      websocketStore,
       isCheckHovered,
       isCloseHovered,
       isDownloadHovered,
