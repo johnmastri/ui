@@ -7,7 +7,6 @@ extern LEDController ledController;
 
 void UARTComm::begin() {
     Serial.begin(USB_SERIAL_BAUD);
-    
     piSerial.begin(PI_UART_BAUD, SERIAL_8N1, PI_UART_RX_PIN, PI_UART_TX_PIN);
     
     usbInputBuffer.reserve(UART_BUFFER_SIZE);
@@ -23,27 +22,7 @@ void UARTComm::begin() {
     errors = 0;
     
     delay(100);
-    
-    Serial.println("\n");
-    Serial.println("========================================");
-    Serial.println("ESP32-S3 WebSocket-to-Pi Bridge");
-    Serial.println("========================================");
-    Serial.println("Firmware: " FIRMWARE_VERSION);
-    Serial.println("Device ID: " DEVICE_ID);
-    Serial.print("MAC Address: ");
-    Serial.println(getMacAddress());
-    Serial.println("----------------------------------------");
-    Serial.println("USB Serial: ACTIVE (115200 baud)");
-    Serial.println("  Purpose: Receive WebSocket data");
-    Serial.println("Pi UART: ACTIVE (115200 baud)");
-    Serial.print("  TX Pin: D");
-    Serial.println(PI_UART_TX_PIN);
-    Serial.print("  RX Pin: D");
-    Serial.println(PI_UART_RX_PIN);
-    Serial.println("========================================");
-    Serial.println();
-    
-    delay(100);
+    Serial.printf("UART Init | GPIO%d/%d @ %d baud\n", PI_UART_TX_PIN, PI_UART_RX_PIN, PI_UART_BAUD);
     sendStartup();
 }
 
@@ -93,18 +72,14 @@ void UARTComm::processPiData() {
         if (c == '\n') {
             if (piInputBuffer.length() > 0) {
                 piMessagesReceived++;
-                
                 processPiMessage(piInputBuffer);
-                
-                Serial.println(piInputBuffer);
-                
                 piInputBuffer = "";
             }
         } else if (c != '\r') {
             piInputBuffer += c;
             
             if (piInputBuffer.length() >= UART_BUFFER_SIZE - 1) {
-                Serial.println("[ERROR] Pi buffer overflow - clearing");
+                Serial.println("ERROR: Pi buffer overflow");
                 piInputBuffer = "";
                 incrementErrorCount();
             }
@@ -144,28 +119,21 @@ void UARTComm::processPiMessage(const String& message) {
     DeserializationError error = deserializeJson(doc, message);
     
     if (error) {
-        Serial.print("│ [ERROR] Pi JSON parse failed: ");
-        Serial.println(error.c_str());
+        Serial.printf("RX Pi ERROR: %s\n", error.c_str());
         incrementErrorCount();
         return;
     }
     
     if (!doc.containsKey("type")) {
-        Serial.println("│ [WARNING] Pi message missing 'type' field");
         return;
     }
     
     String messageType = doc["type"];
-    Serial.print("│ Parsed Type: ");
-    Serial.println(messageType);
+    Serial.printf("RX Pi: %s\n", messageType.c_str());
     
     if (messageType == MSG_TYPE_ENCODER) {
         int encoderId = doc["encoder_id"];
         float value = doc["value"];
-        Serial.print("│ Encoder ");
-        Serial.print(encoderId);
-        Serial.print(" Value: ");
-        Serial.println(value);
     }
 }
 
@@ -223,7 +191,7 @@ void UARTComm::sendMessageToUSB(const String& message) {
 }
 
 void UARTComm::sendMessageToPi(const String& message) {
-    piSerial.println(message);
+    size_t bytesWritten = piSerial.println(message);
     messagesSent++;
 }
 
@@ -244,33 +212,33 @@ void UARTComm::sendStartup() {
     doc["mac_address"] = getMacAddress();
     doc["firmware_version"] = FIRMWARE_VERSION;
     doc["status"] = "ready";
-    doc["capabilities"] = "websocket_bridge,dual_uart,led_control,i2c_encoders";
-    doc["usb_baud"] = USB_SERIAL_BAUD;
-    doc["pi_baud"] = PI_UART_BAUD;
     doc["timestamp"] = millis();
     
     String message;
     serializeJson(doc, message);
     
-    Serial.println(">>> Sending Startup Message to USB <<<");
     sendMessageToUSB(message);
-    
-    delay(100);
-    
-    Serial.println(">>> Sending Startup Message to Pi <<<");
     sendMessageToPi(message);
+    
+    Serial.printf("TX: startup (%d bytes)\n", message.length());
 }
 
 void UARTComm::sendHeartbeat() {
     DynamicJsonDocument doc(256);
     doc["type"] = MSG_TYPE_HEARTBEAT;
     doc["device_id"] = DEVICE_ID;
-    doc["mac_address"] = getMacAddress();
-    doc["status"] = "alive";
     doc["uptime"] = millis();
     doc["timestamp"] = millis();
     
-    sendJSON(doc);
+    String message;
+    serializeJson(doc, message);
+    
+    sendMessageToUSB(message);
+    sendMessageToPi(message);
+    
+    Serial.printf("TX: heartbeat | Sent: %lu | Rcvd: %lu | Errors: %lu\n", 
+                  messagesSent, piMessagesReceived, errors);
+    
     lastHeartbeat = millis();
 }
 
@@ -278,19 +246,19 @@ void UARTComm::sendStatus() {
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     doc["type"] = MSG_TYPE_STATUS;
     doc["device_id"] = DEVICE_ID;
-    doc["mac_address"] = getMacAddress();
     doc["uptime"] = millis();
     doc["free_memory"] = ESP.getFreeHeap();
     doc["messages_sent"] = messagesSent;
-    doc["messages_received"] = messagesReceived;
-    doc["usb_messages"] = usbMessagesReceived;
     doc["pi_messages"] = piMessagesReceived;
-    doc["usb_connected"] = isUsbConnected;
-    doc["pi_connected"] = isPiConnected;
     doc["errors"] = errors;
     doc["timestamp"] = millis();
     
-    sendJSON(doc);
+    String message;
+    serializeJson(doc, message);
+    
+    sendMessageToUSB(message);
+    sendMessageToPi(message);
+    
     lastStatusUpdate = millis();
 }
 

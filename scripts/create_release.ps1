@@ -94,10 +94,32 @@ function Build-Firmware {
     
     Write-Host "Building ESP32 firmware..." -ForegroundColor Yellow
     
-    $arduinoCli = Get-Command arduino-cli -ErrorAction SilentlyContinue
+    $arduinoCliPaths = @(
+        "C:\Users\johnm\AppData\Local\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe",
+        "arduino-cli"
+    )
+    
+    $arduinoCli = $null
+    foreach ($path in $arduinoCliPaths) {
+        if ($path -like "*:*") {
+            if (Test-Path $path) {
+                $arduinoCli = $path
+                break
+            }
+        } else {
+            $cmd = Get-Command $path -ErrorAction SilentlyContinue
+            if ($cmd) {
+                $arduinoCli = $path
+                break
+            }
+        }
+    }
     
     if (-not $arduinoCli) {
         Write-Host "  Warning: arduino-cli not found." -ForegroundColor Yellow
+        Write-Host "  Checked:" -ForegroundColor Yellow
+        Write-Host "    - Arduino IDE bundled arduino-cli" -ForegroundColor Yellow
+        Write-Host "    - System PATH" -ForegroundColor Yellow
         Write-Host "  Install with: winget install ArduinoSA.CLI" -ForegroundColor Yellow
         Write-Host "  Then configure with:" -ForegroundColor Yellow
         Write-Host "    arduino-cli config init" -ForegroundColor Yellow
@@ -108,10 +130,12 @@ function Build-Firmware {
         return $true
     }
     
-    $esp32Core = arduino-cli core list 2>&1 | Select-String "esp32:esp32"
+    Write-Host "  Using: $arduinoCli" -ForegroundColor Cyan
+    
+    $esp32Core = & $arduinoCli core list 2>&1 | Select-String "esp32:esp32"
     if (-not $esp32Core) {
         Write-Host "  Warning: ESP32 core not installed." -ForegroundColor Yellow
-        Write-Host "  Install with: arduino-cli core install esp32:esp32" -ForegroundColor Yellow
+        Write-Host "  Install with: `"$arduinoCli`" core install esp32:esp32" -ForegroundColor Yellow
         Write-Host "  (Note: This is a large download ~1GB and may take several minutes)" -ForegroundColor Yellow
         Write-Host "  Place firmware-v${Version}.bin in $ReleaseDir manually" -ForegroundColor Yellow
         return $true
@@ -129,7 +153,7 @@ function Build-Firmware {
     $outputDir = Join-Path $ReleaseDir "build"
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
     
-    arduino-cli compile --fqbn esp32:esp32:esp32s3 MasterController.ino --output-dir $outputDir 2>&1
+    & $arduinoCli compile --fqbn esp32:esp32:esp32s3 MasterController.ino --output-dir $outputDir 2>&1
     
     if ($LASTEXITCODE -ne 0) {
         Pop-Location

@@ -8,7 +8,13 @@ extern LEDController ledController;
 void UARTComm::begin() {
     Serial.begin(USB_SERIAL_BAUD);
     
+    Serial.println("\n[UART] Initializing UART communication...");
+    
     piSerial.begin(PI_UART_BAUD, SERIAL_8N1, PI_UART_RX_PIN, PI_UART_TX_PIN);
+    
+    Serial.println("[UART] Hardware serial initialized");
+    Serial.printf("[UART]   Pi UART: GPIO%d(TX) / GPIO%d(RX) @ %d baud\n", 
+                  PI_UART_TX_PIN, PI_UART_RX_PIN, PI_UART_BAUD);
     
     usbInputBuffer.reserve(UART_BUFFER_SIZE);
     piInputBuffer.reserve(UART_BUFFER_SIZE);
@@ -36,15 +42,21 @@ void UARTComm::begin() {
     Serial.println("USB Serial: ACTIVE (115200 baud)");
     Serial.println("  Purpose: Receive WebSocket data");
     Serial.println("Pi UART: ACTIVE (115200 baud)");
-    Serial.print("  TX Pin: D");
-    Serial.println(PI_UART_TX_PIN);
-    Serial.print("  RX Pin: D");
-    Serial.println(PI_UART_RX_PIN);
+    Serial.print("  TX Pin: GPIO");
+    Serial.print(PI_UART_TX_PIN);
+    Serial.print(" (D8)");
+    Serial.println(" → Pi RX");
+    Serial.print("  RX Pin: GPIO");
+    Serial.print(PI_UART_RX_PIN);
+    Serial.print(" (D9)");
+    Serial.println(" ← Pi TX");
     Serial.println("========================================");
     Serial.println();
     
+    Serial.println("[UART] Sending startup message...");
     delay(100);
     sendStartup();
+    Serial.println("[UART] Initialization complete");
 }
 
 void UARTComm::update() {
@@ -94,9 +106,10 @@ void UARTComm::processPiData() {
             if (piInputBuffer.length() > 0) {
                 piMessagesReceived++;
                 
-                processPiMessage(piInputBuffer);
-                
+                Serial.print("[UART] ← Pi: ");
                 Serial.println(piInputBuffer);
+                
+                processPiMessage(piInputBuffer);
                 
                 piInputBuffer = "";
             }
@@ -104,7 +117,7 @@ void UARTComm::processPiData() {
             piInputBuffer += c;
             
             if (piInputBuffer.length() >= UART_BUFFER_SIZE - 1) {
-                Serial.println("[ERROR] Pi buffer overflow - clearing");
+                Serial.println("[UART] [ERROR] Pi buffer overflow - clearing");
                 piInputBuffer = "";
                 incrementErrorCount();
             }
@@ -223,8 +236,12 @@ void UARTComm::sendMessageToUSB(const String& message) {
 }
 
 void UARTComm::sendMessageToPi(const String& message) {
-    piSerial.println(message);
+    size_t bytesWritten = piSerial.println(message);
     messagesSent++;
+    
+    if (DEBUG_SERIAL && bytesWritten > 0) {
+        Serial.printf("[UART] → Pi: %d bytes written\n", bytesWritten);
+    }
 }
 
 void UARTComm::forwardMessageToPi(const String& message) {
@@ -252,13 +269,25 @@ void UARTComm::sendStartup() {
     String message;
     serializeJson(doc, message);
     
-    Serial.println(">>> Sending Startup Message to USB <<<");
+    Serial.println("[UART] >>> Sending Startup Message to USB <<<");
+    Serial.print("[UART]     Size: ");
+    Serial.print(message.length());
+    Serial.println(" bytes");
     sendMessageToUSB(message);
     
     delay(100);
     
-    Serial.println(">>> Sending Startup Message to Pi <<<");
+    Serial.println("[UART] >>> Sending Startup Message to Pi UART <<<");
+    Serial.print("[UART]     TX Pin: GPIO");
+    Serial.print(PI_UART_TX_PIN);
+    Serial.print(", Size: ");
+    Serial.print(message.length());
+    Serial.println(" bytes");
+    Serial.print("[UART]     Message: ");
+    Serial.println(message);
+    
     sendMessageToPi(message);
+    Serial.println("[UART]     ✓ Sent to Pi UART");
 }
 
 void UARTComm::sendHeartbeat() {
@@ -270,7 +299,16 @@ void UARTComm::sendHeartbeat() {
     doc["uptime"] = millis();
     doc["timestamp"] = millis();
     
-    sendJSON(doc);
+    String message;
+    serializeJson(doc, message);
+    
+    Serial.print("[UART] ♥ Heartbeat → USB + Pi (");
+    Serial.print(message.length());
+    Serial.println(" bytes)");
+    
+    sendMessageToUSB(message);
+    sendMessageToPi(message);
+    
     lastHeartbeat = millis();
 }
 
@@ -290,7 +328,18 @@ void UARTComm::sendStatus() {
     doc["errors"] = errors;
     doc["timestamp"] = millis();
     
-    sendJSON(doc);
+    String message;
+    serializeJson(doc, message);
+    
+    Serial.println("[UART] ℹ Status Report → USB + Pi");
+    Serial.printf("[UART]   Uptime: %lums, Free Mem: %d bytes\n", 
+                  millis(), ESP.getFreeHeap());
+    Serial.printf("[UART]   USB msgs: %lu, Pi msgs: %lu, Errors: %lu\n",
+                  usbMessagesReceived, piMessagesReceived, errors);
+    
+    sendMessageToUSB(message);
+    sendMessageToPi(message);
+    
     lastStatusUpdate = millis();
 }
 

@@ -215,8 +215,6 @@ class UpdateManager:
             
             self.create_backup('ui')
             
-            subprocess.run(['sudo', 'systemctl', 'stop', 'mastrctrl-ui'], check=True)
-            
             zip_file = self.staging_path / f"ui-v{version}.zip"
             ui_dest = self.current_path / 'ui'
             
@@ -225,15 +223,10 @@ class UpdateManager:
                 
             shutil.unpack_archive(zip_file, ui_dest)
             
-            subprocess.run(['sudo', 'systemctl', 'start', 'mastrctrl-ui'], check=True)
-            
-            if self._verify_service_running('mastrctrl-ui'):
-                self.current_versions['ui'] = version
-                self.save_current_versions()
-                print(f"[UPDATE MANAGER] UI update successful")
-                return True
-            else:
-                raise Exception("UI service failed to start")
+            self.current_versions['ui'] = version
+            self.save_current_versions()
+            print(f"[UPDATE MANAGER] UI update successful")
+            return True
                 
         except Exception as e:
             print(f"[UPDATE MANAGER] UI update failed: {e}")
@@ -285,9 +278,14 @@ class UpdateManager:
             
             firmware_file = self.staging_path / f"firmware-v{version}.bin"
             
-            subprocess.run(['sudo', 'systemctl', 'stop', 'mastrctrl-server'], check=True)
-            time.sleep(1)
+            if not firmware_file.exists():
+                raise Exception(f"Firmware file not found: {firmware_file}")
             
+            print(f"[UPDATE MANAGER] Stopping server to access serial port...")
+            subprocess.run(['sudo', 'systemctl', 'stop', 'mastrctrl-server'], check=True)
+            time.sleep(2)
+            
+            print(f"[UPDATE MANAGER] Flashing ESP32...")
             result = subprocess.run([
                 'esptool.py',
                 '--port', '/dev/serial0',
@@ -304,21 +302,30 @@ class UpdateManager:
             
             if result.returncode != 0:
                 raise Exception(f"esptool failed: {result.stderr}")
-                
+            
+            print(f"[UPDATE MANAGER] Firmware flashed successfully, waiting for ESP32 to restart...")
+            time.sleep(5)
+            
+            print(f"[UPDATE MANAGER] Starting server...")
+            subprocess.run(['sudo', 'systemctl', 'start', 'mastrctrl-server'], check=True)
             time.sleep(3)
             
-            subprocess.run(['sudo', 'systemctl', 'start', 'mastrctrl-server'], check=True)
-            time.sleep(2)
-            
-            shutil.copy2(firmware_file, self.current_path / 'firmware.bin')
-            
-            self.current_versions['firmware'] = version
-            self.save_current_versions()
-            print(f"[UPDATE MANAGER] Firmware update successful")
-            return True
+            if self._verify_service_running('mastrctrl-server'):
+                shutil.copy2(firmware_file, self.current_path / 'firmware.bin')
+                self.current_versions['firmware'] = version
+                self.save_current_versions()
+                print(f"[UPDATE MANAGER] Firmware update successful")
+                return True
+            else:
+                raise Exception("Server failed to start after firmware update")
             
         except Exception as e:
             print(f"[UPDATE MANAGER] Firmware update failed: {e}")
+            print(f"[UPDATE MANAGER] Attempting to restart server...")
+            try:
+                subprocess.run(['sudo', 'systemctl', 'start', 'mastrctrl-server'], check=False)
+            except:
+                pass
             self.rollback('firmware')
             return False
             

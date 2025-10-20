@@ -437,12 +437,17 @@ async def handle_install_updates(websocket, components):
     
     try:
         steps = []
+        install_order = []
+        
+        if 'ui' in components:
+            steps.extend(['Backing up UI', 'Installing UI'])
+            install_order.append('ui')
         if 'firmware' in components:
-            steps.extend(['Backing up firmware', 'Flashing ESP32', 'Verifying firmware'])
+            steps.extend(['Backing up firmware', 'Stopping server', 'Flashing ESP32', 'Verifying firmware'])
+            install_order.append('firmware')
         if 'server' in components:
             steps.extend(['Backing up server', 'Installing server', 'Restarting server'])
-        if 'ui' in components:
-            steps.extend(['Backing up UI', 'Installing UI', 'Restarting UI'])
+            install_order.append('server')
         
         await send_to_client(websocket, {
             'type': 'update_install_progress',
@@ -454,24 +459,24 @@ async def handle_install_updates(websocket, components):
         current_step = 0
         updated_versions = {}
         
-        for component in ['firmware', 'server', 'ui']:
-            if component not in components:
-                continue
-            
-            result = await update_manager.check_for_updates()
-            if not result or not result.get('available'):
-                raise Exception('No updates available')
-            
+        result = await update_manager.check_for_updates()
+        if not result or not result.get('available'):
+            raise Exception('No updates available')
+        
+        for component in install_order:
             version = result['components'][component]['version']
             
-            if component == 'firmware':
-                success = update_manager.apply_firmware_update(version)
-                current_step += 3
-            elif component == 'server':
-                success = update_manager.apply_server_update(version)
-                current_step += 3
-            elif component == 'ui':
+            if component == 'ui':
+                print(f"[UPDATE] Installing UI v{version}...")
                 success = update_manager.apply_ui_update(version)
+                current_step += 2
+            elif component == 'firmware':
+                print(f"[UPDATE] Installing firmware v{version}...")
+                success = update_manager.apply_firmware_update(version)
+                current_step += 4
+            elif component == 'server':
+                print(f"[UPDATE] Installing server v{version}...")
+                success = update_manager.apply_server_update(version)
                 current_step += 3
             
             if success:
@@ -490,6 +495,8 @@ async def handle_install_updates(websocket, components):
             'components': list(updated_versions.keys()),
             'versions': updated_versions
         })
+        
+        print(f"[UPDATE] All updates installed successfully: {updated_versions}")
         
     except Exception as e:
         print(f"[UPDATE] Error installing updates: {e}")

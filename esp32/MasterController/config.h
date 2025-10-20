@@ -10,25 +10,25 @@
 // ============================================================================
 
 // LED Strip (APA102) - D0/D1
-#define LED_DATA_PIN 44        // D0 = GPIO44 on XIAO ESP32-S3  
-#define LED_CLOCK_PIN 43       // D1 = GPIO43 on XIAO ESP32-S3
+#define LED_DATA_PIN 1         // D0 = GPIO1 on XIAO ESP32-S3  
+#define LED_CLOCK_PIN 2        // D1 = GPIO2 on XIAO ESP32-S3
 
 // I2C Encoders - SDA/SCL  
 #define I2C_SDA_PIN 6          // SDA = GPIO6 on XIAO ESP32-S3
 #define I2C_SCL_PIN 7          // SCL = GPIO7 on XIAO ESP32-S3
 
 // Rotary Encoder - D2/D3/D4
-#define ROTARY_ENCODER_A_PIN 2     // D2 = GPIO2 (Channel A / CLK)
-#define ROTARY_ENCODER_B_PIN 3     // D3 = GPIO3 (Channel B / DT)
-#define ROTARY_ENCODER_BTN_PIN 4   // D4 = GPIO4 (Push button)
+#define ROTARY_ENCODER_A_PIN 3     // D2 = GPIO3 (Channel A / CLK)
+#define ROTARY_ENCODER_B_PIN 4     // D3 = GPIO4 (Channel B / DT)
+#define ROTARY_ENCODER_BTN_PIN 6   // D4 = GPIO6 (Push button)
 
 // USB Serial Communication (Desktop Computer)
 #define USB_SERIAL_BAUD 115200
 
 // Pi UART Communication (Raspberry Pi)
 #define PI_UART_BAUD 115200
-#define PI_UART_TX_PIN 8       // D8 = GPIO8 (ESP32 TX -> Pi RX)
-#define PI_UART_RX_PIN 9       // D9 = GPIO9 (ESP32 RX <- Pi TX)
+#define PI_UART_TX_PIN 43      // D6 = GPIO43 (ESP32 TX -> Pi RX)
+#define PI_UART_RX_PIN 44      // D7 = GPIO44 (ESP32 RX <- Pi TX)
 
 // Hardware Configuration
 // ============================================================================
@@ -58,7 +58,7 @@
 // ============================================================================
 
 #define MAIN_LOOP_DELAY_MS 1
-#define HEARTBEAT_INTERVAL_MS 5000      // 5 seconds
+#define HEARTBEAT_INTERVAL_MS 500       // 0.5 seconds
 #define STATUS_UPDATE_INTERVAL_MS 10000 // 10 seconds
 #define I2C_SCAN_INTERVAL_MS 50         // 20Hz encoder scanning
 

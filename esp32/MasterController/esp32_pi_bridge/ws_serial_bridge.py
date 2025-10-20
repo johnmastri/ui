@@ -360,7 +360,11 @@ async def start_server(port, baud=115200, ws_port=8766):
     print("ESP32-S3 WebSocket-to-Serial Bridge Server")
     print("="*60)
     
-    esp32_port = find_esp32_port()
+    if port:
+        esp32_port = port
+        print(f"Using specified serial port: {port}")
+    else:
+        esp32_port = find_esp32_port()
     
     if not connect_to_esp32(esp32_port, baud):
         print("Failed to connect to ESP32. Exiting.")
