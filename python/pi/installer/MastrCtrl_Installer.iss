@@ -94,3 +94,5 @@ Filename: "pnputil.exe"; Parameters: "/delete-driver MastrCtrl_USB.inf /uninstal
 [Messages]
 WelcomeLabel2=This will install [name/ver] on your computer.%n%nThis includes:%n• MastrCtrl VST3 Plugin%n• User Interface Files%n• USB Hardware Driver%n%nIt is recommended that you close all other applications before continuing.
 
+
+

@@ -50,3 +50,5 @@ HKR, Ndi\Interfaces,    LowerRange,               0, "ethernet"
 ProviderName        = "Raspberry Pi Foundation"
 RndisDevice         = "Raspberry Pi USB Ethernet/RNDIS Gadget"
 
+
+

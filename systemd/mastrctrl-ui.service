@@ -9,7 +9,7 @@ User=pi
 WorkingDirectory=/home/pi/mastrctrl/ui
 Environment=DISPLAY=:0
 ExecStartPre=/bin/sleep 5
-ExecStart=/usr/bin/electron electron/kiosk_basic_fast.js
+ExecStart=/usr/bin/electron electron/kiosk_basic_fast.cjs
 Restart=always
 RestartSec=10
 StandardOutput=journal

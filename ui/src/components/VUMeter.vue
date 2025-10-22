@@ -412,7 +412,10 @@ export default {
     // 'P' key toggles pendulum/demo mode
     if (event.key.toLowerCase() === 'p') {
       event.preventDefault()
+      console.log('🎚️ P key pressed - toggling mode')
+      console.log('🎚️ Current mode:', isCompressionMode.value ? 'Compression' : 'Demo')
       toggleMode()
+      console.log('🎚️ New mode:', isCompressionMode.value ? 'Compression' : 'Demo')
     }
   }
     
