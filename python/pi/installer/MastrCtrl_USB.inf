@@ -1,0 +1,52 @@
+;
+; MastrCtrl USB MIDI Controller Driver
+; RNDIS/Ethernet Gadget Driver for Windows
+;
+; This INF file tells Windows to use its built-in RNDIS driver
+; for the MastrCtrl USB MIDI Controller hardware
+;
+
+[Version]
+Signature           = "$Windows NT$"
+Class               = Net
+ClassGUID           = {4d36e972-e325-11ce-bfc1-08002be10318}
+Provider            = %ProviderName%
+DriverVer           = 10/22/2024,1.0.0.0
+CatalogFile         = mastrctrl_usb.cat
+
+[Manufacturer]
+%ProviderName%      = MastrCtrl,NTx86,NTamd64,NTarm,NTarm64
+
+[MastrCtrl.NTx86]
+%MastrCtrlDevice%   = RNDIS.NT.5.1, USB\VID_045E&PID_07AB
+
+[MastrCtrl.NTamd64]
+%MastrCtrlDevice%   = RNDIS.NT.5.1, USB\VID_045E&PID_07AB
+
+[MastrCtrl.NTarm]
+%MastrCtrlDevice%   = RNDIS.NT.5.1, USB\VID_045E&PID_07AB
+
+[MastrCtrl.NTarm64]
+%MastrCtrlDevice%   = RNDIS.NT.5.1, USB\VID_045E&PID_07AB
+
+[RNDIS.NT.5.1]
+Characteristics     = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
+BusType             = 15
+include             = netrndis.inf
+needs               = Usb_Rndis.ndi
+AddReg              = Rndis_AddReg_Vista
+
+[RNDIS.NT.5.1.Services]
+include             = netrndis.inf
+needs               = Usb_Rndis.ndi.Services
+
+[Rndis_AddReg_Vista]
+HKR, ,                  RSSConfiguration,         0, "2"
+HKR, Ndi,               Service,                  0, "usb8023"
+HKR, Ndi\Interfaces,    UpperRange,               0, "ndis5"
+HKR, Ndi\Interfaces,    LowerRange,               0, "ethernet"
+
+[Strings]
+ProviderName        = "MastrCtrl"
+MastrCtrlDevice     = "MastrCtrl USB MIDI Controller"
+

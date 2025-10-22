@@ -1,244 +1,191 @@
-# MastrCtrl Deployment Script
-# Deploys UI, Python server, and ESP32 firmware to Raspberry Pi
-
 param(
-    [string]$ConfigFile = "../deploy-config.json",
-    [switch]$DryRun = $false,
-    [switch]$ServerOnly = $false,
-    [switch]$UIOnly = $false,
-    [switch]$NoRestart = $false,
-    [switch]$Build = $true
+    [Parameter(Mandatory=$true)]
+    [string]$PiAddress,
+    
+    [Parameter(Mandatory=$false)]
+    [string]$PiUser = "mastrctrl",
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$Deploy
 )
 
-Write-Host "=" * 60 -ForegroundColor Cyan
-Write-Host "MastrCtrl Deployment Script" -ForegroundColor Cyan
-Write-Host "=" * 60 -ForegroundColor Cyan
+$ErrorActionPreference = "Stop"
 
-if (-not (Test-Path $ConfigFile)) {
-    Write-Host "Error: Config file not found: $ConfigFile" -ForegroundColor Red
-    exit 1
-}
-
-$config = Get-Content $ConfigFile | ConvertFrom-Json
-
-$piHost = $config.pi_host
-$piUser = $config.pi_user
-$serverPath = $config.server_path
-$backupEnabled = $config.backup_enabled
-$autoRestart = $config.auto_restart -and (-not $NoRestart)
-
-Write-Host "Configuration:" -ForegroundColor Yellow
-Write-Host "  Pi Host: $piHost"
-Write-Host "  Pi User: $piUser"
-Write-Host "  Server Path: $serverPath"
-Write-Host "  Backup Enabled: $backupEnabled"
-Write-Host "  Auto Restart: $autoRestart"
-Write-Host "  Dry Run: $DryRun"
+Write-Host "=" * 60
+Write-Host "Master Controller - Raspberry Pi Deployment Script"
+Write-Host "=" * 60
 Write-Host ""
 
-$piConnection = "${piUser}@${piHost}"
-
-function Test-SSHConnection {
-    Write-Host "Testing SSH connection to Pi..." -ForegroundColor Yellow
-    $result = ssh $piConnection "echo 'SSH OK'"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: Cannot connect to Pi via SSH" -ForegroundColor Red
-        return $false
-    }
-    Write-Host "  SSH connection OK" -ForegroundColor Green
-    return $true
-}
-
-function Build-UI {
-    Write-Host "Building Vue.js UI..." -ForegroundColor Yellow
-    Push-Location ../ui
-    
-    if (-not (Test-Path "node_modules")) {
-        Write-Host "  Installing dependencies..."
-        npm install
-    }
-    
-    Write-Host "  Running build..."
-    npm run build
-    
-    if ($LASTEXITCODE -ne 0) {
-        Pop-Location
-        Write-Host "Error: Build failed" -ForegroundColor Red
-        return $false
-    }
-    
-    Pop-Location
-    Write-Host "  Build complete" -ForegroundColor Green
-    return $true
-}
-
-function Deploy-Server {
-    Write-Host "Deploying Python server..." -ForegroundColor Yellow
-    
-    $pythonFiles = "../python/*"
-    $destination = "${piConnection}:${serverPath}/python/"
-    
-    if ($DryRun) {
-        Write-Host "  [DRY RUN] Would copy: $pythonFiles -> $destination"
-        return $true
-    }
-    
-    Write-Host "  Creating directory on Pi..."
-    ssh $piConnection "mkdir -p ${serverPath}/python"
-    
-    Write-Host "  Copying Python files..."
-    scp -r $pythonFiles $destination
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: Failed to copy Python files" -ForegroundColor Red
-        return $false
-    }
-    
-    Write-Host "  Installing Python dependencies..."
-    ssh $piConnection "cd ${serverPath}/python && pip3 install -r requirements.txt"
-    
-    Write-Host "  Server deployed successfully" -ForegroundColor Green
-    return $true
-}
-
-function Deploy-UI {
-    Write-Host "Deploying UI..." -ForegroundColor Yellow
-    
-    $uiFiles = "../ui/*"
-    $destination = "${piConnection}:${serverPath}/ui/"
-    
-    if ($DryRun) {
-        Write-Host "  [DRY RUN] Would copy: $uiFiles -> $destination"
-        return $true
-    }
-    
-    Write-Host "  Creating directory on Pi..."
-    ssh $piConnection "mkdir -p ${serverPath}/ui"
-    
-    Write-Host "  Copying UI files (excluding node_modules)..."
-    $excludeArgs = "--exclude=node_modules --exclude=dist --exclude=.vite"
-    $command = "scp -r $excludeArgs $uiFiles $destination"
-    Invoke-Expression $command
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: Failed to copy UI files" -ForegroundColor Red
-        return $false
-    }
-    
-    Write-Host "  Installing UI dependencies on Pi..."
-    ssh $piConnection "cd ${serverPath}/ui && npm install"
-    
-    Write-Host "  UI deployed successfully" -ForegroundColor Green
-    return $true
-}
-
-function Deploy-ESP32Firmware {
-    Write-Host "Copying ESP32 firmware..." -ForegroundColor Yellow
-    
-    $esp32Files = "../esp32/*"
-    $destination = "${piConnection}:${serverPath}/esp32/"
-    
-    if ($DryRun) {
-        Write-Host "  [DRY RUN] Would copy: $esp32Files -> $destination"
-        return $true
-    }
-    
-    Write-Host "  Creating directory on Pi..."
-    ssh $piConnection "mkdir -p ${serverPath}/esp32"
-    
-    Write-Host "  Copying ESP32 files..."
-    scp -r $esp32Files $destination
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: Failed to copy ESP32 files" -ForegroundColor Red
-        return $false
-    }
-    
-    Write-Host "  ESP32 firmware copied" -ForegroundColor Green
-    return $true
-}
-
-function Restart-Services {
-    if (-not $autoRestart) {
-        Write-Host "Skipping service restart (auto-restart disabled)" -ForegroundColor Yellow
-        return $true
-    }
-    
-    Write-Host "Restarting services on Pi..." -ForegroundColor Yellow
-    
-    if ($DryRun) {
-        Write-Host "  [DRY RUN] Would restart services"
-        return $true
-    }
-    
-    if (-not $UIOnly) {
-        Write-Host "  Restarting server..."
-        ssh $piConnection "sudo systemctl restart mastrctrl-server"
-    }
-    
-    if (-not $ServerOnly) {
-        Write-Host "  Restarting UI..."
-        ssh $piConnection "sudo systemctl restart mastrctrl-ui"
-    }
-    
-    Start-Sleep -Seconds 3
-    
-    Write-Host "  Checking service status..."
-    $serverStatus = ssh $piConnection "systemctl is-active mastrctrl-server"
-    $uiStatus = ssh $piConnection "systemctl is-active mastrctrl-ui"
-    
-    Write-Host "  Server status: $serverStatus" -ForegroundColor $(if ($serverStatus -eq "active") { "Green" } else { "Red" })
-    Write-Host "  UI status: $uiStatus" -ForegroundColor $(if ($uiStatus -eq "active") { "Green" } else { "Red" })
-    
-    return $true
-}
-
-# Main deployment flow
-if (-not (Test-SSHConnection)) {
-    exit 1
-}
-
-if ($Build -and (-not $ServerOnly)) {
-    if (-not (Build-UI)) {
+Write-Host "[1/8] Checking Pi connectivity..."
+try {
+    $ping = Test-Connection -ComputerName $PiAddress -Count 2 -Quiet
+    if ($ping) {
+        Write-Host "  OK Pi is reachable at $PiAddress" -ForegroundColor Green
+    } else {
+        Write-Host "  ERROR: Cannot reach Pi at $PiAddress" -ForegroundColor Red
         exit 1
     }
-}
-
-$success = $true
-
-if (-not $UIOnly) {
-    if (-not (Deploy-Server)) {
-        $success = $false
-    }
-    
-    if (-not (Deploy-ESP32Firmware)) {
-        $success = $false
-    }
-}
-
-if (-not $ServerOnly) {
-    if (-not (Deploy-UI)) {
-        $success = $false
-    }
-}
-
-if ($success) {
-    Restart-Services
-    
-    Write-Host ""
-    Write-Host "=" * 60 -ForegroundColor Green
-    Write-Host "Deployment Complete!" -ForegroundColor Green
-    Write-Host "=" * 60 -ForegroundColor Green
-    Write-Host ""
-    Write-Host "Next steps:"
-    Write-Host "  1. Check logs: ssh $piConnection 'journalctl -u mastrctrl-server -f'"
-    Write-Host "  2. Access UI: http://${piHost}:3000"
-    Write-Host ""
-} else {
-    Write-Host ""
-    Write-Host "=" * 60 -ForegroundColor Red
-    Write-Host "Deployment Failed" -ForegroundColor Red
-    Write-Host "=" * 60 -ForegroundColor Red
+} catch {
+    Write-Host "  ERROR: Cannot ping Pi: $_" -ForegroundColor Red
     exit 1
 }
 
+Write-Host ""
+Write-Host "[2/8] Creating deployment package..."
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$packageName = "mastrctrl-pi-$timestamp.zip"
+$scriptDir = $PSScriptRoot
+$sourcePath = Join-Path (Split-Path $scriptDir -Parent) "python\pi"
+$tempZip = Join-Path $env:TEMP $packageName
+
+Write-Host "  Source path: $sourcePath" -ForegroundColor Gray
+
+if (-not (Test-Path $sourcePath)) {
+    Write-Host "  ERROR: Source path does not exist: $sourcePath" -ForegroundColor Red
+    exit 1
+}
+
+if (Test-Path $tempZip) {
+    Remove-Item $tempZip -Force
+}
+
+try {
+    Push-Location $sourcePath
+    Compress-Archive -Path * -DestinationPath $tempZip -Force
+    Pop-Location
+    $zipSize = (Get-Item $tempZip).Length / 1KB
+    Write-Host "  OK Package created: $packageName ($([math]::Round($zipSize, 1)) KB)" -ForegroundColor Green
+} catch {
+    if ((Get-Location).Path -ne $PWD.Path) { 
+        Pop-Location 
+    }
+    Write-Host "  ERROR: Failed to create package: $_" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host ""
+Write-Host "[3/8] Copying package to Pi..."
+try {
+    scp $tempZip "${PiUser}@${PiAddress}:~/"
+    Write-Host "  OK Package copied to Pi" -ForegroundColor Green
+} catch {
+    Write-Host "  ERROR: Failed to copy package: $_" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host ""
+Write-Host "[4/8] Extracting files on Pi..."
+$extractCmd = "mkdir -p ~/mastrctrl/package/python/pi && cd ~/mastrctrl/package/python && unzip -o ~/$packageName && rm ~/$packageName && cd pi && find . -type f -name '*.sh' -exec chmod +x {} \; && find . -type f -name '*.py' -exec chmod +x {} \;"
+
+try {
+    ssh "${PiUser}@${PiAddress}" $extractCmd
+    Write-Host "  OK Files extracted" -ForegroundColor Green
+} catch {
+    Write-Host "  ERROR: Failed to extract files: $_" -ForegroundColor Red
+    exit 1
+}
+
+if ($Deploy) {
+    Write-Host ""
+    Write-Host "[5/8] Installing dependencies..."
+    try {
+        ssh "${PiUser}@${PiAddress}" "cd ~/mastrctrl/package/python/pi && bash setup/install_dependencies.sh"
+        Write-Host "  OK Dependencies installed" -ForegroundColor Green
+    } catch {
+        Write-Host "  WARNING: Some dependencies may have failed" -ForegroundColor Yellow
+    }
+    
+    Write-Host ""
+    Write-Host "[6/8] Configuring USB gadget mode (plug-and-play with DHCP)..."
+    $configureUSB = Read-Host "Configure USB gadget mode? This requires sudo and reboot (y/n)"
+    if ($configureUSB -eq 'y') {
+        try {
+            Write-Host "  Installing modern USB gadget with automatic DHCP..." -ForegroundColor Cyan
+            ssh "${PiUser}@${PiAddress}" "cd ~/mastrctrl/package/python/pi/setup && echo 'n' | sudo bash configure_usb_gadget_modern.sh"
+            Write-Host "  OK USB gadget configured with DHCP (reboot required)" -ForegroundColor Green
+            Write-Host "  After reboot, Windows will auto-configure via DHCP - no manual setup needed!" -ForegroundColor Green
+        } catch {
+            Write-Host "  WARNING: USB gadget setup may have failed" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "  SKIPPED USB gadget configuration" -ForegroundColor Yellow
+    }
+    
+    Write-Host ""
+    Write-Host "[7/8] Installing systemd services..."
+    $installService = Read-Host "Install systemd service for auto-start? (y/n)"
+    if ($installService -eq 'y') {
+        try {
+            $serviceCmd = @"
+cd ~/mastrctrl/package/python/pi && 
+if [ -f setup/systemd/mastrctrl-pi.service ]; then 
+    sudo cp setup/systemd/mastrctrl-pi.service /etc/systemd/system/ && 
+    sudo systemctl daemon-reload && 
+    sudo systemctl enable mastrctrl-pi.service; 
+else 
+    echo 'Service file not found'; 
+    exit 1; 
+fi
+"@
+            ssh "${PiUser}@${PiAddress}" $serviceCmd
+            Write-Host "  OK Controller service installed and enabled" -ForegroundColor Green
+            
+            if ($configureUSB -eq 'y') {
+                Write-Host "  USB gadget service also enabled (starts on boot)" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "  WARNING: Service installation may have failed" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "  SKIPPED Service installation" -ForegroundColor Yellow
+    }
+    
+    Write-Host ""
+    Write-Host "[8/8] Starting controller..."
+    $startNow = Read-Host "Start controller now? (y/n)"
+    if ($startNow -eq 'y') {
+        if ($installService -eq 'y') {
+            ssh "${PiUser}@${PiAddress}" "sudo systemctl start mastrctrl-pi.service"
+            Write-Host "  OK Service started" -ForegroundColor Green
+        } else {
+            Write-Host "  Starting manually (Ctrl+C to stop)..." -ForegroundColor Yellow
+            ssh "${PiUser}@${PiAddress}" "cd ~/mastrctrl/package/python/pi && python3 main.py"
+        }
+    }
+} else {
+    Write-Host ""
+    Write-Host "[5-8] Skipped (use -Deploy flag for automatic setup)"
+}
+
+Write-Host ""
+Write-Host "=" * 60
+Write-Host "Deployment Complete!" -ForegroundColor Green
+Write-Host "=" * 60
+Write-Host ""
+Write-Host "Files installed to: ~/mastrctrl/package/python/pi"
+Write-Host ""
+Write-Host "Next steps:"
+Write-Host "  1. Connect Pi USB-C to computer"
+Write-Host "  2. Windows will auto-detect USB Ethernet device"
+Write-Host "  3. Windows will auto-configure IP via DHCP (plug-and-play!)"
+Write-Host "  4. Pi accessible at: 192.168.4.1"
+Write-Host "  5. Connect to: ws://192.168.4.1:8765"
+Write-Host ""
+Write-Host "Manual commands:"
+Write-Host "  ssh ${PiUser}@${PiAddress}"
+Write-Host "  cd ~/mastrctrl/package/python/pi"
+Write-Host "  python3 tests/test_leds.py     # Test LEDs"
+Write-Host "  python3 main.py                # Run controller"
+Write-Host "  sudo systemctl status mastrctrl-pi.service  # Check status"
+Write-Host ""
+
+if ($Deploy -and $configureUSB -eq 'y') {
+    Write-Host "IMPORTANT: USB gadget mode requires a REBOOT!" -ForegroundColor Yellow
+    $rebootNow = Read-Host "Reboot Pi now? (y/n)"
+    if ($rebootNow -eq 'y') {
+        ssh "${PiUser}@${PiAddress}" "sudo reboot"
+        Write-Host "Pi is rebooting..." -ForegroundColor Green
+    }
+}
+
+Remove-Item $tempZip -Force

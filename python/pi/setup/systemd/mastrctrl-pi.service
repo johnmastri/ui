@@ -1,0 +1,17 @@
+[Unit]
+Description=Master Controller Pi Service
+After=network.target
+
+[Service]
+Type=simple
+User=mastrctrl
+WorkingDirectory=/home/mastrctrl/mastrctrl/package/python/pi
+ExecStart=/usr/bin/python3 /home/mastrctrl/mastrctrl/package/python/pi/main.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

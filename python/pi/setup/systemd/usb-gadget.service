@@ -1,0 +1,14 @@
+[Unit]
+Description=USB Gadget (RNDIS Ethernet)
+After=local-fs.target
+Before=network-pre.target dnsmasq.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/usb-gadget-setup.sh
+
+[Install]
+WantedBy=sysinit.target
+
