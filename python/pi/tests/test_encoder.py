@@ -5,7 +5,7 @@ import time
 import argparse
 sys.path.append('..')
 
-from hardware.rotary_encoder import RotaryEncoder
+from rotary_encoder import RotaryEncoder
 
 def main():
     parser = argparse.ArgumentParser(description='Test Rotary Encoder')

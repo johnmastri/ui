@@ -5,7 +5,7 @@ import time
 import argparse
 sys.path.append('..')
 
-from hardware.led_controller import LEDController, LEDPattern
+from led_controller import LEDController, LEDPattern
 
 def main():
     parser = argparse.ArgumentParser(description='Test APA102 LED Strip')

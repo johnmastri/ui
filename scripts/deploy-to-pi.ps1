@@ -37,6 +37,7 @@ $packageName = "mastrctrl-pi-$timestamp.zip"
 $scriptDir = $PSScriptRoot
 $sourcePath = Join-Path (Split-Path $scriptDir -Parent) "python\pi"
 $tempZip = Join-Path $env:TEMP $packageName
+$tempFlatDir = Join-Path $env:TEMP "mastrctrl-pi-flat"
 
 Write-Host "  Source path: $sourcePath" -ForegroundColor Gray
 
@@ -49,15 +50,31 @@ if (Test-Path $tempZip) {
     Remove-Item $tempZip -Force
 }
 
+if (Test-Path $tempFlatDir) {
+    Remove-Item $tempFlatDir -Recurse -Force
+}
+
 try {
-    Push-Location $sourcePath
+    New-Item -ItemType Directory -Path $tempFlatDir -Force | Out-Null
+    
+    Get-ChildItem -Path $sourcePath -Recurse -File | ForEach-Object {
+        Copy-Item $_.FullName -Destination $tempFlatDir -Force
+    }
+    
+    Push-Location $tempFlatDir
     Compress-Archive -Path * -DestinationPath $tempZip -Force
     Pop-Location
+    
+    Remove-Item $tempFlatDir -Recurse -Force
+    
     $zipSize = (Get-Item $tempZip).Length / 1KB
-    Write-Host "  OK Package created: $packageName ($([math]::Round($zipSize, 1)) KB)" -ForegroundColor Green
+    Write-Host "  OK Package created: $packageName ($([math]::Round($zipSize, 1)) KB) [flattened structure]" -ForegroundColor Green
 } catch {
     if ((Get-Location).Path -ne $PWD.Path) { 
         Pop-Location 
+    }
+    if (Test-Path $tempFlatDir) {
+        Remove-Item $tempFlatDir -Recurse -Force
     }
     Write-Host "  ERROR: Failed to create package: $_" -ForegroundColor Red
     exit 1
@@ -75,7 +92,7 @@ try {
 
 Write-Host ""
 Write-Host "[4/8] Extracting files on Pi..."
-$extractCmd = "mkdir -p ~/mastrctrl/package/python/pi && cd ~/mastrctrl/package/python && unzip -o ~/$packageName && rm ~/$packageName && cd pi && find . -type f -name '*.sh' -exec chmod +x {} \; && find . -type f -name '*.py' -exec chmod +x {} \;"
+$extractCmd = "mkdir -p ~/mastrctrl/package/python/pi && cd ~/mastrctrl/package/python/pi && unzip -o ~/$packageName && rm ~/$packageName && find . -type f -name '*.sh' -exec chmod +x {} \; && find . -type f -name '*.py' -exec chmod +x {} \;"
 
 try {
     ssh "${PiUser}@${PiAddress}" $extractCmd

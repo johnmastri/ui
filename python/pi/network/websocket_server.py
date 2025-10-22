@@ -5,7 +5,7 @@ from datetime import datetime
 import sys
 sys.path.append('..')
 
-from utils.message_handler import (
+from message_handler import (
     parse_message, build_startup, build_heartbeat, 
     build_encoder_update, build_button_press, build_bridge_status
 )
@@ -95,16 +95,20 @@ class WebSocketServer:
             return
         
         try:
-            encoder_id = message.get('encoder_id', 0)
             color = message.get('color', {})
-            pattern = message.get('pattern', 'solid')
-            value = message.get('value', 0.0)
-            
             r = color.get('r', 0)
             g = color.get('g', 0)
             b = color.get('b', 0)
             
-            self.led_controller.update_encoder_ring(encoder_id, r, g, b, pattern, value)
+            if 'led_start' in message and 'led_count' in message:
+                led_start = message.get('led_start')
+                led_count = message.get('led_count')
+                self.led_controller.set_led_range(led_start, led_count, r, g, b)
+            else:
+                encoder_id = message.get('encoder_id', 0)
+                pattern = message.get('pattern', 'solid')
+                value = message.get('value', 0.0)
+                self.led_controller.update_encoder_ring(encoder_id, r, g, b, pattern, value)
         except Exception as e:
             print(f"[WS] Error handling LED update: {e}")
     

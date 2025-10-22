@@ -8,12 +8,12 @@ import time
 from datetime import datetime
 
 import config
-from hardware.led_controller import LEDController
-from hardware.rotary_encoder import RotaryEncoder
-from hardware.i2c_encoders import I2CEncoderManager
-from network.websocket_server import WebSocketServer
-from network.usb_gadget import check_usb_gadget, print_usb_status
-from utils.message_handler import build_encoder_update, build_button_press
+from led_controller import LEDController
+from rotary_encoder import RotaryEncoder
+from i2c_encoders import I2CEncoderManager
+from websocket_server import WebSocketServer
+from usb_gadget import check_usb_gadget, print_usb_status
+from message_handler import build_encoder_update, build_button_press
 
 class MasterController:
     def __init__(self, args):
@@ -128,7 +128,7 @@ class MasterController:
                 
                 if current_time - self.last_heartbeat >= config.HEARTBEAT_INTERVAL_MS / 1000.0:
                     uptime = int((current_time - self.start_time) * 1000)
-                    from utils.message_handler import build_heartbeat
+                    from message_handler import build_heartbeat
                     message = build_heartbeat(config.DEVICE_ID, uptime)
                     await self.websocket_server.broadcast_message(message)
                     self.last_heartbeat = current_time

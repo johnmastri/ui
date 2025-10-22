@@ -910,7 +910,7 @@
                 return;
             }
             
-            ws = new WebSocket('ws://localhost:8766');
+            ws = new WebSocket('ws://192.168.4.1:8765');
             
             ws.onopen = () => {
                 updateConnectionStatus(true);

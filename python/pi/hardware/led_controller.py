@@ -47,6 +47,20 @@ class LEDController:
         self.clear_all()
         print(f"[LED] APA102 strip initialized: {self.total_leds} LEDs, {num_encoders} encoder rings")
     
+    def set_led_range(self, led_start, led_count, r, g, b):
+        if led_start < 0 or led_start >= self.total_leds:
+            print(f"[LED] Warning: led_start {led_start} out of range (0-{self.total_leds-1})")
+            return
+        
+        led_end = min(led_start + led_count, self.total_leds)
+        actual_count = led_end - led_start
+        
+        for i in range(led_start, led_end):
+            self.strip.set_pixel(i, r, g, b)
+        
+        self.strip.show()
+        print(f"[LED] Direct update: LEDs {led_start}-{led_end-1} ({actual_count} LEDs) RGB({r},{g},{b})")
+    
     def update_encoder_ring(self, encoder_id, r, g, b, pattern, value):
         if 0 <= encoder_id < self.num_encoders:
             ring = self.encoder_rings[encoder_id]
