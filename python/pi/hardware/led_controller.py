@@ -43,6 +43,7 @@ class LEDController:
         
         self.last_update = time.time()
         self.initialized = True
+        self.direct_mode = False
         
         self.clear_all()
         print(f"[LED] APA102 strip initialized: {self.total_leds} LEDs, {num_encoders} encoder rings")
@@ -55,11 +56,13 @@ class LEDController:
         led_end = min(led_start + led_count, self.total_leds)
         actual_count = led_end - led_start
         
+        self.direct_mode = True
+        
         for i in range(led_start, led_end):
-            self.strip.set_pixel(i, r, g, b)
+            self.strip.set_pixel(i, b, g, r)
         
         self.strip.show()
-        print(f"[LED] Direct update: LEDs {led_start}-{led_end-1} ({actual_count} LEDs) RGB({r},{g},{b})")
+        print(f"[LED] Direct update: LEDs {led_start}-{led_end-1} ({actual_count} LEDs) RGB({r},{g},{b}) -> BGR({b},{g},{r})")
     
     def update_encoder_ring(self, encoder_id, r, g, b, pattern, value):
         if 0 <= encoder_id < self.num_encoders:
