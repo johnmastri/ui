@@ -64,6 +64,10 @@ class LEDController:
         self.strip.show()
         print(f"[LED] Direct update: LEDs {led_start}-{led_end-1} ({actual_count} LEDs) RGB({r},{g},{b}) -> BGR({b},{g},{r})")
     
+    def enable_encoder_mode(self):
+        self.direct_mode = False
+        print("[LED] Encoder mode enabled")
+    
     def update_encoder_ring(self, encoder_id, r, g, b, pattern, value):
         if 0 <= encoder_id < self.num_encoders:
             ring = self.encoder_rings[encoder_id]
@@ -88,6 +92,9 @@ class LEDController:
             print(f"[LED] Updated encoder {encoder_id}: RGB({r},{g},{b}) {ring.pattern.name} value={value:.2f}")
     
     def update(self):
+        if self.direct_mode:
+            return
+        
         current_time = time.time()
         
         if current_time - self.last_update < 0.016:

@@ -6,7 +6,10 @@ param(
     [string]$PiUser = "mastrctrl",
     
     [Parameter(Mandatory=$false)]
-    [switch]$Deploy
+    [switch]$Deploy,
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$Run
 )
 
 $ErrorActionPreference = "Stop"
@@ -181,20 +184,29 @@ Write-Host "=" * 60
 Write-Host ""
 Write-Host "Files installed to: ~/mastrctrl/package/python/pi"
 Write-Host ""
-Write-Host "Next steps:"
-Write-Host "  1. Connect Pi USB-C to computer"
-Write-Host "  2. Windows will auto-detect USB Ethernet device"
-Write-Host "  3. Windows will auto-configure IP via DHCP (plug-and-play!)"
-Write-Host "  4. Pi accessible at: 192.168.4.1"
-Write-Host "  5. Connect to: ws://192.168.4.1:8765"
-Write-Host ""
-Write-Host "Manual commands:"
-Write-Host "  ssh ${PiUser}@${PiAddress}"
-Write-Host "  cd ~/mastrctrl/package/python/pi"
-Write-Host "  python3 tests/test_leds.py     # Test LEDs"
-Write-Host "  python3 main.py                # Run controller"
-Write-Host "  sudo systemctl status mastrctrl-pi.service  # Check status"
-Write-Host ""
+
+if ($Run) {
+    Write-Host "Starting controller..." -ForegroundColor Cyan
+    Write-Host "WebSocket server will be at: ws://192.168.4.1:8765"
+    Write-Host "(Press Ctrl+C to stop)"
+    Write-Host ""
+    ssh "${PiUser}@${PiAddress}" "cd ~/mastrctrl/package/python/pi && python3 main.py"
+} else {
+    Write-Host "Next steps:"
+    Write-Host "  1. Connect Pi USB-C to computer"
+    Write-Host "  2. Windows will auto-detect USB Ethernet device"
+    Write-Host "  3. Windows will auto-configure IP via DHCP (plug-and-play!)"
+    Write-Host "  4. Pi accessible at: 192.168.4.1"
+    Write-Host "  5. Connect to: ws://192.168.4.1:8765"
+    Write-Host ""
+    Write-Host "Manual commands:"
+    Write-Host "  ssh ${PiUser}@${PiAddress}"
+    Write-Host "  cd ~/mastrctrl/package/python/pi"
+    Write-Host "  python3 tests/test_leds.py     # Test LEDs"
+    Write-Host "  python3 main.py                # Run controller"
+    Write-Host "  sudo systemctl status mastrctrl-pi.service  # Check status"
+    Write-Host ""
+}
 
 if ($Deploy -and $configureUSB -eq 'y') {
     Write-Host "IMPORTANT: USB gadget mode requires a REBOOT!" -ForegroundColor Yellow
