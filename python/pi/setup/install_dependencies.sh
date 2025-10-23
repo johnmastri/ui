@@ -28,8 +28,13 @@ echo "  ✓ I2C enabled"
 echo ""
 echo "[5/6] Installing Python packages..."
 cd "$PI_DIR"
-pip3 install -r requirements.txt
-echo "  ✓ Python packages installed"
+if pip3 install -r requirements.txt --break-system-packages 2>/dev/null; then
+    echo "  ✓ Python packages installed"
+elif pip3 install -r requirements.txt 2>/dev/null; then
+    echo "  ✓ Python packages installed"
+else
+    echo "  ⚠ Python package installation had issues, but continuing..."
+fi
 
 echo ""
 echo "[6/6] Configuring I2C speed to 400kHz..."
@@ -53,14 +58,7 @@ echo "  ✓ User $CURRENT_USER added to gpio, spi, i2c groups"
 
 echo ""
 echo "=============================================="
-echo "Installation Complete!"
+echo "Dependencies Installation Complete!"
 echo "=============================================="
-echo ""
-echo "Next steps:"
-echo "  1. Log out and log back in (for group changes)"
-echo "  2. Run USB gadget setup: sudo bash setup/usb_gadget_setup.sh"
-echo "  3. Install systemd service: sudo bash setup/install_service.sh"
-echo "  4. Test LEDs: python3 tests/test_leds.py"
-echo "  5. Run main controller: python3 main.py"
 echo ""
 

@@ -165,6 +165,8 @@ class WebSocketServer:
         await self.broadcast(message_str)
     
     async def start(self):
+        import socket
+        
         server = await websockets.serve(
             self.handler,
             self.ip,
@@ -172,6 +174,16 @@ class WebSocketServer:
             ping_interval=20,
             ping_timeout=10
         )
+        
+        try:
+            server.sockets[0].setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                server.sockets[0].setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            except (AttributeError, OSError):
+                pass
+            print("[WS] Socket reuse options enabled")
+        except Exception as e:
+            print(f"[WS] Note: Could not set socket options: {e}")
         
         print(f"[WS] WebSocket server running on ws://{self.ip}:{self.port}")
         
