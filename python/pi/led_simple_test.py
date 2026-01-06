@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-from led_controller import LEDController
+from hardware.led_controller import LEDController
 
 print("=" * 60)
 print("SIMPLE LED TEST - All LEDs Off, Then Solid Red")

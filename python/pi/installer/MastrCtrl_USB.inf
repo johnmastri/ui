@@ -12,7 +12,6 @@ Class               = Net
 ClassGUID           = {4d36e972-e325-11ce-bfc1-08002be10318}
 Provider            = %ProviderName%
 DriverVer           = 10/22/2024,1.0.0.0
-CatalogFile         = mastrctrl_usb.cat
 
 [Manufacturer]
 %ProviderName%      = MastrCtrl,NTx86,NTamd64,NTarm,NTarm64

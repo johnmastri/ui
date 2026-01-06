@@ -3,9 +3,10 @@
 import sys
 import time
 import argparse
-sys.path.append('..')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from led_controller import LEDController, LEDPattern
+from hardware.led_controller import LEDController, LEDPattern
 
 def main():
     parser = argparse.ArgumentParser(description='Test APA102 LED Strip')

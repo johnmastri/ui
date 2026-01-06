@@ -3,9 +3,10 @@
 import sys
 import time
 import argparse
-sys.path.append('..')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from rotary_encoder import RotaryEncoder
+from hardware.rotary_encoder import RotaryEncoder
 
 def main():
     parser = argparse.ArgumentParser(description='Test Rotary Encoder')

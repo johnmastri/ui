@@ -8,12 +8,12 @@ import time
 from datetime import datetime
 
 import config
-from led_controller import LEDController
-from rotary_encoder import RotaryEncoder
-from i2c_encoders import I2CEncoderManager
-from websocket_server import WebSocketServer
-from usb_gadget import check_usb_gadget, print_usb_status
-from message_handler import build_encoder_update, build_button_press
+from hardware.led_controller import LEDController
+from hardware.rotary_encoder import RotaryEncoder
+from hardware.i2c_encoders import I2CEncoderManager
+from network.websocket_server import WebSocketServer
+from network.usb_gadget import check_usb_gadget, print_usb_status
+from utils.message_handler import build_encoder_update, build_button_press
 
 class MasterController:
     def __init__(self, args):
@@ -25,6 +25,7 @@ class MasterController:
         self.test_encoder = None
         self.i2c_encoders = None
         self.websocket_server = None
+        self.websocket_ip = None
         
         self.last_encoder_count = 0
         self.last_heartbeat = 0
@@ -36,9 +37,28 @@ class MasterController:
         print(f"Device ID: {config.DEVICE_ID}")
         print("=" * 60)
         
+        self.websocket_ip = config.WEBSOCKET_IP
+        
         if not self.args.no_usb:
             usb_status = check_usb_gadget()
             print_usb_status(usb_status)
+            
+            import subprocess
+            try:
+                result = subprocess.run(['ip', 'addr', 'show', 'usb0'], 
+                                      capture_output=True, text=True, timeout=2)
+                if result.returncode == 0 and '192.168.4.1' in result.stdout:
+                    self.websocket_ip = "192.168.4.1"
+                    print("[INIT] USB gadget detected, using 192.168.4.1")
+                else:
+                    self.websocket_ip = "0.0.0.0"
+                    print("[INIT] USB gadget not available, binding to all interfaces")
+            except Exception as e:
+                self.websocket_ip = "0.0.0.0"
+                print(f"[INIT] USB gadget check failed, binding to all interfaces: {e}")
+        else:
+            self.websocket_ip = "0.0.0.0"
+            print("[INIT] USB check disabled, binding to all interfaces")
         
         if not self.args.no_leds:
             print("[INIT] Initializing LED controller...")
@@ -78,7 +98,7 @@ class MasterController:
         
         print("[INIT] Starting WebSocket server...")
         self.websocket_server = WebSocketServer(
-            config.WEBSOCKET_IP,
+            self.websocket_ip,
             config.WEBSOCKET_PORT,
             config.DEVICE_ID,
             config.FIRMWARE_VERSION
@@ -91,7 +111,21 @@ class MasterController:
         
         print("=" * 60)
         print("System initialized successfully!")
-        print(f"WebSocket: ws://{config.WEBSOCKET_IP}:{config.WEBSOCKET_PORT}")
+        if self.websocket_ip == "0.0.0.0":
+            import subprocess
+            try:
+                result = subprocess.run(['hostname', '-I'], capture_output=True, text=True, timeout=2)
+                if result.returncode == 0:
+                    ips = result.stdout.strip().split()
+                    print(f"WebSocket (port {config.WEBSOCKET_PORT}):")
+                    for ip in ips:
+                        print(f"  ws://{ip}:{config.WEBSOCKET_PORT}")
+                else:
+                    print(f"WebSocket: ws://{self.websocket_ip}:{config.WEBSOCKET_PORT}")
+            except Exception:
+                print(f"WebSocket: ws://{self.websocket_ip}:{config.WEBSOCKET_PORT}")
+        else:
+            print(f"WebSocket: ws://{self.websocket_ip}:{config.WEBSOCKET_PORT}")
         print("Press Ctrl+C to stop")
         print("=" * 60)
     
@@ -128,7 +162,7 @@ class MasterController:
                 
                 if current_time - self.last_heartbeat >= config.HEARTBEAT_INTERVAL_MS / 1000.0:
                     uptime = int((current_time - self.start_time) * 1000)
-                    from message_handler import build_heartbeat
+                    from utils.message_handler import build_heartbeat
                     message = build_heartbeat(config.DEVICE_ID, uptime)
                     await self.websocket_server.broadcast_message(message)
                     self.last_heartbeat = current_time

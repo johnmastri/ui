@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export DEBIAN_FRONTEND=noninteractive
+
 echo "=============================================="
 echo "Master Controller - Dependency Installation"
 echo "=============================================="
@@ -9,7 +11,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PI_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo "[1/6] Updating package list..."
-sudo apt-get update
+sudo apt-get update -y
 
 echo ""
 echo "[2/6] Installing system packages..."
@@ -28,9 +30,9 @@ echo "  ✓ I2C enabled"
 echo ""
 echo "[5/6] Installing Python packages..."
 cd "$PI_DIR"
-if pip3 install -r requirements.txt --break-system-packages 2>/dev/null; then
+if pip3 install -r requirements.txt --break-system-packages --user 2>&1; then
     echo "  ✓ Python packages installed"
-elif pip3 install -r requirements.txt 2>/dev/null; then
+elif pip3 install -r requirements.txt --user 2>&1; then
     echo "  ✓ Python packages installed"
 else
     echo "  ⚠ Python package installation had issues, but continuing..."

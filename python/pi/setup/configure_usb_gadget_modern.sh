@@ -64,6 +64,7 @@ else
 fi
 
 echo "[5/8] Configuring dnsmasq for USB gadget..."
+mkdir -p /etc/dnsmasq.d
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cp "$SCRIPT_DIR/dnsmasq-usb-gadget.conf" /etc/dnsmasq.d/usb-gadget.conf
 echo "  ✓ dnsmasq configuration created"

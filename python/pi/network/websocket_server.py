@@ -2,10 +2,8 @@ import asyncio
 import websockets
 import json
 from datetime import datetime
-import sys
-sys.path.append('..')
 
-from message_handler import (
+from utils.message_handler import (
     parse_message, build_startup, build_heartbeat, 
     build_encoder_update, build_button_press, build_bridge_status
 )
@@ -185,7 +183,21 @@ class WebSocketServer:
         except Exception as e:
             print(f"[WS] Note: Could not set socket options: {e}")
         
-        print(f"[WS] WebSocket server running on ws://{self.ip}:{self.port}")
+        if self.ip == "0.0.0.0":
+            import subprocess
+            try:
+                result = subprocess.run(['hostname', '-I'], capture_output=True, text=True, timeout=2)
+                if result.returncode == 0:
+                    ips = result.stdout.strip().split()
+                    print(f"[WS] WebSocket server running on all interfaces (port {self.port})")
+                    for ip in ips:
+                        print(f"[WS]   Available at: ws://{ip}:{self.port}")
+                else:
+                    print(f"[WS] WebSocket server running on ws://{self.ip}:{self.port}")
+            except Exception:
+                print(f"[WS] WebSocket server running on ws://{self.ip}:{self.port}")
+        else:
+            print(f"[WS] WebSocket server running on ws://{self.ip}:{self.port}")
         
         return server
 

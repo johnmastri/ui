@@ -1,0 +1,12 @@
+QUICK SSH SETUP - Copy and paste this into PowerShell:
+
+# Step 1: Copy this entire command and paste into PowerShell (it will prompt for password: mastri)
+$key = Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub; ssh mastrctrl@192.168.1.195 "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '$key' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && echo 'Done!'"
+
+# Step 2: Test it (should NOT ask for password)
+ssh mastrctrl@192.168.1.195 "echo 'Passwordless SSH works!'"
+
+# Step 3: Test deploy script
+cd D:\Dropbox\projects\midi_cs\controller_v2\package\scripts\deploy
+bash deploy.sh --verify 192.168.1.195 mastrctrl
+

@@ -3,7 +3,7 @@
 import sys
 import time
 
-from led_controller import LEDController, LEDPattern
+from hardware.led_controller import LEDController, LEDPattern
 
 def main():
     print("=" * 60)
